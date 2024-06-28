@@ -707,7 +707,7 @@ alibacktrack(int          i,
       for (s = 0; s < n_seq; s++)
         E -= vrna_E_ext_stem(type[s], (i > 1) ? S1[s][i - 1] : -1, (j < n2) ? S2[s][j + 1] : -1, P);
       if (E != n_seq * P->DuplexInit)
-        vrna_message_error("backtrack failed in aliduplex");
+        vrna_message_error("Backtrack failed in aliduplex!");
       else
         break;
     }
