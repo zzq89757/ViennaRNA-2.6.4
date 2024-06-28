@@ -645,6 +645,7 @@ alibacktrack(int          i,
   int   k, l, *type, type2, E, traced, i0, j0, s, n_seq;
   char  *st1, *st2, *struc;
 
+
   n1  = (int)S1[0][0];
   n2  = (int)S2[0][0];
 
