@@ -31,6 +31,7 @@ PRIVATE void
 print_struc(duplexT const *dup);
 
 
+
 /*--------------------------------------------------------------------------*/
 
 int
@@ -61,7 +62,7 @@ main(int  argc,
   /* temperature */
   if (args_info.temp_given)
     temperature = args_info.temp_arg;
-
+  // printf("debug here");
   /* do not take special tetra loop energies into account */
   if (args_info.noTetra_given)
     tetra_loop = 0;
@@ -224,6 +225,7 @@ main(int  argc,
     if (delta >= 0) {
       duplexT *sub;
       subopt = duplex_subopt(s1, s2, delta, 5);
+      // printf(subopt);
       for (sub = subopt; sub->i > 0; sub++) {
         print_struc(sub);
         free(sub->structure);
