@@ -385,6 +385,7 @@ vrna_E_ext_loop_3(vrna_fold_compound_t  *fc,
 }
 
 
+
 PUBLIC int
 vrna_E_ext_stem(unsigned int  type,
                 int           n5d,

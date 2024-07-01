@@ -63,14 +63,9 @@ vrna_E_ext_stem(unsigned int  type,
 
 
 /**
- *  @brief Evaluate the free energy of a base pair in the exterior loop
- *
- *  Evalue the free energy of a base pair connecting two nucleotides in the exterior
- *  loop and take hard constraints into account.
- *
- *  Typically, this is simply dangling end contributions of the adjacent
- *  nucleotides, potentially a terminal A-U mismatch penalty, and maybe some
- *  generic soft constraint contribution for that decomposition.
+ *  @brief 评估分支出外环的茎结构能量。给定一个碱基对 (i, j) 编码为 type，计算能量贡献，
+ * 包括悬挂末端/终端错配贡献。函数不直接返回能量贡献，而是返回相应的玻尔兹曼因子。
+ * 如果相邻核苷酸 (i - 1) 和 (j + 1) 不能贡献堆叠能量，对应的编码必须是 -1
  *
  *  @note   For dangles == 1 || 3 this function also evaluates the three additional
  *          pairs (i + 1, j), (i, j - 1), and (i + 1, j - 1) and returns the minimum

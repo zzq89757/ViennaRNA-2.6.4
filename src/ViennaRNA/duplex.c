@@ -46,11 +46,13 @@
  # GLOBAL VARIABLES              #
  #################################
  */
+
 /*
  #################################
  # PRIVATE VARIABLES             #
  #################################
  */
+
 PRIVATE vrna_param_t  *P = NULL;
 PRIVATE int           **c = NULL;     /* energy array, given that i-j pair */
 PRIVATE short         *S1 = NULL, *SS1 = NULL, *S2 = NULL, *SS2 = NULL;
@@ -69,6 +71,7 @@ PRIVATE int           n1, n2;         /* sequence lengths */
  # PRIVATE FUNCTION DECLARATIONS #
  #################################
  */
+
 PRIVATE duplexT
 duplexfold_cu(const char  *s1,
               const char  *s2,
@@ -108,6 +111,7 @@ covscore(const int  *types,
  # BEGIN OF FUNCTION DEFINITIONS #
  #################################
  */
+
 PUBLIC duplexT
 duplexfold(const char *s1,
            const char *s2)
@@ -205,35 +209,59 @@ duplexfold_cu(const char  *s1,
 }
 
 
+// 用于计算给定的两个RNA序列 s1 和 s2 的次优（suboptimal）二级结构。这些次优结构的自由能在最低自由能结构（MFE）的基础上增加一个给定的能量范围 delta 以内。函数返回一个包含这些次优结构的数组 w: 一个窗口参数，用于限制次优结构的数量
 PUBLIC duplexT *
-// obtain duplex sub opt results
+
 duplex_subopt(const char  *s1,
               const char  *s2,
               int         delta,
               int         w)
 {
+  /*   i, j: 循环变量。
+  n1, n2: 分别表示序列 s1 和 s2 的长度。
+  thresh: 能量阈值。
+  E: 当前能量值。
+  n_subopt: 记录找到的次优结构的数量。
+  n_max: 次优结构数组的初始大小。
+  struc: 保存回溯得到的次优结构。
+  mfe: 最低自由能结构。
+  subopt: 存储次优结构的数组。*/
+
   int     i, j, n1, n2, thresh, E, n_subopt = 0, n_max;
   char    *struc;
   duplexT mfe;
   duplexT *subopt;
+
+
+  /*
+  初始化 n_max 为 16。
+  使用 vrna_alloc 分配初始大小为 16 的 duplexT 数组 subopt。
+  计算并获取最低自由能结构 mfe。
+  释放 mfe.structure 所占用的内存。
+  */
 
   n_max   = 16;
   subopt  = (duplexT *)vrna_alloc(n_max * sizeof(duplexT));
   mfe     = duplexfold_cu(s1, s2, 0);
   free(mfe.structure);
 
+  // 根据 mfe.energy 和 delta 计算能量阈值 threshold。
   thresh  = (int)mfe.energy * 100 + 0.1 + delta;
   n1      = strlen(s1);
   n2      = strlen(s2);
+
+  // 二层遍历查找次优结构
   for (i = n1; i > 0; i--) {
     for (j = 1; j <= n2; j++) {
       int type, ii, jj, Ed;
       type = pair[S2[j]][S1[i]];
       if (!type)
         continue;
-
+      // 计算能量
       E   = Ed = c[i][j];
+      // from /data/ntc/Repository/ViennaRNA-2.6.4/src/ViennaRNA/loops/external.c
       Ed  += vrna_E_ext_stem(type, (j > 1) ? SS2[j - 1] : -1, (i < n1) ? SS1[i + 1] : -1, P);
+      // 超过阈值则跳过
       if (Ed > thresh)
         continue;
 
@@ -253,6 +281,7 @@ duplex_subopt(const char  *s1,
 
       struc = backtrack(i, j);
       vrna_message_info(stderr, "%d %d %d", i, j, E);
+      // 如果 subopt 数组已满，使用 vrna_realloc 扩展数组大小
       if (n_subopt + 1 >= n_max) {
         n_max   *= 2;
         subopt  = (duplexT *)vrna_realloc(subopt, n_max * sizeof(duplexT));
