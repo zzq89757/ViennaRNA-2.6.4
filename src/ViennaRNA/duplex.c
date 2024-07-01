@@ -115,7 +115,7 @@ duplexfold(const char *s1,
   return duplexfold_cu(s1, s2, 1);
 }
 
-
+// generate result if no -e option 
 PRIVATE duplexT
 duplexfold_cu(const char  *s1,
               const char  *s2,
@@ -206,6 +206,7 @@ duplexfold_cu(const char  *s1,
 
 
 PUBLIC duplexT *
+// obtain duplex sub opt results
 duplex_subopt(const char  *s1,
               const char  *s2,
               int         delta,
