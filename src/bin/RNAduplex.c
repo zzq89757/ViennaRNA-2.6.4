@@ -225,7 +225,6 @@ main(int  argc,
     if (delta >= 0) {
       duplexT *sub;
       subopt = duplex_subopt(s1, s2, delta, 5);
-      // printf(subopt);
       for (sub = subopt; sub->i > 0; sub++) {
         print_struc(sub);
         free(sub->structure);
