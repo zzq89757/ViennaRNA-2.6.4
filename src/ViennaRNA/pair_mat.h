@@ -195,16 +195,25 @@ make_pair_matrix(void)
   }
 }
 
-
+/*
+  用 encode_char 函数将每个字符编码为数字，并将结果存储在数组 S 中,how为0时S[0]为序列长度，否则为序列末尾碱基对应的数值
+*/
 static INLINE short *
 encode_sequence(const char  *sequence,
                 short       how)
-{
+{ 
+  /*
+  i 和 l：用于循环和序列长度。
+  S：分配内存以存储编码后的序列，长度为 l + 2。这里额外添加两个元素的目的是为了处理循环结构中的边界情况。
+  */
   unsigned int  i, l = (unsigned int)strlen(sequence);
   short         *S = (short *)vrna_alloc(sizeof(short) * (l + 2));
 
   switch (how) {
     /* standard encoding as always used for S */
+    // 遍历输入序列 sequence，调用 encode_char 函数将每个字符编码为数字，并将结果存储在数组 S 中。
+    // S[l + 1] = S[1]：将序列首尾相连，用于处理循环结构。
+    // S[0] = (short)l：存储序列的长度在 S[0] 中。
     case 0:
       for (i = 1; i <= l; i++)    /* make numerical encoding of sequence */
         S[i] = (short)encode_char(sequence[i - 1]);
@@ -212,6 +221,9 @@ encode_sequence(const char  *sequence,
       S[0]      = (short)l;
       break;
     /* encoding for mismatches of nostandard bases (normally used for S1) */
+    // 同样遍历输入序列 sequence，但是通过 alias 数组将每个字符的编码映射为新的编码，并将结果存储在数组 S 中。
+    // S[l + 1] = S[1]：同样将序列首尾相连。
+    // S[0] = S[l]：存储序列末尾元素的值作为 S[0]，用于处理特定情况。
     case 1:
       for (i = 1; i <= l; i++)
         S[i] = alias[(short)encode_char(sequence[i - 1])];

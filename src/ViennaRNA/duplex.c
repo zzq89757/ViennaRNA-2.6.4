@@ -17,16 +17,16 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
-#include "ViennaRNA/utils/basic.h"
-#include "ViennaRNA/params/default.h"
-#include "ViennaRNA/fold_vars.h"
-#include "ViennaRNA/fold.h"
-#include "ViennaRNA/pair_mat.h"
-#include "ViennaRNA/params/basic.h"
-#include "ViennaRNA/alifold.h"
-#include "ViennaRNA/subopt.h"
-#include "ViennaRNA/loops/all.h"
-#include "ViennaRNA/duplex.h"
+#include "utils/basic.h"
+#include "params/default.h"
+#include "fold_vars.h"
+#include "fold.h"
+#include "pair_mat.h"
+#include "params/basic.h"
+#include "alifold.h"
+#include "subopt.h"
+#include "loops/all.h"
+#include "duplex.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -145,16 +145,18 @@ duplexfold_cu(const char  *s1,
       free(P);
     // 基于模型参数 md 生成新的参数集 P。
     P = vrna_params(&md);
-    // 创建配对矩阵 /data/ntc/Repository/ViennaRNA-2.6.4/src/ViennaRNA/pair_mat.h
+    // 创建配对矩阵 /data/ntc/Repository/ViennaRNA-2.6.4/src/pair_mat.h
     make_pair_matrix();
   }
   // 内存分配 c: 分配一个二维数组，用于存储能量值 
   c = (int **)vrna_alloc(sizeof(int *) * (n1 + 1));
   for (i = 1; i <= n1; i++)
     c[i] = (int *)vrna_alloc(sizeof(int) * (n2 + 1));
-  // 
+  // 将序列转换为数字编码串
+  // len(seq) + encode(seq)
   S1  = encode_sequence(s1, 0);
   S2  = encode_sequence(s2, 0);
+  // encode(seq[-1]) + encode(seq)
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
   // 计算能量
@@ -272,7 +274,7 @@ duplex_subopt(const char  *s1,
         continue;
       // 计算能量
       E   = Ed = c[i][j];
-      // from /data/ntc/Repository/ViennaRNA-2.6.4/src/ViennaRNA/loops/external.c
+      // from /data/ntc/Repository/ViennaRNA-2.6.4/src/loops/external.c
       Ed  += vrna_E_ext_stem(type, (j > 1) ? SS2[j - 1] : -1, (i < n1) ? SS1[i + 1] : -1, P);
       // 超过阈值则跳过
       if (Ed > thresh)
