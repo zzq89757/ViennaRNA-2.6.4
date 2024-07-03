@@ -180,7 +180,7 @@ duplexfold_cu(const char  *s1,
       int type, type2, E, k, l;
       // type: 序列 s1[i] 和 s2[j] 的配对类型 例如，A-U，G-C。
       type    = pair[S1[i]][S2[j]];
-      print_pair();
+      // print_pair();
       // 初始化能量。如果 type 有效，则设置初始值，否则设置为无穷大。
       c[i][j] = type ? P->DuplexInit : INF;
       // 若配对的type 自由能为0 则跳过能量累加计算
