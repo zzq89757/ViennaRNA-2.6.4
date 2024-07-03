@@ -125,7 +125,9 @@ BP_pair[NBASES][NBASES] = BP_ENCODING_DEFAULT;
 PRIVATE const float
 dm_default[7][7] = DM_DEFAULT;
 
-
+/*
+default params !!!
+*/
 PRIVATE vrna_md_t defaults = {
   VRNA_MODEL_DEFAULT_TEMPERATURE,
   1.,
@@ -1122,6 +1124,33 @@ set_model_details(vrna_md_t *md)
     /* make sure there are no uninitialized data fields */
     memset(md, 0, sizeof(vrna_md_t));
 
+
+    /* dangles: 用于处理悬挂末端的参数。
+    special_hp: 特殊发夹的参数。
+    noLP: 是否允许孤立碱基对。
+    noGU: 是否允许 G-U 配对。
+    noGUclosure: 是否允许 G-U 闭合。
+    logML: 是否使用对数多分支环能量模型。
+    gquad: 是否考虑 G 四链体结构。
+    circ: 是否预测环状 RNA。
+    uniq_ML: 是否使用唯一多分支环模型。
+    compute_bpp: 是否计算碱基配对概率。
+    backtrack: 回溯参数。
+    backtrack_type: 回溯类型。
+    energy_set: 能量集合。
+    max_bp_span: 最大碱基对跨度。
+    min_loop_size: 最小环大小。
+    window_size: 窗口大小。
+    temperature: 温度参数。
+    betaScale: β 缩放因子。
+    pf_smooth: 平滑因子。
+    sfact: 标准因子。
+    salt: 盐浓度参数。
+    saltMLLower 和 saltMLUpper: 多分支环盐浓度下限和上限。
+    saltDPXInit 和 saltDPXInitFact: 双链盐浓度初始化参数。
+    helical_rise: 螺旋上升参数。
+    backbone_length: 骨架长度参数。
+    */
     md->dangles         = dangles;
     md->special_hp      = tetra_loop;
     md->noLP            = noLonelyPairs;
@@ -1153,11 +1182,13 @@ set_model_details(vrna_md_t *md)
     md->saltDPXInitFact = defaults.saltDPXInitFact;
     md->helical_rise    = defaults.helical_rise;
     md->backbone_length = defaults.backbone_length;
-
+    // 如果存在非标准碱基对，通过 copy_nonstandards 函数将其复制到 md 结构体中。
     if (nonstandards)
       copy_nonstandards(md, nonstandards);
 
-    /* set default values for the pair/rtype[pair] stuff */
+    /* set default values for the pair/rtype[pair] stuff 
+    调用 vrna_md_update 函数，根据 md 结构体的设置更新配对矩阵。
+    */
     vrna_md_update(md);
   }
 }

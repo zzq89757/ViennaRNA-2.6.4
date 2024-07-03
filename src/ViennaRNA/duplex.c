@@ -145,7 +145,7 @@ duplexfold_cu(const char  *s1,
       free(P);
     // 基于模型参数 md 生成新的参数集 P。
     P = vrna_params(&md);
-    // 创建配对矩阵
+    // 创建配对矩阵 /data/ntc/Repository/ViennaRNA-2.6.4/src/ViennaRNA/pair_mat.h
     make_pair_matrix();
   }
   // 内存分配 c: 分配一个二维数组，用于存储能量值 
