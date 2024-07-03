@@ -160,7 +160,7 @@ duplexfold_cu(const char  *s1,
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
   // 计算能量
-  //   type: 序列 s1[i] 和 s2[j] 的配对类型。
+  // type: 序列 s1[i] 和 s2[j] 的配对类型。
   // P->DuplexInit: 初始化能量。
   // vrna_E_ext_stem: 计算外部茎的能量。
   // E_IntLoop: 计算内部环的能量。
