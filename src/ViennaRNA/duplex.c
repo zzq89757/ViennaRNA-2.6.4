@@ -153,10 +153,10 @@ duplexfold_cu(const char  *s1,
   for (i = 1; i <= n1; i++)
     c[i] = (int *)vrna_alloc(sizeof(int) * (n2 + 1));
   // 将序列转换为数字编码串
-  // len(seq) + encode(seq)
+  // S* = len(seq) + encode(seq)
   S1  = encode_sequence(s1, 0);
   S2  = encode_sequence(s2, 0);
-  // encode(seq[-1]) + encode(seq)
+  // SS* = encode(seq[-1]) + encode(seq)
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
   // 计算能量
