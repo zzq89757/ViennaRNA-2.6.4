@@ -119,38 +119,50 @@ duplexfold(const char *s1,
   return duplexfold_cu(s1, s2, 1);
 }
 
-// generate result if no -e option 
+// generate result if no -e option  clean_up: 一个标志，指示是否在函数结束时清理分配的内存。
 PRIVATE duplexT
 duplexfold_cu(const char  *s1,
               const char  *s2,
               int         clean_up)
 {
+//   i 和 j: 循环变量。
+// Emin: 最小能量值，初始化为无穷大（INF）。
+// i_min 和 j_min: 记录能量最小时的位置。
+// struc: 存储回溯得到的结构字符串。
+// mfe: 用于存储最小自由能的双链结构。
+// md: 结构体，存储模型参数。
   int       i, j, Emin = INF, i_min = 0, j_min = 0;
   char      *struc;
   duplexT   mfe;
   vrna_md_t md;
-
+  // 获取序列长度
   n1  = (int)strlen(s1);
   n2  = (int)strlen(s2);
-
+  // 初始化模型参数 md。
   set_model_details(&md);
   if ((!P) || (fabs(P->temperature - temperature) > 1e-6)) {
     if (P)
       free(P);
-
+    // 基于模型参数 md 生成新的参数集 P。
     P = vrna_params(&md);
+    // 创建配对矩阵
     make_pair_matrix();
   }
-
+  // 内存分配 c: 分配一个二维数组，用于存储能量值 
   c = (int **)vrna_alloc(sizeof(int *) * (n1 + 1));
   for (i = 1; i <= n1; i++)
     c[i] = (int *)vrna_alloc(sizeof(int) * (n2 + 1));
-
+  // 
   S1  = encode_sequence(s1, 0);
   S2  = encode_sequence(s2, 0);
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
-
+  // 计算能量
+  //   type: 序列 s1[i] 和 s2[j] 的配对类型。
+  // P->DuplexInit: 初始化能量。
+  // vrna_E_ext_stem: 计算外部茎的能量。
+  // E_IntLoop: 计算内部环的能量。
+  // MIN2: 返回两个值中的最小值。
   for (i = 1; i <= n1; i++) {
     for (j = n2; j > 0; j--) {
       int type, type2, E, k, l;
@@ -183,18 +195,19 @@ duplexfold_cu(const char  *s1,
       }
     }
   }
-
+  // 回溯生成结构
   struc = backtrack(i_min, j_min);
   if (i_min < n1)
     i_min++;
 
   if (j_min > 1)
     j_min--;
-
+  // 填充 mfe 结构体
   mfe.i         = i_min;
   mfe.j         = j_min;
   mfe.energy    = (float)Emin / 100.;
   mfe.structure = struc;
+  // 清理内存
   if (clean_up) {
     for (i = 1; i <= n1; i++)
       free(c[i]);
@@ -204,7 +217,7 @@ duplexfold_cu(const char  *s1,
     free(SS1);
     free(SS2);
   }
-
+  // 返回结果
   return mfe;
 }
 
@@ -724,7 +737,7 @@ alibacktrack(int          i,
                           S1[s][k + 1], S2[s][l - 1], S1[s][i - 1], S2[s][j + 1], P);
         }
         if (E == c[k][l] + LE) {
-          traced  = 1;
+          traced  = 1;MAXLOOP
           i       = k;
           j       = l;
           break;
