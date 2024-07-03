@@ -39,7 +39,9 @@
 
 
 /**
- *  @brief  Evaluate a stem branching off the exterior loop
+ *  @brief  评估分支出外环的茎结构能量。给定一个碱基对 (i, j) 编码为 type，计算能量贡献，
+ * 包括悬挂末端/终端错配贡献。函数不直接返回能量贡献，而是返回相应的玻尔兹曼因子。
+ * 如果相邻核苷酸 (i - 1) 和 (j + 1) 不能贡献堆叠能量，对应的编码必须是 -1
  *
  *  Given a base pair @f$(i,j)@f$ encoded by @em type, compute the energy contribution
  *  including dangling-end/terminal-mismatch contributions. Instead of returning the

@@ -66,8 +66,7 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
  /usr/include/x86_64-linux-gnu/bits/mathinline.h /usr/include/ctype.h \
  /usr/include/string.h /usr/include/strings.h \
  /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
- /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
- ../../src/ViennaRNA/utils/basic.h \
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h utils/basic.h \
  ../../src/ViennaRNA/datastructures/basic.h \
  ../../src/ViennaRNA/params/constants.h \
  /usr/lib/gcc/x86_64-linux-gnu/9/include/limits.h \
@@ -86,20 +85,20 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
  ../../src/ViennaRNA/structured_domains.h \
  ../../src/ViennaRNA/unstructured_domains.h \
  ../../src/ViennaRNA/utils/structures.h ../../src/ViennaRNA/zscore.h \
- ../../src/ViennaRNA/params/default.h ../../src/ViennaRNA/fold_vars.h \
- ../../src/ViennaRNA/fold.h ../../src/ViennaRNA/mfe.h \
+ params/default.h fold_vars.h fold.h ../../src/ViennaRNA/mfe.h \
  ../../src/ViennaRNA/eval.h \
  ../../src/ViennaRNA/datastructures/char_stream.h \
- ../../src/ViennaRNA/landscape/move.h ../../src/ViennaRNA/pair_mat.h \
- ../../src/ViennaRNA/alifold.h ../../src/ViennaRNA/ribo.h \
+ ../../src/ViennaRNA/landscape/move.h pair_mat.h \
+ ../../src/ViennaRNA/utils/basic.h ../../src/ViennaRNA/fold_vars.h \
+ params/basic.h alifold.h ../../src/ViennaRNA/ribo.h \
  ../../src/ViennaRNA/part_func.h ../../src/ViennaRNA/centroid.h \
  ../../src/ViennaRNA/equilibrium_probs.h \
  ../../src/ViennaRNA/boltzmann_sampling.h \
- ../../src/ViennaRNA/utils/alignments.h ../../src/ViennaRNA/subopt.h \
- ../../src/ViennaRNA/loops/all.h ../../src/ViennaRNA/loops/external.h \
- ../../src/ViennaRNA/loops/hairpin.h ../../src/ViennaRNA/params/salt.h \
- ../../src/ViennaRNA/loops/internal.h \
- ../../src/ViennaRNA/loops/multibranch.h ../../src/ViennaRNA/duplex.h \
+ ../../src/ViennaRNA/utils/alignments.h subopt.h loops/all.h \
+ ../../src/ViennaRNA/loops/external.h ../../src/ViennaRNA/loops/hairpin.h \
+ ../../src/ViennaRNA/params/salt.h ../../src/ViennaRNA/loops/internal.h \
+ ../../src/ViennaRNA/params/default.h \
+ ../../src/ViennaRNA/loops/multibranch.h loops/internal.h duplex.h \
  /usr/lib/gcc/x86_64-linux-gnu/9/include/omp.h
 
 /usr/include/stdc-predef.h:
@@ -256,7 +255,7 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
 
 /usr/include/x86_64-linux-gnu/bits/string_fortified.h:
 
-../../src/ViennaRNA/utils/basic.h:
+utils/basic.h:
 
 ../../src/ViennaRNA/datastructures/basic.h:
 
@@ -306,11 +305,11 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
 
 ../../src/ViennaRNA/zscore.h:
 
-../../src/ViennaRNA/params/default.h:
+params/default.h:
 
-../../src/ViennaRNA/fold_vars.h:
+fold_vars.h:
 
-../../src/ViennaRNA/fold.h:
+fold.h:
 
 ../../src/ViennaRNA/mfe.h:
 
@@ -320,9 +319,15 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
 
 ../../src/ViennaRNA/landscape/move.h:
 
-../../src/ViennaRNA/pair_mat.h:
+pair_mat.h:
 
-../../src/ViennaRNA/alifold.h:
+../../src/ViennaRNA/utils/basic.h:
+
+../../src/ViennaRNA/fold_vars.h:
+
+params/basic.h:
+
+alifold.h:
 
 ../../src/ViennaRNA/ribo.h:
 
@@ -336,9 +341,9 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
 
 ../../src/ViennaRNA/utils/alignments.h:
 
-../../src/ViennaRNA/subopt.h:
+subopt.h:
 
-../../src/ViennaRNA/loops/all.h:
+loops/all.h:
 
 ../../src/ViennaRNA/loops/external.h:
 
@@ -348,8 +353,12 @@ duplex.lo: duplex.c /usr/include/stdc-predef.h ../../config.h \
 
 ../../src/ViennaRNA/loops/internal.h:
 
+../../src/ViennaRNA/params/default.h:
+
 ../../src/ViennaRNA/loops/multibranch.h:
 
-../../src/ViennaRNA/duplex.h:
+loops/internal.h:
+
+duplex.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/9/include/omp.h:

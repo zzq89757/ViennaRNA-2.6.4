@@ -385,7 +385,11 @@ vrna_E_ext_loop_3(vrna_fold_compound_t  *fc,
 }
 
 
-
+/*
+评估分支出外环的茎结构能量。给定一个碱基对 (i, j) 编码为 type，计算能量贡献，
+包括悬挂末端/终端错配贡献。函数不直接返回能量贡献，而是返回相应的玻尔兹曼因子。
+如果相邻核苷酸 (i - 1) 和 (j + 1) 不能贡献堆叠能量，对应的编码必须是 -1
+*/
 PUBLIC int
 vrna_E_ext_stem(unsigned int  type,
                 int           n5d,
@@ -393,17 +397,20 @@ vrna_E_ext_stem(unsigned int  type,
                 vrna_param_t  *p)
 {
   int energy = 0;
-
+  // 两个相邻核苷酸都有效 (n5d >= 0 && n3d >= 0)
+  // 累加终端错配的能量贡献
   if (n5d >= 0 && n3d >= 0)
     energy += p->mismatchExt[type][n5d][n3d];
+  // 只有 5' 端相邻核苷酸有效 (n5d >= 0)
+  // 累加 5' 悬挂末端的能量贡献
   else if (n5d >= 0)
     energy += p->dangle5[type][n5d];
   else if (n3d >= 0)
     energy += p->dangle3[type][n3d];
-
+  // 如果碱基对类型大于 2（例如 A-U 碱基对），累加终端 A-U 的能量贡献
   if (type > 2)
     energy += p->TerminalAU;
-
+  // 返回总能量贡献
   return energy;
 }
 

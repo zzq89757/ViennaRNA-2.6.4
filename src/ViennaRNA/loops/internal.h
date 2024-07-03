@@ -476,7 +476,7 @@ ubf_eval_ext_int_loop(int           i,
   return energy;
 }
 
-
+/* compute energy of degree 2 loop (stack bulge or interior) */
 PRIVATE INLINE int
 E_IntLoop(int           n1,
           int           n2,
@@ -488,7 +488,7 @@ E_IntLoop(int           n1,
           int           sq1,
           vrna_param_t  *P)
 {
-  /* compute energy of degree 2 loop (stack bulge or interior) */
+  
   int nl, ns, u, energy, salt_stack_correction, salt_loop_correction, backbones;
 
   salt_stack_correction = P->SaltStack;

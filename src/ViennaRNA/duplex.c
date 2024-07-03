@@ -26,6 +26,7 @@
 #include "alifold.h"
 #include "subopt.h"
 #include "loops/all.h"
+#include "loops/internal.h"
 #include "duplex.h"
 
 #ifdef _OPENMP
@@ -119,18 +120,27 @@ duplexfold(const char *s1,
   return duplexfold_cu(s1, s2, 1);
 }
 
+void print_pair() {
+    for (int i = 0; i < 21; i++) {
+        for (int j = 0; j < 21; j++) {
+            printf("%4d ", pair[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 // generate result if no -e option  clean_up: 一个标志，指示是否在函数结束时清理分配的内存。
 PRIVATE duplexT
 duplexfold_cu(const char  *s1,
               const char  *s2,
               int         clean_up)
 {
-//   i 和 j: 循环变量。
-// Emin: 最小能量值，初始化为无穷大（INF）。
-// i_min 和 j_min: 记录能量最小时的位置。
-// struc: 存储回溯得到的结构字符串。
-// mfe: 用于存储最小自由能的双链结构。
-// md: 结构体，存储模型参数。
+  //   i 和 j: 循环变量。
+  // Emin: 最小能量值，初始化为无穷大（INF）。
+  // i_min 和 j_min: 记录能量最小时的位置。
+  // struc: 存储回溯得到的结构字符串。
+  // mfe: 用于存储最小自由能的双链结构。
+  // md: 结构体，存储模型参数。
   int       i, j, Emin = INF, i_min = 0, j_min = 0;
   char      *struc;
   duplexT   mfe;
@@ -160,25 +170,28 @@ duplexfold_cu(const char  *s1,
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
   // 计算能量
-  // type: 序列 s1[i] 和 s2[j] 的配对类型。
-  // P->DuplexInit: 初始化能量。
-  // vrna_E_ext_stem: 计算外部茎的能量。
-  // E_IntLoop: 计算内部环的能量。
-  // MIN2: 返回两个值中的最小值。
   for (i = 1; i <= n1; i++) {
     for (j = n2; j > 0; j--) {
+      // P->DuplexInit: 初始化能量。
+      // vrna_E_ext_stem: 计算外部茎的能量。
+      // E_IntLoop: 计算内部环的能量。
+      // MIN2: 返回两个值中的最小值。
+      /* c: energy array, given that i-j pair */
       int type, type2, E, k, l;
+      // type: 序列 s1[i] 和 s2[j] 的配对类型 例如，A-U，G-C。
       type    = pair[S1[i]][S2[j]];
+      print_pair();
+      // 初始化能量。如果 type 有效，则设置初始值，否则设置为无穷大。
       c[i][j] = type ? P->DuplexInit : INF;
+      // 若配对的type 自由能为0 则跳过能量累加计算
       if (!type)
         continue;
-
+      // 计算外部茎的能量 使用 type 和相邻的碱基（如果存在）计算能量。
       c[i][j] += vrna_E_ext_stem(type, (i > 1) ? SS1[i - 1] : -1, (j < n2) ? SS2[j + 1] : -1, P);
       for (k = i - 1; k > 0 && k > i - MAXLOOP - 2; k--) {
         for (l = j + 1; l <= n2; l++) {
           if (i - k + l - j - 2 > MAXLOOP)
             break;
-
           type2 = pair[S1[k]][S2[l]];
           if (!type2)
             continue;
@@ -739,7 +752,7 @@ alibacktrack(int          i,
                           S1[s][k + 1], S2[s][l - 1], S1[s][i - 1], S2[s][j + 1], P);
         }
         if (E == c[k][l] + LE) {
-          traced  = 1;MAXLOOP
+          traced  = 1;
           i       = k;
           j       = l;
           break;
