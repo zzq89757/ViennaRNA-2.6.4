@@ -162,13 +162,16 @@ duplexfold_cu(const char  *s1,
   c = (int **)vrna_alloc(sizeof(int *) * (n1 + 1));
   for (i = 1; i <= n1; i++)
     c[i] = (int *)vrna_alloc(sizeof(int) * (n2 + 1));
-  // 将序列转换为数字编码串
+  // 将序列转换为数字编码串 此处分配空间大于len(seq) + 1 后面的以0填充---------------------------
   // S* = len(seq) + encode(seq)
   S1  = encode_sequence(s1, 0);
   S2  = encode_sequence(s2, 0);
   // SS* = encode(seq[-1]) + encode(seq)
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
+  // printf("%d\n", SS2[0]);
+  // printf("%d\n", SS2[1]);
+  // printf("%d\n", SS2[-1]);
   // 计算能量
   for (i = 1; i <= n1; i++) {
     for (j = n2; j > 0; j--) {
@@ -182,6 +185,7 @@ duplexfold_cu(const char  *s1,
       type    = pair[S1[i]][S2[j]];
       // print_pair();
       // 初始化能量。如果 type 有效，则设置初始值，否则设置为无穷大。
+      printf("%d,", c[i][j]);
       c[i][j] = type ? P->DuplexInit : INF;
       // 若配对的type 自由能为0 则跳过能量累加计算
       if (!type)
