@@ -26789,11 +26789,14 @@ class Duplex():
                 
 
 if __name__ == "__main__":
-    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
     all = d.duplex_subopt(10)
     
     for mfe in all:
     
         print(mfe.structure)
-        # print(mfe.energy)
+        print(mfe.energy)
+        print(mfe.i)
+        print(mfe.j)
         

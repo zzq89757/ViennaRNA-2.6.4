@@ -304,9 +304,7 @@ duplex_subopt(const char  *s1,
        * better one close (w) by. For simplicity we do test without
        * adding dangles, which is slightly inaccurate.
        */
-      printf("%d(w)",w);
       for (ii = MAX2(i - w, 1); (ii <= MIN2(i + w, n1)) && type; ii++) {
-        printf("%d-", ii);
         for (jj = MAX2(j - w, 1); jj <= MIN2(j + w, n2); jj++)
           if (c[ii][jj] < E) {
             type = 0;
