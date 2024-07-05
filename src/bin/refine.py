@@ -26126,13 +26126,10 @@ class Duplex():
     def encode_base(self, base:str):
         code = 0
         base = base.upper()
-        if energy_set > 0:
-            code =  ord(base) - ord('A') + 1
-        else:
-            idx = Law_and_Order.find(base)
-            if idx > -1:code = idx
-            if code > 5:code = 0
-            if code > 4:code -= 1
+        idx = Law_and_Order.find(base)
+        if idx > -1:code = idx
+        if code > 5:code = 0
+        if code > 4:code -= 1
         return code
         
     
@@ -26243,23 +26240,16 @@ class Duplex():
         dm_default = DM_DEFAULT
         def vrna_nucleotide_encode(c:str, md:vrna_md_t):
             code = -1
-
             c = c.upper()
-
             if md:
-                if md.energy_set > 0:
-                    code = ord(c) - ord('A') + 1
+                law_and_order = "ACGUT"
+                pos = law_and_order.find(c)
+                if pos == -1:
+                    code = 0
                 else:
-                    law_and_order = "ACGUT"
-                    pos = law_and_order.find(c)
-                    if pos == -1:
-                        code = 0
-                    else:
-                        code = pos
-
-                    if code > 4:
-                        code -= 1  # make T and U equivalent
-
+                    code = pos
+                if code > 4:
+                    code -= 1  # make T and U equivalent
             return code
 
         def prepare_default_pairs(md:vrna_md_t):
@@ -26289,66 +26279,7 @@ class Duplex():
         md.alias = [0] * (MAXALPHA + 1)
 
         # start setting actual base pair type encodings
-        energy_set = md.energy_set
-        if energy_set == 0:
-            prepare_default_pairs(md)
-        elif energy_set == 1:
-            i = 1
-            while i < MAXALPHA:
-                md.alias[i] = 3  # A <-> G
-                i += 1
-                md.alias[i] = 2  # B <-> C
-                i += 1
-
-            i = 1
-            while i < MAXALPHA:
-                md.pair[i][i + 1] = 2  # AB <-> GC
-                i += 1
-                md.pair[i][i - 1] = 1  # BA <-> CG
-                i += 1
-
-        elif energy_set == 2:
-            i = 1
-            while i < MAXALPHA:
-                md.alias[i] = 1  # A <-> A
-                i += 1
-                md.alias[i] = 4  # B <-> U
-                i += 1
-
-            i = 1
-            while i < MAXALPHA:
-                md.pair[i][i + 1] = 5  # AB <-> AU
-                i += 1
-                md.pair[i][i - 1] = 6  # BA <-> UA
-                i += 1
-
-        elif energy_set == 3:
-            i = 1
-            while i < MAXALPHA - 2:
-                md.alias[i] = 3  # A <-> G
-                i += 1
-                md.alias[i] = 2  # B <-> C
-                i += 1
-                md.alias[i] = 1  # C <-> A
-                i += 1
-                md.alias[i] = 4  # D <-> U
-                i += 1
-
-            i = 1
-            while i < MAXALPHA - 2:
-                md.pair[i][i + 1] = 2  # AB <-> GC
-                i += 1
-                md.pair[i][i - 1] = 1  # BA <-> CG
-                i += 1
-                md.pair[i][i + 1] = 5  # CD <-> AU
-                i += 1
-                md.pair[i][i - 1] = 6  # DC <-> UA
-                i += 1
-
-        else:
-            print("vrna_md_update: Unknown energy_set = {}. Using defaults!".format(md.energy_set))
-            md.energy_set = 0
-            prepare_default_pairs(md)
+        prepare_default_pairs(md)
 
         # set the reverse base pair types
         for i in range(MAXALPHA + 1):
@@ -26366,62 +26297,31 @@ class Duplex():
     
     def make_pair_matrix(self):
         # 默认能量集 (energy_set == 0)
-        if energy_set == 0:
-            # 将前5个碱基设置为其本身
-            alias = list(range(5))
-            alias += [3, 2, 0]  # X <-> G, K <-> C, I <-> default base '@'
+        # 将前5个碱基设置为其本身
+        alias = list(range(5))
+        alias += [3, 2, 0]  # X <-> G, K <-> C, I <-> default base '@'
             
-            for i in range(NBASES):
-                for j in range(NBASES):
-                    self.pair[i][j] = BP_pair[i][j]
+        for i in range(NBASES):
+            for j in range(NBASES):
+                self.pair[i][j] = BP_pair[i][j]
             
             
-            # 如果noGU为真，禁止G-U配对
-            if noGU:
-                self.pair[3][4] = self.pair[4][3] = 0
+        # 如果noGU为真，禁止G-U配对
+        if noGU:
+            self.pair[3][4] = self.pair[4][3] = 0
 
-            # 如果nonstandards不为空，允许非标准碱基对
-            if nonstandards is not None:
-                for i in range(0, len(nonstandards), 2):
+        # 如果nonstandards不为空，允许非标准碱基对
+        if nonstandards is not None:
+            for i in range(0, len(nonstandards), 2):
                     self.pair[self.encode_base(nonstandards[i])][self.encode_base(nonstandards[i + 1])] = 7
 
-            # 设置反向配对矩阵
-            # rtype = [[0 for _ in range(NBASES)] for _ in range(NBASES)]
-            for i in range(NBASES):
-                for j in range(NBASES):
-                    rtype[self.pair[i][j]] = self.pair[j][i]
+        # 设置反向配对矩阵
+        # rtype = [[0 for _ in range(NBASES)] for _ in range(NBASES)]
+        for i in range(NBASES):
+            for j in range(NBASES):
+                rtype[self.pair[i][j]] = self.pair[j][i]
 
-        else:
-            self.pair = [[0 for _ in range(MAXALPHA + 1)] for _ in range(MAXALPHA + 1)]
-            if energy_set == 1:
-                alias = [0] + [3, 2] * ((MAXALPHA - 1) // 2)
-                for i in range(1, MAXALPHA, 2):
-                    self.pair[i][i + 1] = 2  # AB <-> GC
-                    self.pair[i + 1][i] = 1  # BA <-> CG
-            elif energy_set == 2:
-                alias = [0] + [1, 4] * ((MAXALPHA - 1) // 2)
-                for i in range(1, MAXALPHA, 2):
-                    self.pair[i][i + 1] = 5  # AB <-> AU
-                    self.pair[i + 1][i] = 6  # BA <-> UA
-            elif energy_set == 3:
-                alias = [0]
-                for i in range(1, MAXALPHA - 2, 4):
-                    alias += [3, 2, 1, 4]  # A <-> G, B <-> C, C <-> A, D <-> U
-                for i in range(1, MAXALPHA - 2, 4):
-                    self.pair[i][i + 1] = 2  # AB <-> GC
-                    self.pair[i + 1][i] = 1  # BA <-> CG
-                    self.pair[i + 2][i + 3] = 5  # CD <-> AU
-                    self.pair[i + 3][i + 2] = 6  # DC <-> UA
-            else:
-                print("What energy_set are YOU using??")
 
-            # 设置反向配对矩阵
-            # rtype = [[0 for _ in range(MAXALPHA + 1)] for _ in range(MAXALPHA + 1)]
-            for i in range(MAXALPHA + 1):
-                for j in range(MAXALPHA + 1):
-                    rtype[self.pair[i][j]] = self.pair[j][i]
-    
-        
     
     def vrna_E_ext_stem(self, type, n5d, n3d, P:vrna_param_s):
         # print(type, end=",")
