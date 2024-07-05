@@ -26747,7 +26747,6 @@ class Duplex():
             for j in range(n2, 0 , -1):
                 type = self.pair[self.S1[i]][self.S2[j]]
                 self.c[i][j] = self.P.DuplexInit if type else INF
-                # print(self.c[i][j], end=",")
                 # print(type, end=",")
                 if not type:
                     continue
