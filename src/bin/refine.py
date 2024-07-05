@@ -8,6 +8,7 @@ energy_set = 0
 '''
 Law_and_Order = "_ACGUTXKI"
 MIN2 = lambda a, b:(a + b)/2 - abs((a - b)/2)
+MAX2 = lambda a, b:(a + b)/2 + abs((a - b)/2)
 NBASES = 8
 NBPAIRS = 7
 MAXALPHA = 20
@@ -26124,6 +26125,10 @@ class Duplex():
         self.pair = [[BP_pair[i][j] for j in range(NBASES)] for i in range(NBASES)]
         self.n1 = len(s1)
         self.n2 = len(s2)
+        self.i = 0
+        self.j = 0
+        self.energy = 0
+        self.structure = None
 
     ### encode 
     def encode_base(self, base:str):
@@ -26672,8 +26677,8 @@ class Duplex():
     def duplexfold_cu(self, clean_up):
         temperature     = VRNA_MODEL_DEFAULT_TEMPERATURE
         Emin = INF
-        n1 = len(self.s1)
-        n2 = len(self.s2)
+        self.n1 = len(self.s1)
+        self.n2 = len(self.s2)
         md = vrna_md_t()
         i_min = j_min = 0
         self.P = None
@@ -26683,23 +26688,23 @@ class Duplex():
             if self.P:self.P = None
             self.P = self.vrna_params(md)   
             self.make_pair_matrix()
-        self.c = [[0 for _ in range(n2 + 1)] for _ in range(n1 + 1)]
+        self.c = [[0 for _ in range(self.n2 + 1)] for _ in range(self.n1 + 1)]
         self.S1 = self.encode_sequence(self.s1, 0)
         self.S2 = self.encode_sequence(self.s2, 0)
         self.SS1 = self.encode_sequence(self.s1, 1)
         self.SS2 = self.encode_sequence(self.s2, 1)
-        for i in range(1, n1 + 1):
-            for j in range(n2, 0 , -1):
+        for i in range(1, self.n1 + 1):
+            for j in range(self.n2, 0 , -1):
                 type = self.pair[self.S1[i]][self.S2[j]]
                 self.c[i][j] = self.P.DuplexInit if type else INF
                 # print(type, end=",")
                 if not type:
                     continue
-                self.c[i][j] += self.vrna_E_ext_stem(type, self.SS1[i - 1] if i > 1 else -1, self.SS2[j + 1] if j < n2 else -1, self.P)
+                self.c[i][j] += self.vrna_E_ext_stem(type, self.SS1[i - 1] if i > 1 else -1, self.SS2[j + 1] if j < self.n2 else -1, self.P)
                 for k in range(i - 1, 0, -1):
-                    if i - k + n2 - j - 2 > MAXLOOP:
+                    if i - k + self.n2 - j - 2 > MAXLOOP:
                         break
-                    for l in range(j + 1, n2 + 1):
+                    for l in range(j + 1, self.n2 + 1):
                         if i - k + l - j - 2 > MAXLOOP:
                             break
                         type2 = self.pair[self.S1[k]][self.S2[l]]
@@ -26708,13 +26713,13 @@ class Duplex():
                         Energy = self.E_IntLoop(i - k - 1, l - j - 1, type2, rtype[type], self.SS1[k + 1], self.SS2[l - 1], self.SS1[i - 1], self.SS2[j + 1], self.P)
                         self.c[i][j] = MIN2(self.c[i][j], self.c[k][l] + Energy)
                 Energy = self.c[i][j]
-                Energy += self.vrna_E_ext_stem(rtype[type], self.SS2[j - 1] if j > 1 else -1, self.SS1[i + 1] if i < n1 else -1, self.P)
+                Energy += self.vrna_E_ext_stem(rtype[type], self.SS2[j - 1] if j > 1 else -1, self.SS1[i + 1] if i < self.n1 else -1, self.P)
                 if Energy < Emin:
                     Emin = Energy
                     i_min = i
                     j_min = j
         struc = self.backtrack(i_min, j_min)
-        if i_min < n1:
+        if i_min < self.n1:
             i_min += 1
 
         if j_min > 1:
@@ -26731,12 +26736,72 @@ class Duplex():
             self.SS2.clear()
 
         # 返回结果
-        return mfe    
+        return mfe   
+    
+    def  duplex_subopt(self, delta, w):
+        n_max = 16
+        n_subopt = 0
+        # 计算并获取最低自由能结构 mfe
+        mfe = self.duplexfold_cu(0)
+        # 根据 mfe.energy 和 delta 计算能量阈值 threshold
+        thresh  = int(mfe.energy) * 100 + 0.1 + delta
+        subopt = [Duplex(self.s1, self.s2) for _ in range(n_max)]
+        for i in range(self.n1, 0, -1):
+            for j in range(1, self.n2 + 1):
+                type = self.pair[self.S2[j]][self.S1[i]]
+                if not type:
+                    continue
+                E = Ed = self.c[i][j]
+                Ed += self.vrna_E_ext_stem(type, self.SS2[j - 1] if j > 1 else -1, self.SS1[i + 1] if i < self.n1 else -1, self.P)
+                if Ed > thresh:
+                    # print(Ed)
+                    continue
+                # erro here
+                for ii in range(max(i - w, 1), MIN2(i + w, self.n1) + 1):
+                    for jj in range(max(j - w, 1), MIN2(j + w, self.n2) + 1):
+                        if self.c[ii][jj] < E:
+                            type = 0
+                            break
+                    if not type:
+                        break
+                if not type:
+                    continue
+
+                struc = self.backtrack(i, j)
+                print("{},{},{}".format(i, j, E))
+                # if n_subopt + 1 >= n_max:
+                #     n_max *= 2
+                #     subopt.extend([None] * (n_max - len(subopt)))
+                subopt[n_subopt].i = min(i + 1, self.n1)
+                subopt[n_subopt].j = max(j - 1, 1)
+                subopt[n_subopt].energy = Ed * 0.01
+                subopt[n_subopt].structure = struc
+                n_subopt += 1
+                # subopt.append(DuplexT(min(i + 1, self.n1), max(j - 1, 1), Ed * 0.01, struc))
+                # n_subopt += 1
+
+        # Free all static globals
+        for row in self.c:
+            row.clear()
+        self.c.clear()
+        self.S1.clear()
+        self.S2.clear()
+        self.SS1.clear()
+        self.SS2.clear()
+
+        # if subopt_sorted():
+        #     subopt.sort(key=lambda x: x.energy)
+
+        # subopt.append(Duplex())
+        return subopt
                 
 
 if __name__ == "__main__":
     d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
-    mfe = d.duplexfold_cu(0)
-    print(mfe.structure)
-    print(mfe.energy)
+    all = d.duplex_subopt(100, 10)
+    
+    for mfe in all:
+    
+        print(mfe.structure)
+        print(mfe.energy)
         
