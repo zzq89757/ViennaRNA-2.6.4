@@ -26738,47 +26738,39 @@ class Duplex():
         # 返回结果
         return mfe   
     
-    def  duplex_subopt(self, delta, w):
+    def  duplex_subopt(self, delta, w = 5):
         n_max = 16
         n_subopt = 0
         # 计算并获取最低自由能结构 mfe
         mfe = self.duplexfold_cu(0)
         # 根据 mfe.energy 和 delta 计算能量阈值 threshold
-        thresh  = int(mfe.energy) * 100 + 0.1 + delta
-        subopt = [Duplex(self.s1, self.s2) for _ in range(n_max)]
+        thresh  = int(mfe.energy * 100 + 0.1 + delta * 100)
+        subopt = [Duplex(self.s1, self.s2) for _ in range(n_max *2)]
         for i in range(self.n1, 0, -1):
             for j in range(1, self.n2 + 1):
                 type = self.pair[self.S2[j]][self.S1[i]]
                 if not type:
                     continue
-                E = Ed = self.c[i][j]
+                e = Ed = self.c[i][j]
                 Ed += self.vrna_E_ext_stem(type, self.SS2[j - 1] if j > 1 else -1, self.SS1[i + 1] if i < self.n1 else -1, self.P)
                 if Ed > thresh:
-                    # print(Ed)
                     continue
                 # erro here
-                for ii in range(max(i - w, 1), MIN2(i + w, self.n1) + 1):
-                    for jj in range(max(j - w, 1), MIN2(j + w, self.n2) + 1):
-                        if self.c[ii][jj] < E:
+                for ii in range(max(i - w, 1), min(i + w, self.n1) + 1):
+                    if not (min(i + w, self.n1) and type):continue
+                    for jj in range(max(j - w, 1), min(j + w, self.n2) + 1):
+                        if self.c[ii][jj] < e:
                             type = 0
                             break
-                    if not type:
-                        break
                 if not type:
                     continue
-
                 struc = self.backtrack(i, j)
-                print("{},{},{}".format(i, j, E))
-                # if n_subopt + 1 >= n_max:
-                #     n_max *= 2
-                #     subopt.extend([None] * (n_max - len(subopt)))
+                # print("{},{},{}".format(i, j, e))
                 subopt[n_subopt].i = min(i + 1, self.n1)
                 subopt[n_subopt].j = max(j - 1, 1)
                 subopt[n_subopt].energy = Ed * 0.01
                 subopt[n_subopt].structure = struc
                 n_subopt += 1
-                # subopt.append(DuplexT(min(i + 1, self.n1), max(j - 1, 1), Ed * 0.01, struc))
-                # n_subopt += 1
 
         # Free all static globals
         for row in self.c:
@@ -26798,10 +26790,10 @@ class Duplex():
 
 if __name__ == "__main__":
     d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
-    all = d.duplex_subopt(100, 10)
+    all = d.duplex_subopt(10)
     
     for mfe in all:
     
         print(mfe.structure)
-        print(mfe.energy)
+        # print(mfe.energy)
         
