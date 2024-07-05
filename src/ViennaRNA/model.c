@@ -1100,7 +1100,9 @@ prepare_default_pairs(vrna_md_t *md)
   if (md->noGU)
     md->pair[3][4] = md->pair[4][3] = 0;
 
+
   if (md->nonstandards[0] != '\0') {
+    printf("nostandards come in !!!!!!!!!!");
     /* allow nonstandard bp's (encoded by type=7) */
     for (i = 0; i < strlen(md->nonstandards); i += 2)
       md->pair[vrna_nucleotide_encode(md->nonstandards[i], md)]

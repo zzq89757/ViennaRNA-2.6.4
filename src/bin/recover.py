@@ -403,8 +403,7 @@ mismatchHdH = [
         [830, 140, 830, 140, -50]
     ]
 ]
-import sys
-INF = sys.maxsize
+
 
 NBPAIRS = 4  # Assuming NBPAIRS value, adjust as needed
 
@@ -26188,19 +26187,19 @@ class Duplex():
             md.betaScale       = VRNA_MODEL_DEFAULT_BETA_SCALE
             md.pf_smooth       = VRNA_MODEL_DEFAULT_PF_SMOOTH
             md.sfact           = 1.07
-            md.salt            = self.P.model_details.salt
-            md.saltMLLower     = self.P.model_details.saltMLLower
-            md.saltMLUpper     = self.P.model_details.saltMLUpper
-            md.saltDPXInit     = self.P.model_details.saltDPXInit
-            md.saltDPXInitFact = self.P.model_details.saltDPXInitFact
-            md.helical_rise    = self.P.model_details.helical_rise
-            md.backbone_length = self.P.model_details.backbone_length 
+            md.salt            = VRNA_MODEL_DEFAULT_SALT
+            md.saltMLLower     = VRNA_MODEL_DEFAULT_SALT_MLLOWER
+            md.saltMLUpper     = VRNA_MODEL_DEFAULT_SALT_MLUPPER
+            md.saltDPXInit     = VRNA_MODEL_DEFAULT_SALT_DPXINIT
+            md.saltDPXInitFact = VRNA_MODEL_DEFAULT_SALT_DPXINIT_FACT
+            md.helical_rise    = VRNA_MODEL_DEFAULT_HELICAL_RISE
+            md.backbone_length = VRNA_MODEL_DEFAULT_BACKBONE_LENGTH 
             self.fill_pair_matrices(md)
       
             
     def fill_pair_matrices(self, md:vrna_md_t):
         dm_default = DM_DEFAULT
-        def vrna_nucleotide_encode(c, md:vrna_md_t):
+        def vrna_nucleotide_encode(c:str, md:vrna_md_t):
             code = -1
 
             c = c.upper()
@@ -26235,13 +26234,15 @@ class Duplex():
 
             if md.noGU:
                 md.pair[3][4] = md.pair[4][3] = 0
-
-            if md.nonstandards:
+            
+            if md.nonstandards[0] != 0:
                 for i in range(0, len(md.nonstandards), 2):
                     md.pair[vrna_nucleotide_encode(md.nonstandards[i], md)][vrna_nucleotide_encode(md.nonstandards[i + 1], md)] = 7
         # nullify everything
+         
         for i in range(MAXALPHA + 1):
-            md.pair[i] = [0] * (MAXALPHA + 1)
+            if i == 0: md.pair = [[0] * (MAXALPHA + 1)]
+            md.pair.append([0] * (MAXALPHA + 1))
 
         md.alias = [0] * (MAXALPHA + 1)
 
@@ -26327,7 +26328,12 @@ class Duplex():
             # 将前5个碱基设置为其本身
             alias = list(range(5))
             alias += [3, 2, 0]  # X <-> G, K <-> C, I <-> default base '@'
-
+            
+            for i in range(NBASES):
+                for j in range(NBASES):
+                    self.pair[i][j] = BP_pair[i][j]
+            
+            
             # 如果noGU为真，禁止G-U配对
             if noGU:
                 self.pair[3][4] = self.pair[4][3] = 0
@@ -26376,6 +26382,7 @@ class Duplex():
         
     
     def vrna_E_ext_stem(self, type, n5d, n3d, P:vrna_param_s):
+        # print(type, end=",")
         energy = 0
         if n5d >= 0 and n3d >= 0:
             energy += P.mismatchExt[type][n5d][n3d]
@@ -26720,10 +26727,11 @@ class Duplex():
     def duplexfold_cu(self, clean_up):
         temperature     = VRNA_MODEL_DEFAULT_TEMPERATURE
         Emin = INF
-        self.P = vrna_param_s()
         n1 = len(self.s1)
         n2 = len(self.s2)
         md = vrna_md_t()
+        i_min = j_min = 0
+        self.P = None
         self.set_model_details(md)
         # obtain P
         if (not self.P) or abs(self.P.temperature - temperature) > 1e-6:
@@ -26738,8 +26746,9 @@ class Duplex():
         for i in range(1, n1 + 1):
             for j in range(n2, 0 , -1):
                 type = self.pair[self.S1[i]][self.S2[j]]
-                print(self.c[i][j], end=",")
                 self.c[i][j] = self.P.DuplexInit if type else INF
+                # print(self.c[i][j], end=",")
+                # print(type, end=",")
                 if not type:
                     continue
                 self.c[i][j] += self.vrna_E_ext_stem(type, self.SS1[i - 1] if i > 1 else -1, self.SS2[j + 1] if j < n2 else -1, self.P)
