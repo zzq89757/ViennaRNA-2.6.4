@@ -187,7 +187,7 @@ duplexfold_cu(const char  *s1,
       // 初始化能量。如果 type 有效，则设置初始值，否则设置为无穷大。
       c[i][j] = type ? P->DuplexInit : INF;
       // printf("%d,", type);
-      printf("%d,", c[i][j]);
+      // printf("%d,", c[i][j]);
       // 若配对的type 自由能为0 则跳过能量累加计算
       if (!type)
         continue;
