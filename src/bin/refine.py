@@ -240,7 +240,7 @@ TetraloopdH = [690, -1030, -330, -890, -660, -750, -350, -1390, -760, -1070, -66
 # dangle5
 dangle5_37 = [
     # N    A    C    G    U
-    [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],  # NP
+    [INF, INF, INF, INF, INF],  # NP
     [-10, -50, -30, -20, -10],  # CG
     [0, -20, -30, 0, 0],  # GC
     [-20, -30, -30, -40, -20],  # GU
@@ -252,7 +252,7 @@ dangle5_37 = [
 
 dangle3_37 = [
     # N    A    C    G    U
-    [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],  # NP
+    [INF, INF, INF, INF, INF],  # NP
     [-40, -110, -40, -130, -60],  # CG
     [-80, -170, -80, -170, -120],  # GC
     [-10, -70, -10, -70, -10],  # GU
@@ -265,7 +265,7 @@ dangle3_37 = [
 # dangle5_enthalpies
 dangle5_dH = [
     # N    A    C    G    U
-    [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],  # NP
+    [INF, INF, INF, INF, INF],  # NP
     [330, -240, 330, 80, -140],  # CG
     [70, -160, 70, -460, -40],  # GC
     [310, 160, 220, 70, 310],  # GU
@@ -278,7 +278,7 @@ dangle5_dH = [
 # dangle3_enthalpies
 dangle3_dH = [
     # N    A    C    G    U
-    [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],  # NP
+    [INF, INF, INF, INF, INF],  # NP
     [-280, -740, -280, -640, -360],  # CG
     [-410, -900, -410, -860, -750],  # GC
     [-70, -570, -70, -580, -220],  # GU
@@ -291,11 +291,11 @@ dangle3_dH = [
 # mismatchH37
 mismatchH37 = [
     [
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')]
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF]
     ],
     [
         [-80, -100, -110, -100, -80],
@@ -351,11 +351,11 @@ mismatchH37 = [
 # mismatchHdH
 mismatchHdH = [
     [
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')],
-        [float('inf'), float('inf'), float('inf'), float('inf'), float('inf')]
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF],
+        [INF, INF, INF, INF, INF]
     ],
     [
         [560, -570, 560, -560, -270],
