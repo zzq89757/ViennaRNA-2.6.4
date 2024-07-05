@@ -1,8 +1,11 @@
 import math
 
 ########### global variable ################
-#0 = BP; 1=any with GC; 2=any with AU-parameter If set to 1 or 2: fold sequences from an artificial alphabet ABCD..., where A pairs B, C pairs D, etc. using either GC (1) or AU parameters (2); default is 0, you probably don't want to change it.
+
 energy_set = 0 
+'''
+0 = BP; 1=any with GC; 2=any with AU-parameter If set to 1 or 2: fold sequences from an artificial alphabet ABCD..., where A pairs B, C pairs D, etc. using either GC (1) or AU parameters (2); default is 0, you probably don't want to change it.
+'''
 Law_and_Order = "_ACGUTXKI"
 MIN2 = lambda a, b:(a + b)/2 - abs((a - b)/2)
 NBASES = 8
