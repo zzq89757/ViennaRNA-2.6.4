@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 ########### global variable ################
 
@@ -111,9 +112,8 @@ GQuadLayerMismatchH    = 0
 GQuadLayerMismatchMax  = 1
 TerminalAU37 = 50
 TerminalAUdH = 370
-DuplexInit37=410
-DuplexInitdH=360
-import numpy as np
+DuplexInit37 = 410
+DuplexInitdH = 360
 
 # 定义二维数组
 stack37 = np.array([
