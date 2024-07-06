@@ -25783,7 +25783,6 @@ MAXNUM = 1.7976931348623157e+308
 MAXFAC = 31
 
 def expn(n, x):
-    MAXNUM = 1.7976931348623157e+308  # Python float max
     BIG = 1.44115188075855872e+17  # Approximation, adjust as needed
     
     if n < 0 or x < 0:
@@ -26305,9 +26304,6 @@ class Duplex():
     
     def make_pair_matrix(self):
         # 默认能量集 (energy_set == 0)
-        # 将前5个碱基设置为其本身
-        alias = list(range(5))
-        alias += [3, 2, 0]  # X <-> G, K <-> C, I <-> default base '@'
             
         for i in range(NBASES):
             for j in range(NBASES):
@@ -26592,9 +26588,9 @@ class Duplex():
             return round(correction)
         
         
-        def vrna_salt_ml(saltLoop, lower, upper, m, b):
+        def vrna_salt_ml(saltLoop, lower, upper):
             sumx = sumxx = 0
-            sumy = sumyy = sumxy = 0.0
+            sumy = sumxy = 0.0
             
             for i in range(lower, upper + 1):
                 sumx += i
@@ -26604,7 +26600,6 @@ class Duplex():
                 
                 sumxy += i * y
                 sumy += y
-                sumyy += y * y
             
             denom = (upper - lower + 1) * sumxx - sumx * sumx
             dm = ((upper - lower + 1) * sumxy - sumx * sumy) / denom if denom != 0 else 0
@@ -26628,7 +26623,7 @@ class Duplex():
         if md.salt == VRNA_MODEL_DEFAULT_SALT:
             params.SaltMLbase = params.SaltMLclosing = 0
         else:
-            vrna_salt_ml(params.SaltLoopDbl, md.saltMLLower, md.saltMLUpper, params.SaltMLbase, params.SaltMLclosing)
+            vrna_salt_ml(params.SaltLoopDbl, md.saltMLLower, md.saltMLUpper)
         
         params.MLclosing += params.SaltMLbase
         params.MLclosing += params.SaltMLclosing
