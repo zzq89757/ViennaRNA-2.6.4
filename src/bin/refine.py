@@ -26789,14 +26789,15 @@ class Duplex():
                 
 
 if __name__ == "__main__":
-    # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
-    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
+    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
     all = d.duplex_subopt(10)
     
     for mfe in all:
-    
-        print(mfe.structure)
-        print(mfe.energy)
-        print(mfe.i)
-        print(mfe.j)
+        if not mfe.structure:continue
+        print(mfe.structure, end="\t")
+        print(f"{mfe.energy} Kal/Mol\t ({ len(d.s1) - mfe.i},{mfe.i})\t({mfe.j},{len(d.s2) - mfe.j + 1})")
+        # print(mfe.energy, end="\t")
+        # print(mfe.i, end="\t")
+        # print(mfe.j)
         
