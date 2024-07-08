@@ -26462,8 +26462,6 @@ class Duplex():
         print(i0,end = "\t")
         print(j,end = "\t")
         print(j0,end = "\n")
-        self.s1_start = i
-        self.s2_end = j
         
         struc = ''.join(st1[max(i - 1, 0):i0]) + '&' + ''.join(st2[j0 - 1:j])
 
@@ -26779,10 +26777,8 @@ class Duplex():
         self.SS1.clear()
         self.SS2.clear()
 
-        # if subopt_sorted():
-        #     subopt.sort(key=lambda x: x.energy)
-
-        # subopt.append(Duplex())
+        # Sort by energy
+        subopt.sort(key=lambda x: x.energy)
         return subopt
                 
 
