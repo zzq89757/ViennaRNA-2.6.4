@@ -26042,7 +26042,7 @@ class vrna_md_t():
         self.backtrack = VRNA_MODEL_DEFAULT_BACKTRACK
         self.backtrack_type = VRNA_MODEL_DEFAULT_BACKTRACK_TYPE
         self.compute_bpp = VRNA_MODEL_DEFAULT_COMPUTE_BPP
-        self.nonstandards = [0] * 64
+        self.nonstandards = [""] * 64
         self.max_bp_span = VRNA_MODEL_DEFAULT_MAX_BP_SPAN
         self.min_loop_size = TURN
         self.window_size = VRNA_MODEL_DEFAULT_WINDOW_SIZE
@@ -26613,10 +26613,11 @@ class Duplex():
             
             return round(dm), round(db)
         
-        def vrna_salt_duplex_init(md_p): 
+        def vrna_salt_duplex_init(md_p:vrna_md_t): 
             md = vrna_md_t()          
             if md_p is None:
-                md_p = self.vrna_md_set_default(md)
+                self.vrna_md_set_default(md)
+                md_p = md
             
             if md_p.saltDPXInit != 99999:
                 return md_p.saltDPXInit
@@ -26661,7 +26662,7 @@ class Duplex():
                     md.__dict__.update(md_from.__dict__)
             return md
     
-    def vrna_md_set_default(self, md):
+    def vrna_md_set_default(self, md:vrna_md_t):
             if md:
                 defaults = vrna_md_t()
                 self.vrna_md_copy(md, defaults)
@@ -26676,19 +26677,15 @@ class Duplex():
         
     
     def duplexfold_cu(self, clean_up):
-        temperature     = VRNA_MODEL_DEFAULT_TEMPERATURE
         Emin = INF
         self.n1 = len(self.s1)
         self.n2 = len(self.s2)
         md = vrna_md_t()
         i_min = j_min = 0
-        self.P = None
+        
+        self.P = self.vrna_params(md)
         self.set_model_details(md)
-        # obtain P
-        if (not self.P) or abs(self.P.temperature - temperature) > 1e-6:
-            if self.P:self.P = None
-            self.P = self.vrna_params(md)   
-            self.make_pair_matrix()
+        self.make_pair_matrix()
         self.c = [[0 for _ in range(self.n2 + 1)] for _ in range(self.n1 + 1)]
         self.S1 = self.encode_sequence(self.s1, 0)
         self.S2 = self.encode_sequence(self.s2, 0)
