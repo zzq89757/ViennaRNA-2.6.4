@@ -26127,7 +26127,14 @@ class Duplex():
         self.i = 0
         self.j = 0
         self.energy = 0
-        self.structure = None
+        self.structure = ""
+        self.s1_start = 0
+        self.s1_end = 0
+        self.s2_start = 0
+        self.s2_end = 0
+        self.s1_seq = ""
+        self.s2_seq = ""
+        
 
     ### encode 
     def encode_base(self, base:str):
@@ -26462,10 +26469,16 @@ class Duplex():
         print(i0,end = "\t")
         print(j,end = "\t")
         print(j0,end = "\n")
+        # strcut to seq 
+        seq1 = self.s1[i:i0]
+        seq2 = self.s2[j0:j]
+        print(seq1)
+        print(seq2)
         
         struc = ''.join(st1[max(i - 1, 0):i0]) + '&' + ''.join(st2[j0 - 1:j])
 
-        return struc
+        
+        return i, i0, j0, j, struc
     
     
     # params
@@ -26714,7 +26727,7 @@ class Duplex():
                     Emin = Energy
                     i_min = i
                     j_min = j
-        struc = self.backtrack(i_min, j_min)
+        struc = self.backtrack(i_min, j_min)[-1]
         if i_min < self.n1:
             i_min += 1
 
@@ -26733,6 +26746,18 @@ class Duplex():
 
         # 返回结果
         return mfe   
+    
+    def struc2seq(self, subopt_item):
+        # s1 s2 position
+        s1_struc, s2_struc = subopt_item.structure.split("&")
+        s1_end = subopt_item.i
+        s1_start = s1_end - len(s1_struc) + 1
+        s2_start = subopt_item.j
+        s2_end = s2_start + len(s2_struc) - 1 
+        
+        # switch struct to seq
+        
+        
     
     def  duplex_subopt(self, delta, w = 5):
         n_max = 16
@@ -26760,12 +26785,19 @@ class Duplex():
                             break
                 if not type:
                     continue
-                struc = self.backtrack(i, j)
+                s1_start, s1_end, s2_start, s2_end, struc = self.backtrack(i, j)
                 # print("{},{},{}".format(i, j, e))
                 subopt[n_subopt].i = min(i + 1, self.n1)
                 subopt[n_subopt].j = max(j - 1, 1)
                 subopt[n_subopt].energy = Ed * 0.01
+                subopt[n_subopt].s1_start = s1_start
+                subopt[n_subopt].s1_end = s1_end
+                subopt[n_subopt].s2_start = s2_start
+                subopt[n_subopt].s2_end = s2_end
                 subopt[n_subopt].structure = struc
+                # start end info
+                # self.struc2seq(subopt[n_subopt])
+                # subopt[n_subopt].s1_start = 
                 n_subopt += 1
 
         # Free all static globals
@@ -26790,7 +26822,7 @@ if __name__ == "__main__":
     for mfe in all:
         if not mfe.structure:continue
         print(mfe.structure, end="\t")
-        print(f"{mfe.energy} Kal/Mol\t ({ len(d.s1) - mfe.i},{mfe.i})\t({mfe.j},{len(d.s2) - mfe.j + 1})")
+        print(f"{mfe.energy} Kal/Mol\t ({ mfe.s1_start},{mfe.s1_end})\t({mfe.s2_start},{mfe.s2_end})")
         # print(mfe.energy, end="\t")
         # print(mfe.i, end="\t")
         # print(mfe.j)
