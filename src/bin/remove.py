@@ -26815,9 +26815,10 @@ class Duplex():
                 
 
 if __name__ == "__main__":
-    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
-    all = d.duplex_subopt(10)
+    all = d.duplex_subopt(1)
     
     for mfe in all:
         if not mfe.structure:continue
