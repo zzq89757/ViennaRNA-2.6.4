@@ -1312,7 +1312,7 @@ write_csv_header(FILE           *output,
   vrna_cstr_close(stream);
 }
 
-
+/*  MEA compute -------------------------------  */
 static void
 compute_MEA(vrna_fold_compound_t  *fc,
             double                MEAgamma,
@@ -1377,6 +1377,7 @@ get_filename(const char     *id,
 }
 
 
+/* part func --------------------------- */
 PRIVATE vrna_dimer_pf_t
 do_partfunc(char            *string,
             int             length,
@@ -1415,14 +1416,14 @@ do_partfunc(char            *string,
       vrna_fold_compound_free(vc);
       free(tempstruc);
       break;
-
+    /* part func for dimer ----------------------- */
     case 2:   /* dimer */
       tempstruc = (char *)vrna_alloc((unsigned)length * 2 + 2);
       Newstring = (char *)vrna_alloc(sizeof(char) * (length * 2 + 2));
       strcat(Newstring, string);
       strcat(Newstring, "&");
       strcat(Newstring, string);
-
+      /* fold_compound ----------------------*/
       vc = vrna_fold_compound(Newstring,
                               md,
                               VRNA_OPTION_MFE | VRNA_OPTION_PF | VRNA_OPTION_HYBRID);
@@ -1437,6 +1438,8 @@ do_partfunc(char            *string,
       if (md->compute_bpp)
         *tpr = vrna_plist_from_probs(vc, opt->bppmThreshold);
 
+
+      /* memory free*/
       vrna_fold_compound_free(vc);
 
       free(Newstring);
