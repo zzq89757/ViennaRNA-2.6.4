@@ -169,10 +169,14 @@ duplexfold_cu(const char  *s1,
   // SS* = encode(seq[-1]) + encode(seq)
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
-  // printf("%d\n", SS2[0]);
-  // printf("%d\n", SS2[1]);
-  // printf("%d\n", SS2[-1]);
+  // for(i = 0; i <= n1; i++){
+  //   printf("%d ",SS1[i]);
+  // }
+  // printf("%d\n", SS1[0]);
+  // printf("%d\n", SS1[1]);
+  // printf("%d\n", SS1[-1]);
   // 计算能量
+  int no_type_num = 0;
   for (i = 1; i <= n1; i++) {
     for (j = n2; j > 0; j--) {
       // P->DuplexInit: 初始化能量。
@@ -189,10 +193,18 @@ duplexfold_cu(const char  *s1,
       // printf("%d,", type);
       // printf("%d,", c[i][j]);
       // 若配对的type 自由能为0 则跳过能量累加计算
-      if (!type)
+      if (!type){
         continue;
+
+      }
       // 计算外部茎的能量 使用 type 和相邻的碱基（如果存在）计算能量。
+      int n5dd = (j < n2) ? SS2[j + 1] : -1;
       c[i][j] += vrna_E_ext_stem(type, (i > 1) ? SS1[i - 1] : -1, (j < n2) ? SS2[j + 1] : -1, P);
+      // no_type_num += c[i][j];
+      // continue;
+      // printf("%d,", c[i][j]);
+      // no_type_num += c[i][j];
+      // printf("%d,", c[i][j]);
       for (k = i - 1; k > 0 && k > i - MAXLOOP - 2; k--) {
         for (l = j + 1; l <= n2; l++) {
           if (i - k + l - j - 2 > MAXLOOP)
@@ -204,6 +216,7 @@ duplexfold_cu(const char  *s1,
           E = E_IntLoop(i - k - 1, l - j - 1, type2, rtype[type],
                         SS1[k + 1], SS2[l - 1], SS1[i - 1], SS2[j + 1], P);
           c[i][j] = MIN2(c[i][j], c[k][l] + E);
+          no_type_num += l;
         }
       }
       E = c[i][j];
@@ -215,6 +228,10 @@ duplexfold_cu(const char  *s1,
       }
     }
   }
+  // printf("%d",i_min);
+  // printf("%d",j_min);
+  printf("%d",no_type_num);
+
   // 回溯生成结构
   struc = backtrack(i_min, j_min);
   if (i_min < n1)

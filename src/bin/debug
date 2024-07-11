@@ -1,0 +1,42 @@
+Making all in ViennaRNA
+Making all in static
+Making all in plotting/naview
+  CC       duplex.lo
+  CXXLD    libRNA_conv.la
+  CXXLD    libRNA.la
+  GEN      libRNA.a
+Making all in bin
+  CCLD     RNAfold
+  CCLD     RNAeval
+  CCLD     RNAheat
+  CCLD     RNApdist
+  CCLD     RNAdistance
+  CCLD     RNAinverse
+  CCLD     RNAplot
+  CCLD     RNAsubopt
+  CCLD     RNALfold
+  CCLD     RNAcofold
+  CCLD     RNApaln
+  CCLD     RNAduplex
+  CCLD     RNAalifold
+  CCLD     RNAplfold
+  CCLD     RNAup
+  CCLD     RNAaliduplex
+  CCLD     RNALalifold
+  CCLD     RNA2Dfold
+  CCLD     RNAparconv
+  CCLD     RNAPKplex
+  CCLD     RNAplex
+  CCLD     RNAsnoop
+  CCLD     RNApvmin
+  CCLD     RNAdos
+  CCLD     RNAmultifold
+Making all in Utils
+  CCLD     b2ct
+  CCLD     popt
+  CCLD     ct2db
+>NM_024615
+>hsa-miR-145
+3 3 3 1 3 4 4 3 4 4 1 2 3 1 2 1 4 4 4 4 3 3 1 1 1 3 4 2 2 2 3 4 4 3 1 4 4 4 4 3 3 4 3 2 2 1 1 1 1 2 1 1 1 2 4 2 2 2 1 4 4 3 1 2 3 4 2 1 1 4 3 3 3 3 4 3 3 1 3 3936.(((((((((((((((((((((((((((((((((..((((((((((((((((((((((((....((((((((((.&))))))))))....)))))))))))))))))))))..))).)))))))))))))))))))))))))))))))))   377  :   174  (-113.40)
+3 3 3 1 3 4 4 3 4 4 1 2 3 1 2 1 4 4 4 4 3 3 1 1 1 3 4 2 2 2 3 4 4 3 1 4 4 4 4 3 3 4 3 2 2 1 1 1 1 2 1 1 1 2 4 2 2 2 1 4 4 3 1 2 3 4 2 1 1 4 3 3 3 3 4 3 3 1 3 3]
+.((((((((((((((((((((((((((((((((.&.))))))))))))))))))))))))))))))))	-55.0 Kal/Mol	 (336)	(4274)

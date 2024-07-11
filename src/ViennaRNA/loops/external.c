@@ -411,6 +411,9 @@ vrna_E_ext_stem(unsigned int  type,
   if (type > 2)
     energy += p->TerminalAU;
   // 返回总能量贡献
+  // printf("%d,",type);
+  // printf("%d,",n5d);
+  // printf("%d,",n3d);
   return energy;
 }
 

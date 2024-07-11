@@ -26173,7 +26173,6 @@ class Duplex():
         return a * b + (1 - a) * c
     
     def loop_salt_aux(self, kmlss, L, T, backbonelen):
-        # expn = lambda n, k:math.exp(n * k) # unsure!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         a = (GASCONST / 1000.) * T * self.bjerrum_length(T) * L * backbonelen * self.tau_ss(T, backbonelen) * self.tau_ss(T, backbonelen)
         b = math.log(kmlss) - math.log(PI / 2) + Eular_const + self.approx_hyper(kmlss) + 1 / kmlss * (1 - math.exp(-kmlss) + kmlss * expn(1, kmlss))
         return a * b * 100
@@ -26345,6 +26344,9 @@ class Duplex():
             energy += P.dangle3[type][n3d]
         if type > 2:
             energy += P.TerminalAU
+        # print(int(type),end=",")
+        # print(int(n5d),end=",")
+        # print(int(n3d),end=",")
         return energy
     
     def E_IntLoop(self, n1, n2, type, type_2, si1, sj1, sp1, sq1, P:vrna_param_s):
@@ -26465,15 +26467,15 @@ class Duplex():
 
         if j < self.n2:
             j += 1
-        print(i,end = "\t")
-        print(i0,end = "\t")
-        print(j,end = "\t")
-        print(j0,end = "\n")
+        # print(i,end = "\t")
+        # print(i0,end = "\t")
+        # print(j,end = "\t")
+        # print(j0,end = "\n")
         # strcut to seq 
         seq1 = self.s1[i:i0]
         seq2 = self.s2[j0:j]
-        print(seq1)
-        print(seq2)
+        # print(seq1)
+        # print(seq2)
         
         struc = ''.join(st1[max(i - 1, 0):i0]) + '&' + ''.join(st2[j0 - 1:j])
 
@@ -26702,17 +26704,18 @@ class Duplex():
         self.S2 = self.encode_sequence(self.s2, 0)
         self.SS1 = self.encode_sequence(self.s1, 1)
         self.SS2 = self.encode_sequence(self.s2, 1)
+        no_type_num = 0 
         for i in range(1, self.n1 + 1):
             for j in range(self.n2, 0 , -1):
                 type = self.pair[self.S1[i]][self.S2[j]]
                 self.c[i][j] = self.P.DuplexInit if type else INF
-                # print(type, end=",")
                 if not type:
                     continue
-                self.c[i][j] += self.vrna_E_ext_stem(type, self.SS1[i - 1] if i > 1 else -1, self.SS2[j + 1] if j < self.n2 else -1, self.P)
+                n5dd = self.SS1[i - 1] if i > 1 else -1
+                n3dd = self.SS2[j + 1] if j < self.n2 else -1
+                self.c[i][j] += self.vrna_E_ext_stem(type, n5dd, n3dd, self.P)
                 for k in range(i - 1, 0, -1):
-                    if i - k + self.n2 - j - 2 > MAXLOOP:
-                        break
+                    if k <= i - MAXLOOP - 2:continue
                     for l in range(j + 1, self.n2 + 1):
                         if i - k + l - j - 2 > MAXLOOP:
                             break
@@ -26721,6 +26724,7 @@ class Duplex():
                             continue
                         Energy = self.E_IntLoop(i - k - 1, l - j - 1, type2, rtype[type], self.SS1[k + 1], self.SS2[l - 1], self.SS1[i - 1], self.SS2[j + 1], self.P)
                         self.c[i][j] = MIN2(self.c[i][j], self.c[k][l] + Energy)
+                        no_type_num += l
                 Energy = self.c[i][j]
                 Energy += self.vrna_E_ext_stem(rtype[type], self.SS2[j - 1] if j > 1 else -1, self.SS1[i + 1] if i < self.n1 else -1, self.P)
                 if Energy < Emin:
