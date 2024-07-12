@@ -883,7 +883,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
               probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
         }
-        // printf("%f-", probs[ij]);
+        // printf("%d-", probs[ij]);
       }
     if (structure != NULL) {
       /* s generate here -------------------*/
