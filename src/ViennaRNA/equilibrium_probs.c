@@ -723,6 +723,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
                             int                   *ov,
                             constraints_helper    *constraints);
 
+    /* not implement in python !!!!!!!!!!!!! */
     if (vc->type == VRNA_FC_TYPE_SINGLE) {
       compute_bpp_int = &compute_bpp_internal;
       compute_bpp_mul = &compute_bpp_multibranch;
@@ -834,6 +835,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
               aux_bps = sc->bt(i, j, i, j, VRNA_DECOMP_PAIR_HP, sc->data);
               if (aux_bps) {
                 FLT_OR_DBL qhp = vrna_exp_E_hp_loop(vc, i, j);
+                /*  kind  different*/
                 for (ptr = aux_bps; (ptr) && (ptr->i != 0); ptr++) {
                   bp_correction[corr_cnt].i   = ptr->i;
                   bp_correction[corr_cnt].j   = ptr->j;
