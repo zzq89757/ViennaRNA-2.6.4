@@ -863,7 +863,7 @@ process_record(struct record_data *record)
   if (n > 2000)
     vrna_mx_mfe_free(vc);
 
-  /* compute partition function */
+  /* compute partition function -------------------------*/
   if (opt->pf) {
     char              *Astring, *Bstring, *orig_Astring, *orig_Bstring, *pairing_propensity;
     int               Blength, Alength;
@@ -881,7 +881,6 @@ process_record(struct record_data *record)
     Alength = Blength = 0;
 
     pairing_propensity = (char *)vrna_alloc(sizeof(char) * (n + 1));
-
     if (opt->md.dangles == 1) {
       vc->params->model_details.dangles = 2;   /* recompute with dangles as in pf_fold() */
       min_en                            = vrna_eval_structure(vc, mfe_structure);
@@ -895,10 +894,12 @@ process_record(struct record_data *record)
       vrna_cstr_message_info(o_stream->err,
                              "scaling factor %f",
                              vc->exp_params->pf_scale);
+    /* pairing_propensity still nothing here */
 
-    /* compute partition function */
+    // printf("%s-", pairing_propensity);
+    /* compute partition function pairing_propensity is target  !!!!!!!!!!*/
     AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity);
-
+    // printf("%s\n",pairing_propensity);
     if (opt->md.compute_bpp) {
       char *costruc;
       prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
@@ -1396,7 +1397,7 @@ do_partfunc(char            *string,
   vrna_fold_compound_t  *vc;
 
   md = &(opt->md);
-
+  printf("%d", Switch);
   switch (Switch) {
     case 1:   /* monomer */
       tempstruc = (char *)vrna_alloc((unsigned)length + 1);
@@ -1418,8 +1419,11 @@ do_partfunc(char            *string,
       break;
     /* part func for dimer ----------------------- */
     case 2:   /* dimer */
+      printf("into case 2");
       tempstruc = (char *)vrna_alloc((unsigned)length * 2 + 2);
       Newstring = (char *)vrna_alloc(sizeof(char) * (length * 2 + 2));
+      /* Newstring += string */
+      printf("%s", string);
       strcat(Newstring, string);
       strcat(Newstring, "&");
       strcat(Newstring, string);

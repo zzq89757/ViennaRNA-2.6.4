@@ -636,7 +636,7 @@ vrna_pf_dimer_probs(double                  FAB,
 }
 
 
-/* calculate base pairing probs */
+/* calculate base pairing probs  changed structure ---------------------*/
 PRIVATE int
 pf_create_bppm(vrna_fold_compound_t *vc,
                char                 *structure)
@@ -883,12 +883,16 @@ pf_create_bppm(vrna_fold_compound_t *vc,
               probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
         }
+        // printf("%f-", probs[ij]);
       }
-
     if (structure != NULL) {
+      /* s generate here -------------------*/
+      // printf("---%d\n",n); 
       char *s = vrna_db_from_probs(probs, (unsigned int)n);
+      /* strcuture here  generate by s  ---------------- */
       memcpy(structure, s, n);
       structure[n] = '\0';
+      // printf("%s\n\n",structure);
       free(s);
     }
 

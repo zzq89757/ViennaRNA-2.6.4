@@ -821,6 +821,7 @@ vrna_db_from_probs(const FLT_OR_DBL *p,
   s = NULL;
 
   if (p) {
+    // printf("(%d)\n", length);
     index = vrna_idx_row_wise(length);
     s     = (char *)vrna_alloc(sizeof(char) * (length + 1));
 

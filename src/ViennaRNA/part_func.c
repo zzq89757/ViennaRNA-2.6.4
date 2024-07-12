@@ -217,9 +217,10 @@ vrna_pf_dimer(vrna_fold_compound_t  *fc,
   vrna_dimer_pf_t X;
 
   X.F0AB = X.FAB = X.FcAB = X.FA = X.FB = 0.;
-
+  /* structure changed by vrna_pf */
   if (fc) {
     (void)vrna_pf(fc, structure);
+  // printf("%s*",structure);
 
     /* backward compatibility partition function and ensemble energy computation */
     extract_dimer_props(fc,

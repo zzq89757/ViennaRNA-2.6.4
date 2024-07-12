@@ -433,12 +433,14 @@ vrna_message_input_msa(const char *s)
 
 PUBLIC int *
 vrna_idx_row_wise(unsigned int length)
-{
+{ 
+  printf("(%d)\n", length);
   int i;
   int *idx = (int *)vrna_alloc(sizeof(int) * (length + 1));
 
   for (i = 1; i <= length; i++)
     idx[i] = (((length + 1 - i) * (length - i)) / 2) + length + 1;
+    printf("%d-", idx[i]);
   return idx;
 }
 
