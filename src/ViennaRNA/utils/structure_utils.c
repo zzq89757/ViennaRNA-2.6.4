@@ -819,7 +819,7 @@ vrna_db_from_probs(const FLT_OR_DBL *p,
   char  *s;
 
   s = NULL;
-
+  /* p is not zero list !!! --------------------------------*/
   if (p) {
     // printf("(%d)\n", length);
     index = vrna_idx_row_wise(length);
@@ -841,7 +841,9 @@ vrna_db_from_probs(const FLT_OR_DBL *p,
     s[length] = '\0';
     free(index);
   }
-
+  for(i = 0;i<=3;i++){
+    printf("P:%f,",P[i]);
+  }
   return s;
 }
 

@@ -1,4 +1,16 @@
 
+def generate_probs(vc, matrices):
+    my_iindx = vc.iindx
+    n = vc.length
+    probs = matrices.probs
+    
+    
+    for i in range(1, n + 1):
+        probs[my_iindx[i] - i] = 0
+    
+    
+    
+
 
 def vrna_idx_row_wise(length):
     idx = []
@@ -35,18 +47,16 @@ def vrna_db_from_probs(p, length):
     s = [ 0 ] * (length + 1)
     if p is not None:
         index = vrna_idx_row_wise(length)
-
         for j in range(1, length + 1):
-            P = [1.0, 0.0, 0.0]
+            _p = [1.0, 0.0, 0.0]
             for i in range(1, j):
-                P[2] += float(p[index[i] - j])  # j is paired downstream
-                P[0] -= float(p[index[i] - j])  # j is unpaired
+                _p[2] += float(p[index[i] - j])  # j is paired downstream
+                _p[0] -= float(p[index[i] - j])  # j is unpaired
             for i in range(j + 1, length + 1):
-                P[1] += float(p[index[j] - i])  # j is paired upstream
-                P[0] -= float(p[index[j] - i])  # j is unpaired
-            s[j - 1] = vrna_bpp_symbol(P)
+                _p[1] += float(p[index[j] - i])  # j is paired upstream
+                _p[0] -= float(p[index[j] - i])  # j is unpaired
+            s[j - 1] = vrna_bpp_symbol(_p)
         s[length] = '\0'
-    
     return ''.join(s)
     
 
@@ -61,9 +71,7 @@ def generate_struc(probs, n):
     
     # probs = matrices.probs
     probs = [0] * n**2
-    for i in range(1, n + 1):
-        for j in range(i + 1, n + 1):
-            probs.append(0)
+
     return vrna_db_from_probs(probs, n)
 
 if __name__ == "__main__":
