@@ -26517,20 +26517,15 @@ class Duplex():
     def vrna_salt_ml(saltLoop, lower, upper):
         sumx = sumxx = 0
         sumy = sumxy = 0.0
-        
         for i in range(lower, upper + 1):
             sumx += i
-            sumxx += i * i
-                
+            sumxx += i * i         
             y = saltLoop[i]
-            
             sumxy += i * y
             sumy += y
-        
         denom = (upper - lower + 1) * sumxx - sumx * sumx
         dm = ((upper - lower + 1) * sumxy - sumx * sumy) / denom if denom != 0 else 0
-        db = (sumy * sumxx - sumx * sumxy) / denom if denom != 0 else 0
-            
+        db = (sumy * sumxx - sumx * sumxy) / denom if denom != 0 else 0     
         return round(dm), round(db)
     
     @staticmethod    
