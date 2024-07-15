@@ -26169,15 +26169,17 @@ class Duplex():
         bjerrum_length_inv = 1 / Duplex.bjerrum_length(T)
         return MIN2(1 / Helical_Rise, bjerrum_length_inv)
     
-    def approx_hyper(self, y):
+    @staticmethod
+    def approx_hyper(y):
         a = 1 / (pow(y, 6.)/pow(2 * PI, 6.) + 1)
         b = pow(y, 4.)/(36 * pow(PI, 4.)) - pow(y, 3.) / (24 * PI * PI) + y * y / (2 * PI * PI) - y / 2
         c = math.log(2 * PI / y) - 1.96351
         return a * b + (1 - a) * c
     
-    def loop_salt_aux(self, kmlss, L, T, backbonelen):
-        a = (GASCONST / 1000.) * T * self.bjerrum_length(T) * L * backbonelen * self.tau_ss(T, backbonelen) * self.tau_ss(T, backbonelen)
-        b = math.log(kmlss) - math.log(PI / 2) + Eular_const + self.approx_hyper(kmlss) + 1 / kmlss * (1 - math.exp(-kmlss) + kmlss * expn(1, kmlss))
+    @staticmethod
+    def loop_salt_aux(kmlss, L, T, backbonelen):
+        a = (GASCONST / 1000.) * T * Duplex.bjerrum_length(T) * L * backbonelen * Duplex.tau_ss(T, backbonelen) * Duplex.tau_ss(T, backbonelen)
+        b = math.log(kmlss) - math.log(PI / 2) + Eular_const + Duplex.approx_hyper(kmlss) + 1 / kmlss * (1 - math.exp(-kmlss) + kmlss * expn(1, kmlss))
         return a * b * 100
     
     # math static method define
@@ -26199,23 +26201,21 @@ class Duplex():
     def kappa(rho, T):
         return math.sqrt(Duplex.bjerrum_length(T) * Duplex.ionic_strength(rho)) / 8.1284
     
-    def vrna_salt_loop(self, L, rho, T, backbonelen):
-        # ionic_strength = lambda rho:rho
-        # epsilonr = lambda T:5321 / T + 233.76 - 0.9297 * T + 1.417 * T * T / 1000 - 0.8292 * T * T * T / 1000000
-        # self.bjerrum_length = lambda T:167100.052/(T * epsilonr(T))
-        # self.kappa = lambda rho, T:math.sqrt(self.bjerrum_length(T) * ionic_strength(rho)) / 8.1284
+    @staticmethod
+    def vrna_salt_loop(L, rho, T, backbonelen):
         if L == 0:return 0
         kmlss_ref = Duplex.kappa(VRNA_MODEL_DEFAULT_SALT, T) * L * backbonelen
         kmlss = Duplex.kappa(rho, T) * L * backbonelen
-        correction = self.loop_salt_aux(kmlss, L, T, backbonelen) - self.loop_salt_aux(kmlss_ref, L, T, backbonelen)
+        correction = Duplex.loop_salt_aux(kmlss, L, T, backbonelen) - Duplex.loop_salt_aux(kmlss_ref, L, T, backbonelen)
         return correction
     
+    @staticmethod
+    def vrna_salt_loop_int(L, rho, T, backbonelen):
+        correction = Duplex.vrna_salt_loop(L, rho, T, backbonelen)
+        return int(correction + 0.5 - (correction < 0))
     
-    def vrna_salt_loop_int(self, L, rho, T, backbonelen):
-        correction = self.vrna_salt_loop(L, rho, T, backbonelen)
-        return int(correction + 0.5 - (correction<0))
-    
-    def set_model_details(self, md:vrna_md_t):
+    @staticmethod
+    def set_model_details(md:vrna_md_t):
         temperature     = VRNA_MODEL_DEFAULT_TEMPERATURE
         pf_scale        = VRNA_MODEL_DEFAULT_PF_SCALE
         dangles         = VRNA_MODEL_DEFAULT_DANGLES
@@ -26268,43 +26268,47 @@ class Duplex():
             md.saltDPXInitFact = VRNA_MODEL_DEFAULT_SALT_DPXINIT_FACT
             md.helical_rise    = VRNA_MODEL_DEFAULT_HELICAL_RISE
             md.backbone_length = VRNA_MODEL_DEFAULT_BACKBONE_LENGTH 
-            self.fill_pair_matrices(md)
+            Duplex.fill_pair_matrices(md)
+            
+    
+    @staticmethod
+    def vrna_nucleotide_encode(c:str, md:vrna_md_t):
+        code = -1
+        c = c.upper()
+        if md:
+            law_and_order = "ACGUT"
+            pos = law_and_order.find(c)
+            if pos == -1:
+                code = 0
+            else:
+                code = pos
+            if code > 4:
+                code -= 1  # make T and U equivalent
+        return code
+
+    @staticmethod    
+    def prepare_default_pairs(md:vrna_md_t):
+        for i in range(5):
+            md.alias[i] = i
+
+        md.alias[5] = 3  # X <-> G
+        md.alias[6] = 2  # K <-> C
+        md.alias[7] = 0  # I <-> default base '@'
+
+        for i in range(NBASES):
+            for j in range(NBASES):
+                md.pair[i][j] = BP_pair[i][j]
+
+        if md.noGU:
+            md.pair[3][4] = md.pair[4][3] = 0
+        
+        if md.nonstandards[0] != 0:
+            for i in range(0, len(md.nonstandards), 2):
+                md.pair[Duplex.vrna_nucleotide_encode(md.nonstandards[i], md)][Duplex.vrna_nucleotide_encode(md.nonstandards[i + 1], md)] = 7
       
-            
-    def fill_pair_matrices(self, md:vrna_md_t):
+    @staticmethod       
+    def fill_pair_matrices(md:vrna_md_t):
         dm_default = DM_DEFAULT
-        def vrna_nucleotide_encode(c:str, md:vrna_md_t):
-            code = -1
-            c = c.upper()
-            if md:
-                law_and_order = "ACGUT"
-                pos = law_and_order.find(c)
-                if pos == -1:
-                    code = 0
-                else:
-                    code = pos
-                if code > 4:
-                    code -= 1  # make T and U equivalent
-            return code
-
-        def prepare_default_pairs(md:vrna_md_t):
-            for i in range(5):
-                md.alias[i] = i
-
-            md.alias[5] = 3  # X <-> G
-            md.alias[6] = 2  # K <-> C
-            md.alias[7] = 0  # I <-> default base '@'
-
-            for i in range(NBASES):
-                for j in range(NBASES):
-                    md.pair[i][j] = BP_pair[i][j]
-
-            if md.noGU:
-                md.pair[3][4] = md.pair[4][3] = 0
-            
-            if md.nonstandards[0] != 0:
-                for i in range(0, len(md.nonstandards), 2):
-                    md.pair[vrna_nucleotide_encode(md.nonstandards[i], md)][vrna_nucleotide_encode(md.nonstandards[i + 1], md)] = 7
         # nullify everything
          
         for i in range(MAXALPHA + 1):
@@ -26314,7 +26318,7 @@ class Duplex():
         md.alias = [0] * (MAXALPHA + 1)
 
         # start setting actual base pair type encodings
-        prepare_default_pairs(md)
+        Duplex.prepare_default_pairs(md)
 
         # set the reverse base pair types
         for i in range(MAXALPHA + 1):
@@ -26354,8 +26358,8 @@ class Duplex():
                 rtype[self.pair[i][j]] = self.pair[j][i]
 
 
-    
-    def vrna_E_ext_stem(self, type, n5d, n3d, P:vrna_param_s):
+    @staticmethod
+    def vrna_E_ext_stem(type, n5d, n3d, P:vrna_param_s):
         # print(type, end=",")
         energy = 0
         if n5d >= 0 and n3d >= 0:
@@ -26371,7 +26375,8 @@ class Duplex():
         # print(int(n3d),end=",")
         return energy
     
-    def E_IntLoop(self, n1, n2, type, type_2, si1, sj1, sp1, sq1, P:vrna_param_s):
+    @staticmethod
+    def E_IntLoop(n1, n2, type, type_2, si1, sj1, sp1, sq1, P:vrna_param_s):
         salt_stack_correction = P.SaltStack
         salt_loop_correction = 0
 
@@ -26392,7 +26397,7 @@ class Duplex():
             if backbones <= MAXLOOP + 1:
                 salt_loop_correction = P.SaltLoop[backbones]
             else:
-                salt_loop_correction = self.vrna_salt_loop_int(backbones, P.model_details.salt, P.temperature + K0, P.model_details.backbone_length)
+                salt_loop_correction = Duplex.vrna_salt_loop_int(backbones, P.model_details.salt, P.temperature + K0, P.model_details.backbone_length)
 
         if ns == 0:
             # bulge
@@ -26543,7 +26548,8 @@ class Duplex():
             return round(x * md_p.saltDPXInitFact)
     
     # params
-    def get_scaled_params(self, md:vrna_md_t):
+    @staticmethod
+    def get_scaled_params(md:vrna_md_t):
         lxc37=107.9
         myid = 0
         params = vrna_param_s()
@@ -26581,15 +26587,15 @@ class Duplex():
         for i in range(31, MAXLOOP + 1):
             params.bulge[i] = params.bulge[30] + int(params.lxc * math.log(i / 30.0))
             params.internal_loop[i] = params.internal_loop[30] + int(params.lxc * math.log(i / 30.0))
-            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else self.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
+            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else Duplex.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
             params.SaltLoop[i] = int(params.SaltLoopDbl[i] + 0.5 - (params.SaltLoopDbl[i] < 0))
 
         for i in range(0, min(31, MAXLOOP + 1)):
-            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else self.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
+            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else Duplex.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
             params.SaltLoop[i] = int(params.SaltLoopDbl[i] + 0.5 - (params.SaltLoopDbl[i] < 0))
 
         for i in range(31, MAXLOOP + 1):
-            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else self.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
+            params.SaltLoopDbl[i] = 0.0 if md.salt == VRNA_MODEL_DEFAULT_SALT else Duplex.vrna_salt_loop(i, md.salt, md.temperature, md.backbone_length)
             params.SaltLoop[i] = int(params.SaltLoopDbl[i] + 0.5 - (params.SaltLoopDbl[i] < 0))
 
         for i in range(0, len(Tetraloops) // 7):
@@ -26678,8 +26684,8 @@ class Duplex():
         myid += 1
         return params
     
-    
-    def vrna_md_copy(self, md_to, md_from):
+    @staticmethod
+    def vrna_md_copy(md_to, md_from):
             if md_from:
                 if not md_to:
                     md = vrna_md_t()
@@ -26689,19 +26695,21 @@ class Duplex():
                 if md_to != md_from:
                     md.__dict__.update(md_from.__dict__)
             return md
-    
-    def vrna_md_set_default(self, md:vrna_md_t):
+                
+    @staticmethod
+    def vrna_md_set_default(md:vrna_md_t):
             if md:
                 defaults = vrna_md_t()
-                self.vrna_md_copy(md, defaults)
-    
-    def vrna_params(self, md):
+                Duplex.vrna_md_copy(md, defaults)
+                
+    @staticmethod
+    def vrna_params(md):
         if md:
-            return self.get_scaled_params(md)
+            return Duplex.get_scaled_params(md)
         else:
             md = vrna_md_t()
-            self.vrna_md_set_default(md)
-            return self.get_scaled_params(md)
+            Duplex.vrna_md_set_default(md)
+            return Duplex.get_scaled_params(md)
         
     
     def duplexfold_cu(self, clean_up):
@@ -26834,8 +26842,8 @@ class Duplex():
                 
 
 if __name__ == "__main__":
-    # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
-    d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
+    d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
+    # d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
     all = d.duplex_subopt(10)
     
