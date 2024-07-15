@@ -26158,12 +26158,14 @@ class Duplex():
         return s 
     
     #### salt
-    def tau_ss(self, T, backbonelen):
-        bjerrum_length_inv = 1 / self.bjerrum_length(T)
+    @staticmethod
+    def tau_ss(T, backbonelen):
+        bjerrum_length_inv = 1 / Duplex.bjerrum_length(T)
         return MIN2(1 / backbonelen, bjerrum_length_inv)
     
-    def tau_ds(self, T, Helical_Rise):
-        bjerrum_length_inv = 1 / self.bjerrum_length(T)
+    @staticmethod
+    def tau_ds(T, Helical_Rise):
+        bjerrum_length_inv = 1 / Duplex.bjerrum_length(T)
         return MIN2(1 / Helical_Rise, bjerrum_length_inv)
     
     def approx_hyper(self, y):
@@ -26177,14 +26179,33 @@ class Duplex():
         b = math.log(kmlss) - math.log(PI / 2) + Eular_const + self.approx_hyper(kmlss) + 1 / kmlss * (1 - math.exp(-kmlss) + kmlss * expn(1, kmlss))
         return a * b * 100
     
+    # math static method define
+    @staticmethod
+    def ionic_strength(rho):
+        return rho
+    
+    @staticmethod
+    def epsilonr(T):
+        return 5321 / T + 233.76 - 0.9297 * T + 1.417 * T * T / 1000 - 0.8292 * T * T * T / 1000000
+    
+    
+    @staticmethod
+    def bjerrum_length(T):
+        return 167100.052/(T * Duplex.epsilonr(T))
+    
+    
+    @staticmethod
+    def kappa(rho, T):
+        return math.sqrt(Duplex.bjerrum_length(T) * Duplex.ionic_strength(rho)) / 8.1284
+    
     def vrna_salt_loop(self, L, rho, T, backbonelen):
-        ionic_strength = lambda rho:rho
-        epsilonr = lambda T:5321 / T + 233.76 - 0.9297 * T + 1.417 * T * T / 1000 - 0.8292 * T * T * T / 1000000
-        self.bjerrum_length = lambda T:167100.052/(T * epsilonr(T))
-        self.kappa = lambda rho, T:math.sqrt(self.bjerrum_length(T) * ionic_strength(rho)) / 8.1284
+        # ionic_strength = lambda rho:rho
+        # epsilonr = lambda T:5321 / T + 233.76 - 0.9297 * T + 1.417 * T * T / 1000 - 0.8292 * T * T * T / 1000000
+        # self.bjerrum_length = lambda T:167100.052/(T * epsilonr(T))
+        # self.kappa = lambda rho, T:math.sqrt(self.bjerrum_length(T) * ionic_strength(rho)) / 8.1284
         if L == 0:return 0
-        kmlss_ref = self.kappa(VRNA_MODEL_DEFAULT_SALT, T) * L * backbonelen
-        kmlss = self.kappa(rho, T) * L * backbonelen
+        kmlss_ref = Duplex.kappa(VRNA_MODEL_DEFAULT_SALT, T) * L * backbonelen
+        kmlss = Duplex.kappa(rho, T) * L * backbonelen
         correction = self.loop_salt_aux(kmlss, L, T, backbonelen) - self.loop_salt_aux(kmlss_ref, L, T, backbonelen)
         return correction
     
@@ -26482,6 +26503,48 @@ class Duplex():
         
         return i, i0, j0, j, struc
     
+    # vrna_salt static method define
+    @staticmethod 
+    def vrna_salt_stack(rho, T, hrise):
+        Rods_dist = 20.
+        kappa_ref = Duplex.kappa(VRNA_MODEL_DEFAULT_SALT, T)
+        pairing_salt_const = lambda T, Helical_Rise: 2 * (GASCONST / 1000.) * T * Duplex.bjerrum_length(T) * Helical_Rise * Duplex.tau_ds(T, Helical_Rise) * Duplex.tau_ds(T, Helical_Rise) 
+        kn_ref = kn(0, Rods_dist * kappa_ref)
+        correction = 100 * pairing_salt_const(T, hrise) * (kn(0, Rods_dist * Duplex.kappa(rho, T)) - kn_ref)
+        return round(correction)
+        
+    @staticmethod     
+    def vrna_salt_ml(saltLoop, lower, upper):
+        sumx = sumxx = 0
+        sumy = sumxy = 0.0
+        
+        for i in range(lower, upper + 1):
+            sumx += i
+            sumxx += i * i
+                
+            y = saltLoop[i]
+            
+            sumxy += i * y
+            sumy += y
+        
+        denom = (upper - lower + 1) * sumxx - sumx * sumx
+        dm = ((upper - lower + 1) * sumxy - sumx * sumy) / denom if denom != 0 else 0
+        db = (sumy * sumxx - sumx * sumxy) / denom if denom != 0 else 0
+            
+        return round(dm), round(db)
+    
+    @staticmethod    
+    def vrna_salt_duplex_init(md_p:vrna_md_t): 
+        md = vrna_md_t()          
+        if md_p is None:
+            Duplex.vrna_md_set_default(md)
+            md_p = md
+            
+        if md_p.saltDPXInit != 99999:
+            return md_p.saltDPXInit
+        else:
+            x = math.log(md_p.salt / VRNA_MODEL_DEFAULT_SALT)
+            return round(x * md_p.saltDPXInitFact)
     
     # params
     def get_scaled_params(self, md:vrna_md_t):
@@ -26595,55 +26658,11 @@ class Duplex():
         params.Tetraloops = Tetraloops
         params.Triloops = Triloops
         params.Hexaloops = Hexaloops
-
-        
-        # function define
-        def vrna_salt_stack(rho, T, hrise):
-            Rods_dist = 20.
-            kappa_ref = self.kappa(VRNA_MODEL_DEFAULT_SALT, T)
-            pairing_salt_const = lambda T, Helical_Rise: 2*(GASCONST / 1000.)*T*self.bjerrum_length(T)*Helical_Rise*self.tau_ds(T, Helical_Rise) * self.tau_ds(T, Helical_Rise) 
-            kn_ref = kn(0, Rods_dist*kappa_ref)
-            correction = 100*pairing_salt_const(T, hrise)*(kn(0, Rods_dist * self.kappa(rho, T)) - kn_ref)
-            return round(correction)
-        
-        
-        def vrna_salt_ml(saltLoop, lower, upper):
-            sumx = sumxx = 0
-            sumy = sumxy = 0.0
-            
-            for i in range(lower, upper + 1):
-                sumx += i
-                sumxx += i * i
-                
-                y = saltLoop[i]
-                
-                sumxy += i * y
-                sumy += y
-            
-            denom = (upper - lower + 1) * sumxx - sumx * sumx
-            dm = ((upper - lower + 1) * sumxy - sumx * sumy) / denom if denom != 0 else 0
-            db = (sumy * sumxx - sumx * sumxy) / denom if denom != 0 else 0
-            
-            return round(dm), round(db)
-        
-        def vrna_salt_duplex_init(md_p:vrna_md_t): 
-            md = vrna_md_t()          
-            if md_p is None:
-                self.vrna_md_set_default(md)
-                md_p = md
-            
-            if md_p.saltDPXInit != 99999:
-                return md_p.saltDPXInit
-            else:
-                x = math.log(md_p.salt / VRNA_MODEL_DEFAULT_SALT)
-                return round(x * md_p.saltDPXInitFact)
-        
-        
-        params.SaltStack = 0 if md.salt == VRNA_MODEL_DEFAULT_SALT else vrna_salt_stack(md.salt, md.temperature, md.helical_rise)
+        params.SaltStack = 0 if md.salt == VRNA_MODEL_DEFAULT_SALT else Duplex.vrna_salt_stack(md.salt, md.temperature, md.helical_rise)
         if md.salt == VRNA_MODEL_DEFAULT_SALT:
             params.SaltMLbase = params.SaltMLclosing = 0
         else:
-            vrna_salt_ml(params.SaltLoopDbl, md.saltMLLower, md.saltMLUpper)
+            Duplex.vrna_salt_ml(params.SaltLoopDbl, md.saltMLLower, md.saltMLUpper)
         
         params.MLclosing += params.SaltMLbase
         params.MLclosing += params.SaltMLclosing
@@ -26656,7 +26675,7 @@ class Duplex():
             if md.saltDPXInit != VRNA_MODEL_DEFAULT_SALT:
                 params.SaltDPXInit = md.saltDPXInit
             elif md.saltDPXInit:
-                params.SaltDPXInit = vrna_salt_duplex_init(md)
+                params.SaltDPXInit = Duplex.vrna_salt_duplex_init(md)
         params.DuplexInit += params.SaltDPXInit
 
         params.id = myid + 1
@@ -26822,7 +26841,7 @@ if __name__ == "__main__":
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
     d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
-    all = d.duplex_subopt(100)
+    all = d.duplex_subopt(10)
     
     for mfe in all:
         if not mfe.structure:continue
