@@ -26137,7 +26137,8 @@ class Duplex():
         
 
     ### encode 
-    def encode_base(self, base:str):
+    @staticmethod
+    def encode_base(base:str):
         code = 0
         base = base.upper()
         idx = Law_and_Order.find(base)
@@ -26147,13 +26148,13 @@ class Duplex():
         return code
         
     
-    
-    def encode_sequence(self, seq, how):
+    @staticmethod
+    def encode_sequence(seq, how):
         s = [0]
         l = len(seq)
-        s[0] = self.encode_base(seq[-1]) if how else l
+        s[0] = Duplex.encode_base(seq[-1]) if how else l
         for i in range(1, l+1):
-            s.append(self.encode_base(seq[i-1]))
+            s.append(Duplex.encode_base(seq[i-1]))
         s.append(s[1])
         return s 
     
