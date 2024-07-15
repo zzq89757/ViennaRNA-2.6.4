@@ -675,6 +675,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
   qb    = matrices->qb;
   G     = matrices->G;
   probs = matrices->probs;
+  /* probs is 0.0000 now */
   q1k   = matrices->q1k;
   qln   = matrices->qln;
 
@@ -689,6 +690,8 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       (probs) &&
       (circular ? matrices->qm2 != NULL : (q1k != NULL && qln != NULL))) {
     with_gquad = pf_params->model_details.gquad;
+    /* probs is 0.0000 now */
+    printf("probs is :%f", probs);
 
     double      kTn = pf_params->kT / 10.;               /* kT in cal/mol  */
     int         corr_size = 5;
@@ -707,6 +710,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     ml_helpers  = get_ml_helper_arrays(vc);
     constraints = get_constraints_helper(vc);
 
+    /* not implement in python !!!!!!!!!!!!! */
     void                (*compute_bpp_int)(vrna_fold_compound_t *fc,
                                            int                  l,
                                            vrna_ep_t            **bp_correction,
@@ -723,7 +727,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
                             int                   *ov,
                             constraints_helper    *constraints);
 
-    /* not implement in python !!!!!!!!!!!!! */
     if (vc->type == VRNA_FC_TYPE_SINGLE) {
       compute_bpp_int = &compute_bpp_internal;
       compute_bpp_mul = &compute_bpp_multibranch;
@@ -751,7 +754,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     /* init diagonal entries unable to pair in pr matrix */
     for (i = 1; i <= n; i++)
       probs[my_iindx[i] - i] = 0.;
-
+    // printf("probs is :%f", probs);
     /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
     if (circular)
       bppm_circ(vc, constraints);

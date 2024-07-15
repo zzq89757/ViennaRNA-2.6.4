@@ -841,9 +841,9 @@ vrna_db_from_probs(const FLT_OR_DBL *p,
     s[length] = '\0';
     free(index);
   }
-  for(i = 0;i<=3;i++){
-    printf("P:%f,",P[i]);
-  }
+  // for(i = 0;i<=3;i++){
+  //   printf("P:%f,",P[i]);
+  // }
   return s;
 }
 

@@ -1,8 +1,7 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
-  CC       utils/structure_utils.lo
-  CCLD     libRNA_utils.la
+  CC       equilibrium_probs.lo
   CXXLD    libRNA_conv.la
   CXXLD    libRNA.la
   GEN      libRNA.a

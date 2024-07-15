@@ -1397,7 +1397,7 @@ do_partfunc(char            *string,
   vrna_fold_compound_t  *vc;
 
   md = &(opt->md);
-  printf("%d", Switch);
+  printf("do part into %d", Switch);
   switch (Switch) {
     case 1:   /* monomer */
       tempstruc = (char *)vrna_alloc((unsigned)length + 1);
