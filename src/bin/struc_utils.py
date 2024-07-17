@@ -1875,16 +1875,19 @@ def pf_create_bppm(vc:vrna_fold_compound_t, structure):
                             if aux_bps:
                                 qhp = vrna_exp_E_hp_loop(vc, i, j)
                                 for ptr in aux_bps:
-                                    if ptr.i != 0:
+                                    if ptr and (ptr.i != 0):
+                                        bp_correction[corr_cnt].i   = ptr.i
+                                        bp_correction[corr_cnt].j   = ptr.j
+                                        bp_correction[corr_cnt].p = probs[ij] * qhp
                                         if corr_cnt == corr_size:
                                             corr_size += 5
                                             bp_correction = np.resize(bp_correction, corr_size)
-                                        bp_correction[corr_cnt] = (ptr.i, ptr.j, probs[ij] * qhp)
+                                        # bp_correction[corr_cnt] = (ptr.i, ptr.j, probs[ij] * qhp)
                                         corr_cnt += 1
 
                 for i in range(corr_cnt):
-                    ij = my_iindx[bp_correction[i]['i']] - bp_correction[i]['j']
-                    probs[ij] += bp_correction[i]['p'] / qb[ij]
+                    ij = my_iindx[bp_correction[i].i] - bp_correction[i].j
+                    probs[ij] += bp_correction[i].p / qb[ij]
 
         for i in range(1, n + 1):
             for j in range(i + 1, n + 1):
