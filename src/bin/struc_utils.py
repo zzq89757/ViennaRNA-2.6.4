@@ -1,6 +1,6 @@
 import numpy as np
 
-# variable define
+# constant define
 VRNA_FC_TYPE_COMPARATIVE = 1
 VRNA_CONSTRAINT_CONTEXT_HP_LOOP = 0x02
 VRNA_DECOMP_PAIR_HP = 1
@@ -29,9 +29,83 @@ VRNA_DECOMP_EXT_STEM_OUTSIDE = 17
     
 #     for i in range(1, n + 1):
 #         probs[my_iindx[i] - i] = 0
-    
+
+class vrna_fc_type_e:
+    def __init__(self) -> None:
+        ...
+
+
 class vrna_fold_compound_t:
-    pass
+    def __init__(self) -> None:
+        # Common data fields
+        self.type = vrna_fc_type_e  # vrna_fc_type_e
+        self.length = 0  # unsigned int
+        self.strand_number = []  # unsigned int array
+        self.strand_order = []  # unsigned int array
+        self.strand_order_uniq = []  # unsigned int array
+        self.strand_start = []  # unsigned int array
+        self.strand_end = []  # unsigned int array
+        self.strands = 0  # unsigned int
+        self.nucleotides = vrna_seq_t  # vrna_seq_t array
+        self.alignment = vrna_msa_t  # vrna_msa_t array
+        self.hc = vrna_hc_t  # vrna_hc_t
+        self.matrices = vrna_mx_mfe_t  # vrna_mx_mfe_t
+        self.exp_matrices = vrna_mx_pf_t  # vrna_mx_pf_t
+        self.params = vrna_param_t  # vrna_param_t
+        self.exp_params = vrna_exp_param_t  # vrna_exp_param_t
+        self.iindx = 0  # int array
+        self.jindx = 0  # int array
+
+        # User-defined data fields
+        self.stat_cb = vrna_recursion_status_f  # vrna_recursion_status_f
+        self.auxdata = 0  # void pointer
+        self.free_auxdata = vrna_auxdata_free_f  # vrna_auxdata_free_f
+
+        # Secondary Structure Decomposition (grammar) related data fields
+        self.domains_struc = vrna_sd_t  # vrna_sd_t
+        self.domains_up = vrna_ud_t  # vrna_ud_t
+        self.aux_grammar = vrna_gr_aux_t  # vrna_gr_aux_t
+
+        # Data fields available for single/hybrid structure prediction
+        self.sequence = ''  # char array
+        self.sequence_encoding = 0  # short array
+        self.encoding5 = 0  # short array
+        self.encoding3 = 0  # short array
+        self.sequence_encoding2 = 0  # short array
+        self.ptype = 'ptype'  # char array
+        self.ptype_pf_compat = 'ptype_pf_compat'  # char array
+        self.sc = vrna_sc_t  # vrna_sc_t
+
+        # Data fields for consensus structure prediction
+        self.n_seq = 0  # unsigned int
+        self.cons_seq = 'cons_seq'  # char array
+        self.S_cons = 0  # short array
+        self.S = 0  # short array of arrays
+        self.S5 = 0  # short array of arrays
+        self.S3 = 0  # short array of arrays
+        self.Ss = 'Ss'  # char array of arrays
+        self.a2s = 0  # unsigned int array of arrays
+        self.pscore = 0  # int array
+        self.pscore_local = 0  # int array of arrays
+        self.pscore_pf_compat = 0  # short array
+        self.scs = vrna_sc_t  # vrna_sc_t array of arrays
+        self.oldAliEn = 0  # int
+
+        # Additional data fields for Distance Class Partitioning
+        self.maxD1 = 0  # unsigned int
+        self.maxD2 = 0  # unsigned int
+        self.reference_pt1 = 0  # short array
+        self.reference_pt2 = 0  # short array
+        self.referenceBPs1 = 0  # unsigned int array
+        self.referenceBPs2 = 0  # unsigned int array
+        self.bpdist = 0  # unsigned int array
+        self.mm1 = 0  # unsigned int array
+        self.mm2 = 0  # unsigned int array
+
+        # Additional data fields for local folding
+        self.window_size = 0  # int
+        self.ptype_local = 'ptype_local'  # char array of arrays
+        self.zscore_data = vrna_zsc_dat_t  # vrna_zsc_dat_t
 
 
 
