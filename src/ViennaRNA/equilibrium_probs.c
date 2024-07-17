@@ -636,7 +636,7 @@ vrna_pf_dimer_probs(double                  FAB,
 }
 
 
-/* calculate base pairing probs  changed structure ---------------------*/
+/* calculate base pairing probs  changed structure -------start--------------*/
 PRIVATE int
 pf_create_bppm(vrna_fold_compound_t *vc,
                char                 *structure)
@@ -710,7 +710,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     ml_helpers  = get_ml_helper_arrays(vc);
     constraints = get_constraints_helper(vc);
 
-    /* not implement in python !!!!!!!!!!!!! */
+    /* function pointer here igrone it */
     void                (*compute_bpp_int)(vrna_fold_compound_t *fc,
                                            int                  l,
                                            vrna_ep_t            **bp_correction,
@@ -801,7 +801,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
                             &ov);
       }
     }
-
+    // linked vc 
     if (vc->type == VRNA_FC_TYPE_SINGLE) {
       if (with_ud_outside) {
         /*
@@ -857,6 +857,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         /*  correct pairing probabilities for auxiliary base pairs from hairpin-, or interior loop motifs
          *  as augmented by the generalized soft constraints feature
          */
+        // linked bp_correction  corr_cnt corr_size qhp aux_bps ptr sc->bt sc->data  hc->mx sc->f sc->bt
         for (i = 0; i < corr_cnt; i++) {
           ij = my_iindx[bp_correction[i].i] - bp_correction[i].j;
           /* printf("correcting pair %d, %d by %f\n", bp_correction[i].i, bp_correction[i].j, bp_correction[i].p); */
@@ -883,7 +884,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         } else {
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
-
+            // linked vc->type pscore jindx kTn qb with_gquad G q1k qln my_iindx n
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
               probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }

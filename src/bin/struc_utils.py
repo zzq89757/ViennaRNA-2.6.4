@@ -744,6 +744,268 @@ def compute_bpp_multibranch_comparative(fc,
     rotate_ml_helper_arrays_outer(ml_helpers)
 
 
+import numpy as np
+
+def bppm_circ(fc, constraints):
+    n = fc.length
+    n_seq = 1 if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.n_seq
+    SS = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S
+    S5 = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S5
+    S3 = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S3
+    a2s = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.a2s
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    S = fc.sequence_encoding2 if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
+    S1 = fc.sequence_encoding if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
+    my_iindx = fc.iindx
+    jindx = fc.jindx
+    ptype = fc.ptype if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
+    hc = fc.hc
+    matrices = fc.exp_matrices
+    qb = matrices.qb
+    qm = matrices.qm
+    qm1 = matrices.qm1
+    probs = matrices.probs
+    scale = matrices.scale
+    expMLbase = matrices.expMLbase
+    qo = matrices.qo
+    hard_constraints = hc.mx
+    hc_dat_mb = constraints.hc_dat_mb
+    hc_eval_mb = constraints.hc_eval_mb
+    sc_dat_int = constraints.sc_wrapper_int
+    sc_dat_mb = constraints.sc_wrapper_mb
+
+    expMLclosing = pf_params.expMLclosing
+    rtype = pf_params.model_details.rtype
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        numerator_f = numerator_single
+        tt = None
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        numerator_f = numerator_comparative
+        tt = np.zeros(n_seq, dtype=int)
+    else:
+        numerator_f = None
+
+    for i in range(1, n + 1):
+        probs[my_iindx[i] - i] = 0
+        for j in range(i + 1, n + 1):
+            ij = my_iindx[i] - j
+            if qb[ij] > 0:
+                probs[ij] = numerator_f(fc, i, j) / qo
+
+                if fc.type == VRNA_FC_TYPE_SINGLE:
+                    type = vrna_get_ptype_md(S[i], S[j], md)
+                    rt = vrna_get_ptype_md(S[j], S[i], md)
+                else:
+                    for s in range(n_seq):
+                        tt[s] = vrna_get_ptype_md(SS[s][j], SS[s][i], md)
+
+                tmp2 = vrna_exp_E_hp_loop(fc, j, i)
+
+                if hard_constraints[i * n + j] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP:
+                    for k in range(1, i - 1):
+                        ln1 = k - 1
+                        ln3 = n - j
+
+                        if hc.up_int[j + 1] < (ln1 + ln3):
+                            break
+
+                        if (ln1 + ln3) > MAXLOOP:
+                            break
+
+                        lstart = (ln1 + ln3) + i - 1 - MAXLOOP
+                        if lstart < k + 1:
+                            lstart = k + 1
+
+                        for l in range(lstart, i):
+                            ln2 = i - l - 1
+
+                            if (ln1 + ln2 + ln3) > MAXLOOP:
+                                continue
+
+                            if hc.up_int[l + 1] < ln2:
+                                continue
+
+                            if qb[my_iindx[k] - l] == 0:
+                                continue
+
+                            eval = 1 if (hard_constraints[k * n + l] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) else 0
+                            if hc.f:
+                                eval = hc.f(k, l, i, j, VRNA_DECOMP_PAIR_IL, hc.data)
+
+                            if eval:
+                                tmp = qb[my_iindx[k] - l]
+
+                                if fc.type == VRNA_FC_TYPE_SINGLE:
+                                    type_2 = vrna_get_ptype(jindx[l] + k, ptype)
+
+                                    tmp *= exp_E_IntLoop(ln1 + ln3,
+                                                         ln2,
+                                                         rt,
+                                                         rtype[type_2],
+                                                         S1[j + 1],
+                                                         S1[i - 1],
+                                                         S1[k - 1],
+                                                         S1[l + 1],
+                                                         pf_params)
+                                else:
+                                    for s in range(n_seq):
+                                        ln2a = a2s[s][i - 1] - a2s[s][l]
+                                        ln1a = a2s[s][n] - a2s[s][j] + a2s[s][k - 1]
+                                        type_2 = vrna_get_ptype_md(SS[s][l], SS[s][k], md)
+                                        tmp *= exp_E_IntLoop(ln1a, ln2a, tt[s], type_2,
+                                                             S3[s][j],
+                                                             S5[s][i],
+                                                             S5[s][k],
+                                                             S3[s][l],
+                                                             pf_params)
+
+                                if sc_dat_int.pair_ext:
+                                    tmp *= sc_dat_int.pair_ext(k, l, i, j, sc_dat_int)
+
+                                tmp2 += tmp * scale[ln1 + ln2 + ln3]
+
+                    for k in range(j + 1, n):
+                        ln1 = k - j - 1
+
+                        if hc.up_int[j + 1] < ln1:
+                            break
+
+                        if (ln1 + i - 1) > MAXLOOP:
+                            break
+
+                        lstart = ln1 + i - 1 + n - MAXLOOP
+                        if lstart < k + 1:
+                            lstart = k + 1
+
+                        for l in range(lstart, n + 1):
+                            ln2 = i - 1
+                            ln3 = n - l
+
+                            if (ln1 + ln2 + ln3) > MAXLOOP:
+                                continue
+
+                            if hc.up_int[l + 1] < (ln2 + ln3):
+                                continue
+
+                            if qb[my_iindx[k] - l] == 0:
+                                continue
+
+                            eval = 1 if (hard_constraints[k * n + l] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) else 0
+                            if hc.f:
+                                eval = eval if hc.f(i, j, k, l, VRNA_DECOMP_PAIR_IL, hc.data) else 0
+
+                            if eval:
+                                tmp = qb[my_iindx[k] - l]
+
+                                if fc.type == VRNA_FC_TYPE_SINGLE:
+                                    type_2 = vrna_get_ptype(jindx[l] + k, ptype)
+                                    tmp *= exp_E_IntLoop(ln2 + ln3,
+                                                         ln1,
+                                                         rtype[type_2],
+                                                         rt,
+                                                         S1[l + 1],
+                                                         S1[k - 1],
+                                                         S1[i - 1],
+                                                         S1[j + 1],
+                                                         pf_params)
+                                else:
+                                    for s in range(n_seq):
+                                        ln1a = a2s[s][k] - a2s[s][j + 1]
+                                        ln2a = a2s[s][i - 1] + a2s[s][n] - a2s[s][l]
+                                        type_2 = vrna_get_ptype_md(SS[s][l], SS[s][k], md)
+                                        tmp *= exp_E_IntLoop(ln2a, ln1a, type_2, tt[s],
+                                                             S3[s][l],
+                                                             S5[s][k],
+                                                             S5[s][i],
+                                                             S3[s][j],
+                                                             pf_params)
+
+                                if sc_dat_int.pair_ext:
+                                    tmp *= sc_dat_int.pair_ext(i, j, k, l, sc_dat_int)
+
+                                tmp2 += tmp * scale[ln1 + ln2 + ln3]
+
+                if hc_eval_mb(i, j, i - 1, j + 1, VRNA_DECOMP_PAIR_ML_EXT, hc_dat_mb):
+                    sc_contrib = 1
+
+                    if sc_dat_mb.pair_ext:
+                        sc_contrib = sc_dat_mb.pair_ext(i, j, sc_dat_mb)
+
+                    if (i > 2) and (j < n - 1):
+                        tmp = qm[my_iindx[1] - i + 1] * qm[my_iindx[j + 1] - n]
+
+                        if fc.type == VRNA_FC_TYPE_SINGLE:
+                            tmp *= exp_E_MLstem(type,
+                                                S1[i - 1],
+                                                S1[j + 1],
+                                                pf_params) * expMLclosing
+                        else:
+                            for s in range(n_seq):
+                                tmp *= exp_E_MLstem(rtype[tt[s]],
+                                                    S5[s][i],
+                                                    S3[s][j],
+                                                    pf_params)
+
+                            tmp *= np.power(expMLclosing, n_seq)
+
+                        tmp2 += tmp * sc_contrib
+                    # 1.3.2 Left part
+                    if hc.up_ml[j + 1] >= (n - j):
+                        for k in range(2, i - 2):
+                            if (hc_eval_mb(i, n, i, k, VRNA_DECOMP_PAIR_ML, hc_dat_mb)) and (hc_eval_mb(1, i - 1, k, k + 1, VRNA_DECOMP_ML_ML_ML, hc_dat_mb)):
+                                tmp = qm[my_iindx[1] - k] * qm1[jindx[k] + i - 1] * expMLbase[n - j]
+
+                                if fc.type == VRNA_FC_TYPE_SINGLE:
+                                    tmp *= exp_E_MLstem(type,
+                                                        S1[i - 1],
+                                                        S1[j + 1],
+                                                        pf_params) * expMLclosing
+                                else:
+                                    for s in range(n_seq):
+                                        tmp *= exp_E_MLstem(rtype[tt[s]],
+                                                            S5[s][i],
+                                                            S3[s][j],
+                                                            pf_params)
+
+                                    tmp *= np.power(expMLclosing, n_seq)
+                                if (sc_dat_mb.red_ml):
+                                    tmp *= sc_dat_mb.red_ml(i, n, i, j, sc_dat_mb)
+                                if (sc_dat_mb.decomp_ml):
+                                    tmp *= sc_dat_mb.decomp_ml(1, i - 1, k, k + 1, sc_dat_mb)
+                                tmp2 += tmp * sc_contrib
+                    # 1.3.3 Right part
+                    if hc.up_ml[1] >= (i - 1):
+                        for k in range(j + 2, n):
+                            if (hc_eval_mb(1, j, k, n, VRNA_DECOMP_PAIR_ML, hc_dat_mb)) and (hc_eval_mb(j + 1, n, k, k + 1, VRNA_DECOMP_ML_ML_ML, hc_dat_mb)):
+                                tmp = qm[my_iindx[k] - n] * qm1[jindx[1] + j] * expMLbase[i - 1]
+
+                                if fc.type == VRNA_FC_TYPE_SINGLE:
+                                    tmp *= exp_E_MLstem(type,
+                                                        S1[i - 1],
+                                                        S1[j + 1],
+                                                        pf_params) * expMLclosing
+                                else:
+                                    for s in range(n_seq):
+                                        tmp *= exp_E_MLstem(rtype[tt[s]],
+                                                            S5[s][i],
+                                                            S3[s][j],
+                                                            pf_params)
+
+                                    tmp *= np.power(expMLclosing, n_seq)
+
+                                if (sc_dat_mb.red_ml):
+                                    tmp *= sc_dat_mb.red_ml(1, j, i, j, sc_dat_mb)
+                                if (sc_dat_mb.decomp_ml):
+                                    tmp *= sc_dat_mb.decomp_ml(j + 1, n, k, k + 1, sc_dat_mb)
+                                tmp2 += tmp * sc_contrib
+                probs[ij] *= tmp2
+            else:
+                probs[ij] = 0
+                    
+
+
 
 
 
@@ -1454,7 +1716,7 @@ def vrna_exp_E_hp_loop(fc, i, j):
 
 
 
-def pf_create_bppm(vc, structure):
+def pf_create_bppm(vc:vrna_fold_compound_t, structure):
     ov = 0
     n = vc.length
     pscore = vc.pscore if vc.type == VRNA_FC_TYPE_COMPARATIVE else None
@@ -1480,7 +1742,8 @@ def pf_create_bppm(vc, structure):
     with_ud = 1 if (domains_up and domains_up.exp_energy_cb) else 0
     with_ud_outside = 1 if (with_ud and domains_up.probs_add) else 0
 
-    if qb is not None and probs is not None and (circular or (q1k is not None and qln is not None)):
+    if qb and probs and (circular or (q1k is not None and qln is not None)):
+        with_gquad = pf_params.model_details.gquad
         Qmax = 0
         corr_size = 5
         corr_cnt = 0
@@ -1502,6 +1765,7 @@ def pf_create_bppm(vc, structure):
             Y3 = [np.zeros(n + 1) for _ in range(vc.strands)]
             Y3p = [np.zeros(n + 1) for _ in range(vc.strands)]
 
+        # init diagonal entries unable to pair in pr matrix
         probs[my_iindx[1] - 1:my_iindx[n] - n + 1] = 0
 
         if circular:
@@ -1510,16 +1774,16 @@ def pf_create_bppm(vc, structure):
             compute_bpp_external(vc, constraints)
 
         l = n
-        compute_bpp_int(vc, l, bp_correction, corr_cnt, corr_size, Qmax, ov, constraints=None)
+        compute_bpp_int(vc, l, bp_correction, corr_cnt, corr_size, Qmax, ov, constraints)
 
         for l in range(n - 1, 1, -1):
-            compute_bpp_int(vc, l, bp_correction, corr_cnt, corr_size, Qmax, ov, constraints=None)
-            compute_bpp_mul(vc, l, ml_helpers=None, Qmax=Qmax, ov=ov, constraints=None)
+            compute_bpp_int(vc, l, bp_correction, corr_cnt, corr_size, Qmax, ov, constraints)
+            compute_bpp_mul(vc, l, ml_helpers, Qmax, ov, constraints)
 
             if vc.strands > 1:
-                multistrand_update_Y5(vc, l, Y5, Y5p, constraints=None)
-                multistrand_update_Y3(vc, l, Y3, Y3p, constraints=None)
-                multistrand_contrib(vc, l, Y5, Y3, constraints=None, Qmax=Qmax, ov=ov)
+                multistrand_update_Y5(vc, l, Y5, Y5p, constraints)
+                multistrand_update_Y3(vc, l, Y3, Y3p, constraints)
+                multistrand_contrib(vc, l, Y5, Y3, constraints, Qmax, ov)
 
         if vc.type == VRNA_FC_TYPE_SINGLE:
             if with_ud_outside:
