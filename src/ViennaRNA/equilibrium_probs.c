@@ -691,7 +691,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       (circular ? matrices->qm2 != NULL : (q1k != NULL && qln != NULL))) {
     with_gquad = pf_params->model_details.gquad;
     /* probs is 0.0000 now */
-    printf("probs is :%f", probs);
+    // printf("probs is :%f", probs);
 
     double      kTn = pf_params->kT / 10.;               /* kT in cal/mol  */
     int         corr_size = 5;
@@ -883,7 +883,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         } else {
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
-
+            
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
               probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
