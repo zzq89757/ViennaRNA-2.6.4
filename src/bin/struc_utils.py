@@ -25,12 +25,123 @@ VRNA_DECOMP_PAIR_ML_EXT = 23
 VRNA_DECOMP_ML_ML_ML = 5
 
 
-# data structure as class
+# data structure/class start ######################################
+from enum import Enum
+class vrna_fc_type_e(Enum):
+    VRNA_FC_TYPE_SINGLE = 0
+    VRNA_FC_TYPE_COMPARATIVE = 1
 
-class vrna_fc_type_e:
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Optional, Callable
+
+class vrna_fc_s:
+    type:vrna_fc_type_e
+    length: int
+    strand_number: Optional[List[int]] = None
+    strand_order: Optional[List[int]] = None
+    strand_order_uniq: Optional[List[int]] = None
+    strand_start: Optional[List[int]] = None
+    strand_end: Optional[List[int]] = None
+    strands: int = 0
+    nucleotides: Optional[List[str]] = None
+    alignment: Optional[List[str]] = None
+    hc: Optional[str] = None  # This should be updated to the correct type
+    matrices: Optional[str] = None  # This should be updated to the correct type
+    exp_matrices: Optional[str] = None  # This should be updated to the correct type
+    params: Optional[str] = None  # This should be updated to the correct type
+    exp_params: Optional[str] = None  # This should be updated to the correct type
+    iindx: Optional[List[int]] = None
+    jindx: Optional[List[int]] = None
+    stat_cb: Optional[Callable] = None
+    auxdata: Optional[object] = None
+    free_auxdata: Optional[Callable] = None
+    domains_struc: Optional[str] = None  # This should be updated to the correct type
+    domains_up: Optional[str] = None  # This should be updated to the correct type
+    aux_grammar: Optional[str] = None  # This should be updated to the correct type
+
+    # Fields for single/hybrid structure prediction
+    sequence: Optional[str] = None
+    sequence_encoding: Optional[List[int]] = None
+    encoding5: Optional[List[int]] = None
+    encoding3: Optional[List[int]] = None
+    sequence_encoding2: Optional[List[int]] = None
+    ptype: Optional[str] = None
+    ptype_pf_compat: Optional[str] = None
+    sc: Optional[str] = None  # This should be updated to the correct type
+
+    # Fields for consensus structure prediction
+    sequences: Optional[List[str]] = None
+    n_seq: int = 0
+    cons_seq: Optional[str] = None
+    S_cons: Optional[List[int]] = None
+    S: Optional[List[List[int]]] = None
+    S5: Optional[List[List[int]]] = None
+    S3: Optional[List[List[int]]] = None
+    Ss: Optional[List[str]] = None
+    a2s: Optional[List[List[int]]] = None
+    pscore: Optional[List[int]] = None
+    pscore_local: Optional[List[List[int]]] = None
+    pscore_pf_compat: Optional[List[int]] = None
+    scs: Optional[List[str]] = None  # This should be updated to the correct type
+    oldAliEn: int = 0
+
+    # Fields for Distance Class Partitioning
+    maxD1: int = 0
+    maxD2: int = 0
+    reference_pt1: Optional[List[int]] = None
+    reference_pt2: Optional[List[int]] = None
+    referenceBPs1: Optional[List[int]] = None
+    referenceBPs2: Optional[List[int]] = None
+    bpdist: Optional[List[int]] = None
+    mm1: Optional[List[int]] = None
+    mm2: Optional[List[int]] = None
+
+    # Fields for local folding
+    window_size: int = 0
+    ptype_local: Optional[List[str]] = None
+    zscore_data: Optional[str] = None  # This should be updated to the correct type
+
+
+class vrna_hc_t:
+    def __init__(self) -> None:
+        self.type = vrna_fc_type_e
+        self.mx = ''
+        self.up_ext = self.up_hp = self.up_int = self.up_ml = 0
+        self.f = vrna_hc_eval_f
+        self.data = None
+        
+
+
+class vrna_sc_t:
     def __init__(self) -> None:
         ...
 
+
+class vrna_mx_mfe_t:
+    def __init__(self) -> None:
+        ...
+
+
+
+class vrna_mx_pf_t:
+    def __init__(self) -> None:
+        ...
+        
+        
+class vrna_exp_param_t:
+    def __init__(self) -> None:
+        pass
+
+     
+class vrna_ud_t:
+    def __init__(self) -> None:
+        pass 
+     
+     
+
+   
+  
 
 class vrna_fold_compound_t:
     def __init__(self) -> None:
@@ -104,9 +215,9 @@ class vrna_fold_compound_t:
         self.ptype_local = 'ptype_local'  # char array of arrays
         self.zscore_data = vrna_zsc_dat_t  # vrna_zsc_dat_t
 
+# data structure/class end ######################################
 
-
-
+# function/method start ######################################
 
 
 
@@ -232,7 +343,7 @@ def get_constraints_helper(fc):
     return helpers
 
 
-def compute_bpp_internal(fc,
+def compute_bpp_internal(fc:vrna_fold_compound_t,
                          l,
                          bp_correction,
                          corr_cnt,
@@ -819,18 +930,18 @@ import numpy as np
 
 def bppm_circ(fc, constraints):
     n = fc.length
-    n_seq = 1 if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.n_seq
-    SS = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S
-    S5 = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S5
-    S3 = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.S3
-    a2s = None if fc.type == 'VRNA_FC_TYPE_SINGLE' else fc.a2s
+    n_seq = 1 if fc.type == VRNA_FC_TYPE_SINGLE else fc.n_seq
+    SS = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S
+    S5 = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S5
+    S3 = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S3
+    a2s = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.a2s
     pf_params = fc.exp_params
     md = pf_params.model_details
-    S = fc.sequence_encoding2 if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
-    S1 = fc.sequence_encoding if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
+    S = fc.sequence_encoding2 if fc.type == VRNA_FC_TYPE_SINGLE else None
+    S1 = fc.sequence_encoding if fc.type == VRNA_FC_TYPE_SINGLE else None
     my_iindx = fc.iindx
     jindx = fc.jindx
-    ptype = fc.ptype if fc.type == 'VRNA_FC_TYPE_SINGLE' else None
+    ptype = fc.ptype if fc.type == VRNA_FC_TYPE_SINGLE else None
     hc = fc.hc
     matrices = fc.exp_matrices
     qb = matrices.qb
