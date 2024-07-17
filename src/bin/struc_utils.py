@@ -25,14 +25,7 @@ VRNA_DECOMP_PAIR_ML_EXT = 23
 VRNA_DECOMP_ML_ML_ML = 5
 
 
-# def generate_probs(vc, matrices):
-#     my_iindx = vc.iindx
-#     n = vc.length
-#     probs = matrices.probs
-    
-    
-#     for i in range(1, n + 1):
-#         probs[my_iindx[i] - i] = 0
+# data structure as class
 
 class vrna_fc_type_e:
     def __init__(self) -> None:
