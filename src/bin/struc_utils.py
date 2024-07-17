@@ -862,7 +862,7 @@ def prepare_hc_mb_def(fc:vrna_fold_compound_t, dat:hc_mb_def_dat):
         return hc_mb_cb_def_sn
 
 
-class ScExtExpDat:
+class sc_ext_exp_dat:
     def __init__(self):
         self.up = None  # FLT_OR_DBL **up
 
