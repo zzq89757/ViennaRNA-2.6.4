@@ -23,7 +23,21 @@ VRNA_DECOMP_EXT_STEM_OUTSIDE = 17
 VRNA_CONSTRAINT_CONTEXT_INT_LOOP = 0x04
 VRNA_DECOMP_PAIR_ML_EXT = 23
 VRNA_DECOMP_ML_ML_ML = 5
+VRNA_DECOMP_ML_ML_STEM = 9
 
+
+VRNA_DECOMP_EXT_EXT_STEM = 18
+VRNA_CONSTRAINT_CONTEXT_EXT_LOOP = 0x01
+VRNA_DECOMP_EXT_STEM_EXT = 16
+VRNA_DECOMP_EXT_EXT_STEM1 = 19
+VRNA_DECOMP_EXT_STEM_EXT1 = 20
+VRNA_DECOMP_EXT_EXT_EXT = 15
+VRNA_DECOMP_EXT_STEM = 14
+VRNA_DECOMP_EXT_EXT = 12
+VRNA_DECOMP_EXT_UP = 13
+VRNA_DECOMP_EXT_STEM_OUTSIDE = 17
+VRNA_DECOMP_ML_COAXIAL_ENC  = 11
+VRNA_DECOMP_ML_COAXIAL = 10
 
 # data structure/class start ######################################
 from enum import Enum
@@ -133,10 +147,13 @@ class vrna_exp_param_t:
     def __init__(self) -> None:
         pass
 
-     
+class vrna_ud_exp_f:
+    def __init__(self) -> None:
+        pass
+ 
 class vrna_ud_t:
     def __init__(self) -> None:
-        pass 
+        self.exp_energy_cb = vrna_ud_exp_f
      
      
 
@@ -193,7 +210,7 @@ class vrna_fold_compound_t:
         self.S3 = 0  # short array of arrays
         self.Ss = 'Ss'  # char array of arrays
         self.a2s = 0  # unsigned int array of arrays
-        self.pscore = 0  # int array
+        self.pscore = list[int]  # int array
         self.pscore_local = 0  # int array of arrays
         self.pscore_pf_compat = 0  # short array
         self.scs = vrna_sc_t  # vrna_sc_t array of arrays
@@ -325,6 +342,620 @@ class ConstraintsHelper:
         self.sc_wrapper_hp = None
         self.sc_wrapper_int = None
         self.sc_wrapper_mb = None
+
+
+class hc_ext_def_dat:
+    def __init__(self) -> None:
+        self.n = self.mx = self.mx_window =self.sn = self.hc_up = self.hc_dat = None
+        self.hc_f = vrna_hc_eval_f
+
+
+def hc_ext_cb_def(i, j, k, l, d, data:hc_ext_def_dat):
+    dat = data  # Assume data is an instance of HC_EXT_Def_Dat
+    
+    eval = 0
+    di = k - i
+    dj = j - l
+    n = dat.n
+    # Handle different cases based on d
+    if d == VRNA_DECOMP_EXT_EXT_STEM:
+        if dat.mx[dat.n * j + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+            if i != l:
+                di = l - k - 1
+                if di != 0 and dat.hc_up[k + 1] < di:
+                    eval = 0
+
+    elif d == VRNA_DECOMP_EXT_STEM_EXT:
+        if dat.mx[dat.n * k + i] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+            if i != l:
+                di = l - k - 1
+                if di != 0 and dat.hc_up[k + 1] < di:
+                    eval = 0
+
+    elif d == VRNA_DECOMP_EXT_EXT_STEM1:
+        if dat.mx[dat.n * (j - 1) + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+            if dat.hc_up[j] == 0:
+                eval = 0
+            if i != l:
+                di = l - k - 1
+                if di != 0 and dat.hc_up[k + 1] < di:
+                    eval = 0
+
+    elif d == VRNA_DECOMP_EXT_STEM_EXT1:
+        if dat.mx[dat.n * k + i + 1] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+            if dat.hc_up[i] == 0:
+                eval = 0
+            if j != k:
+                dj = l - k - 1
+                if dj != 0 and dat.hc_up[k + 1] < dj:
+                    eval = 0
+
+    elif d == VRNA_DECOMP_EXT_EXT_EXT:
+        eval = 1
+        di = l - k - 1
+        if di != 0 and dat.hc_up[k + 1] < di:
+            eval = 0
+
+    elif d == VRNA_DECOMP_EXT_STEM:
+        if dat.mx[dat.n * k + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+            if di != 0 and dat.hc_up[i] < di:
+                eval = 0
+            if dj != 0 and dat.hc_up[l + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_EXT_EXT:
+        eval = 1
+        if di != 0 and dat.hc_up[i] < di:
+            eval = 0
+        if dj != 0 and dat.hc_up[l + 1] < dj:
+            eval = 0
+
+    elif d == VRNA_DECOMP_EXT_UP:
+        di = j - i + 1
+        eval = 1 if dat.hc_up[i] >= di else 0
+
+    elif d == VRNA_DECOMP_EXT_STEM_OUTSIDE:
+        if dat.mx[dat.n * k + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP:
+            eval = 1
+
+    else:
+        print(f"Warning: Unrecognized decomposition {d}")
+
+    return eval
+
+
+def hc_ext_cb_sn(i, j, k, l, d, data:hc_ext_def_dat):
+    dat = data  # Assume data is an instance of HC_EXT_Def_Dat
+    
+    sn = dat.sn
+    eval = 0
+
+    # Handle different cases based on d
+    if d == VRNA_DECOMP_EXT_EXT_STEM1:
+        if sn[j - 1] != sn[j]:
+            eval = 0
+        elif sn[k] == sn[l]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_EXT_STEM_EXT1:
+        if sn[i] != sn[i + 1]:
+            eval = 0
+        elif sn[k] == sn[l]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_EXT_EXT_STEM or d == VRNA_DECOMP_EXT_STEM_EXT or d == VRNA_DECOMP_EXT_EXT_EXT:
+        if sn[k] == sn[l]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_EXT_STEM or d == VRNA_DECOMP_EXT_EXT:
+        if sn[i] == sn[k] and sn[l] == sn[j]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_EXT_UP:
+        if sn[i] == sn[j]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_EXT_STEM_OUTSIDE:
+        if (k <= i or sn[k - 1] == sn[k]) and (l >= j or sn[l + 1] == sn[l]):
+            eval = 1
+
+    else:
+        print(f"Warning: Unrecognized decomposition {d}")
+
+    return eval
+
+
+
+def hc_ext_cb_def_sn(i, j, k, l, d, data:hc_ext_def_dat):
+    eval = hc_ext_cb_def(i, j, k, l, d, data) if hc_ext_cb_sn(i, j, k, l, d, data) else 0
+    return eval
+
+def hc_ext_cb_def_user(i, j, k, l, d, data:hc_ext_def_dat):
+    dat = data
+    eval = hc_ext_cb_def(i, j, k, l, d, data) if dat.hc_f(i, j, k, l, d, dat.hc_dat) else 0
+    return eval
+
+
+def hc_ext_cb_def_sn_user(i, j, k, l, d, data:hc_ext_def_dat):
+    dat = data
+    eval = hc_ext_cb_def(i, j, k, l, d, data) if hc_ext_cb_sn(i, j, k, l, d, data) else 0
+    eval = hc_ext_cb_def(i, j, k, l, d, data) if dat.hc_f(i, j, k, l, d, dat.hc_dat) else 0
+    return eval
+
+def prepare_hc_ext_def(fc: vrna_fold_compound_t, dat: hc_ext_def_dat) -> Callable:
+    dat.mx = fc.hc.mx
+    dat.n = fc.length
+    dat.hc_up = fc.hc.up_ext
+    dat.sn = fc.strand_number
+
+    if fc.hc.f:
+        dat.hc_f = fc.hc.f
+        dat.hc_dat = fc.hc.data
+        return hc_ext_cb_def_user if fc.strands == 1 else hc_ext_cb_def_sn_user
+
+    return hc_ext_cb_def if fc.strands == 1 else hc_ext_cb_def_sn
+
+class hc_hp_def_dat:
+    def __init__(self) -> None:
+        self.n = self.mx = self.mx_window = self.sn = self.hc_up = self.hc_dat = None
+        self.hc_f = vrna_hc_eval_f
+
+
+def hc_hp_cb_def(i, j, k, l, d, data:hc_hp_def_dat):
+    dat = data  # Assume data is an instance of HC_HP_Def_Dat
+    
+    eval = 0
+
+    # No strand nicks are allowed in hairpin loops
+    if dat.sn[i] != dat.sn[j]:
+        return eval
+
+    if j > i:
+        # Linear case
+        p = i
+        q = j
+        u = q - p - 1
+    else:
+        # Circular case
+        p = j
+        q = i
+        u = dat.n - q + p - 1
+
+    if dat.mx[dat.n * p + q] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP:
+        eval = 1
+        if dat.hc_up[i + 1] < u:
+            eval = 0
+
+    return eval
+
+def hc_hp_cb_def_user(i, j, k, l, d, data:hc_hp_def_dat):
+    dat = data
+    eval = hc_hp_cb_def(i, j, k, l, d, data) if (dat.hc_f(i, j, k, l, d, dat.hc_dat)) else 0
+    return eval
+
+
+def prepare_hc_hp_def(fc: vrna_fold_compound_t, dat: hc_hp_def_dat) -> Callable:
+    dat.mx = fc.hc.mx
+    dat.hc_up = fc.hc.up_hp
+    dat.n = fc.length
+    dat.sn = fc.strand_number
+
+    if fc.hc.f:
+        dat.hc_f = fc.hc.f
+        dat.hc_dat = fc.hc.data
+        return hc_hp_cb_def_user
+
+    return hc_hp_cb_def
+
+
+# hc_int_def_dat
+
+class hc_int_def_dat:
+    def __init__(self):
+        self.mx = None
+        self.mx_local = None
+        self.n = 0
+        self.up = 0
+        self.sn = 0
+        self.hc_f = None
+        self.hc_dat = None
+        
+
+def hc_int_cb_def(i, j, k, l, data:hc_int_def_dat):
+    dat = data  # Assume data is an instance of HC_INT_Def_Dat
+    
+    pij = 0
+    pkl = 0
+
+    # Check strand conditions
+    if dat.sn[i] != dat.sn[k] or dat.sn[l] != dat.sn[j]:
+        return 0
+
+    # Retrieve values based on mx or mx_local
+    if dat.mx:
+        pij = dat.mx[dat.n * i + j]
+        pkl = dat.mx[dat.n * k + l]
+    else:
+        pij = dat.mx_local[i][j - i]
+        pkl = dat.mx_local[k][l - k]
+
+    # Check conditions for internal loops
+    if (pij & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) and (pkl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC):
+        return 1
+
+    return 0
+
+
+def hc_int_cb_def_user(i, j, k, l, data:hc_int_def_dat):
+    dat = data
+    eval = hc_int_cb_def(i, j, k, l, data) if (dat.hc_f(i, j, k, l, VRNA_DECOMP_PAIR_IL, dat.hc_dat)) else 0
+    return eval
+
+def prepare_hc_int_def(fc:vrna_fold_compound_t, dat:hc_int_def_dat) -> Callable:
+    if fc.hc.type == VRNA_HC_WINDOW:
+        dat.mx = None
+        dat.mx_local = fc.hc.matrix_local
+    else:
+        dat.mx = fc.hc.mx
+        dat.mx_local = None
+    
+    dat.n = fc.length
+    dat.up = fc.hc.up_int
+    dat.sn = fc.strand_number
+    
+    if fc.hc.f:
+        dat.hc_f = fc.hc.f
+        dat.hc_dat = fc.hc.data
+        return hc_int_cb_def_user
+    
+    return hc_int_cb_def
+
+class vrna_hc_eval_f:
+    def __init__(self) -> None:
+        self.i = self.j = self.k = self.l = self.d = self.data = None
+
+class hc_mb_def_dat:
+    def __init__(self) -> None:
+        self.mx = None
+        self.n = None
+        self.mx_window = None
+        self.hc_up = None
+        self.sn = None
+        self.hc_f = vrna_hc_eval_f
+        self.hc_dat = None
+
+
+def hc_mb_cb_def_window(i, j, k, l, d, data:hc_mb_def_dat):
+    dat = data  # Assume data is an instance of HC_MB_Def_Dat
+    
+    eval = 0
+    di = k - i
+    dj = j - l
+
+    # Switch based on decomposition type d
+    if d == VRNA_DECOMP_ML_ML_ML:
+        u = l - k - 1
+        eval = 1
+        if u != 0 and dat.hc_up[k + 1] < u:
+            eval = 0
+        if dat.sn[k] != dat.sn[l]:
+            eval = 0
+
+    elif d == VRNA_DECOMP_ML_ML:
+        eval = 1
+        if di != 0 and (dat.hc_up[i] < di or dat.sn[i] != dat.sn[k]):
+            eval = 0
+        if dj != 0 and (dat.hc_up[l + 1] < dj or dat.sn[l] != dat.sn[j]):
+            eval = 0
+
+    elif d == VRNA_DECOMP_ML_STEM:
+        if dat.mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC:
+            eval = 1
+            if di != 0 and dat.hc_up[i] < di:
+                eval = 0
+            if dj != 0 and dat.hc_up[l + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_PAIR_ML:
+        if dat.mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP:
+            eval = 1
+            di -= 1
+            dj -= 1
+            if di != 0 and dat.hc_up[i + 1] < di:
+                eval = 0
+            if dj != 0 and dat.hc_up[l + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_ML_COAXIAL:
+        if dat.mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC:
+            eval = 1
+
+    elif d == VRNA_DECOMP_ML_COAXIAL_ENC:
+        if (dat.mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC and
+                dat.mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC):
+            eval = 1
+
+    else:
+        print(f"Warning: Unrecognized decomposition {d}")
+
+    return eval
+
+
+
+
+def hc_mb_cb_def_user_window(i, j, k, l, d, data:hc_mb_def_dat):
+    dat = data  # Assume data is an instance of HC_MB_Def_Dat
+    
+    # Evaluate using hc_mb_cb_def_window
+    eval = hc_mb_cb_def_window(i, j, k, l, d, data)
+
+    # Apply additional user-defined function logic
+    if dat.hc_f(i, j, k, l, d, dat.hc_dat):
+        return eval
+    else:
+        return 0
+
+
+def hc_mb_cb_def(i, j, k, l, d, data:hc_mb_def_dat):
+    eval = 0
+    di = k - i
+    dj = j - l
+    n = data.n
+
+    # Switch case translation
+    if d == VRNA_DECOMP_ML_ML_ML:
+        u = l - k - 1
+        eval = 1
+        if u != 0 and data.hc_up[k + 1] < u:
+            eval = 0
+
+    elif d == VRNA_DECOMP_ML_ML:
+        eval = 1
+        if di != 0 and data.hc_up[i] < di:
+            eval = 0
+        if dj != 0 and data.hc_up[l + 1] < dj:
+            eval = 0
+
+    elif d == VRNA_DECOMP_ML_STEM:
+        if data.mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC:
+            eval = 1
+            if di != 0 and data.hc_up[i] < di:
+                eval = 0
+            if dj != 0 and data.hc_up[l + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_PAIR_ML:
+        if data.mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP:
+            eval = 1
+            di -= 1
+            dj -= 1
+            if di != 0 and data.hc_up[i + 1] < di:
+                eval = 0
+            if dj != 0 and data.hc_up[l + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_PAIR_ML_EXT:
+        if data.mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP:
+            eval = 1
+            di += 1
+            dj += 1
+            if di != 0 and data.hc_up[k + 1] < di:
+                eval = 0
+            if dj != 0 and data.hc_up[j + 1] < dj:
+                eval = 0
+
+    elif d == VRNA_DECOMP_ML_ML_STEM:
+        u = l - k - 1
+        if data.mx[n * j + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC:
+            eval = 1
+        if u != 0 and data.hc_up[k + 1] < u:
+            eval = 0
+
+    elif d == VRNA_DECOMP_ML_COAXIAL:
+        if data.mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC:
+            eval = 1
+
+    elif d == VRNA_DECOMP_ML_COAXIAL_ENC:
+        if (data.mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC and
+                data.mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC):
+            eval = 1
+
+    else:
+        print("hc_mb_cb_def@multibranch_hc.inc: Unrecognized decomposition %d" % d)
+
+    return eval
+
+
+def hc_mb_cb_def_sn(i, j, k, l, d, data:hc_mb_def_dat):
+    eval = hc_mb_cb_def(i, j, k, l, d, data) if hc_sn(i, j, k, l, d, data) else 0
+    return eval
+
+
+def hc_sn(i, j, k, l, d, data:hc_mb_def_dat):
+    sn = data.sn
+    eval = 0
+
+    # Switch case translation
+    if d == VRNA_DECOMP_ML_ML_ML or d == VRNA_DECOMP_ML_ML_STEM:
+        if sn[k] == sn[l]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_ML_STEM or d == VRNA_DECOMP_ML_ML:
+        if (sn[i] == sn[k] and
+            sn[l] == sn[j] and
+            sn[i - 1] == sn[i] and
+            sn[j + 1] == sn[j]):
+            eval = 1
+
+    elif d == VRNA_DECOMP_PAIR_ML_EXT or d == VRNA_DECOMP_PAIR_ML:
+        if sn[i] == sn[k] and sn[l] == sn[j]:
+            eval = 1
+
+    elif d == VRNA_DECOMP_ML_COAXIAL:
+        if (i == k - 1 and sn[i] == sn[k]) or (l + 1 == j and sn[l] == sn[j]):
+            eval = 1
+
+    elif d == VRNA_DECOMP_ML_COAXIAL_ENC:
+        if sn[j] == sn[k]:
+            eval = 1
+
+    else:
+        print("hc_sn@multibranch_hc.inc: Unrecognized decomposition %d" % d)
+
+    return eval
+
+
+
+
+def hc_mb_cb_def_user(i, j, k, l, d, data:hc_mb_def_dat):
+    dat = data  # Assume data is an instance of HC_MB_Def_Dat
+    
+    # Evaluate using hc_mb_cb_def
+    eval = hc_mb_cb_def(i, j, k, l, d, data)
+
+    # Apply additional user-defined function logic
+    if dat.hc_f(i, j, k, l, d, dat.hc_dat):
+        return eval
+    else:
+        return 0
+
+def hc_mb_cb_def_sn_user(i, j, k, l, d, data:hc_mb_def_dat):
+    dat = data  # Assume data is an instance of HC_MB_Def_Dat
+    
+    # Evaluate using hc_mb_cb_def
+    eval = hc_mb_cb_def(i, j, k, l, d, data)
+
+    # Apply strand number function logic
+    if hc_sn(i, j, k, l, d, data):
+        return eval
+    else:
+        return 0
+
+
+def prepare_hc_mb_def(fc:vrna_fold_compound_t, dat:hc_mb_def_dat):
+    dat.mx         = fc.hc.mx
+    dat.n          = fc.hc.n
+    dat.mx_window  = fc.hc.matrix_local
+    dat.hc_up      = fc.hc.up_ml
+    dat.sn         = fc.strand_number
+    
+    if fc.hc.f:
+        dat.hc_f = fc.hc.f
+        dat.hc_dat = fc.hc.data
+        if fc.hc.type == VRNA_HC_WINDOW:
+            return hc_mb_cb_def_user_window
+        elif fc.strands == 1:
+            return hc_mb_cb_def_user
+        else:
+            return hc_mb_cb_def_sn_user
+    
+    if fc.hc.type == VRNA_HC_WINDOW:
+        return hc_mb_cb_def_window
+    elif fc.strands == 1:
+        return hc_mb_cb_def
+    else:
+        return hc_mb_cb_def_sn
+
+
+class ScExtExpDat:
+    def __init__(self):
+        self.up = None  # FLT_OR_DBL **up
+
+        self.red_ext = sc_ext_exp_cb  # sc_ext_exp_cb red_ext
+        self.red_stem = sc_ext_exp_cb  # sc_ext_exp_cb red_stem
+        self.red_up = sc_ext_exp_red_up  # sc_ext_exp_red_up red_up
+        self.split = sc_ext_exp_split  # sc_ext_exp_split split
+
+        self.user_cb = vrna_sc_exp_f  # vrna_sc_exp_f user_cb
+        self.user_data = None  # void *user_data
+
+        self.n_seq = 0  # int n_seq
+        self.a2s = None  # unsigned int **a2s
+        self.up_comparative = None  # FLT_OR_DBL ***up_comparative
+
+        self.user_cb_comparative = vrna_sc_exp_f  # vrna_sc_exp_f *user_cb_comparative
+        self.user_data_comparative = None  # void **user_data_comparative
+
+
+
+def init_sc_ext_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_ext_exp_dat):
+    sc_wrapper.up = None
+    sc_wrapper.user_cb = None
+    sc_wrapper.user_data = None
+    sc_wrapper.n_seq = 1
+    sc_wrapper.a2s = None
+    sc_wrapper.up_comparative = None
+    sc_wrapper.user_cb_comparative = None
+    sc_wrapper.user_data_comparative = None
+    sc_wrapper.red_ext = None
+    sc_wrapper.red_stem = None
+    sc_wrapper.red_up = None
+    sc_wrapper.split = None
+
+    # no soft constraints by default
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        sc = fc.sc
+        if sc:
+            sc_wrapper.up = sc.exp_energy_up
+            sc_wrapper.user_cb = sc.exp_f
+            sc_wrapper.user_data = sc.data
+            if sc.exp_energy_up:
+                if sc.exp_f:
+                    sc_wrapper.red_ext = sc_ext_exp_cb_red_user_def_to_ext
+                    sc_wrapper.red_stem = sc_ext_exp_cb_red_user_def_to_stem
+                    sc_wrapper.red_up = sc_ext_exp_cb_up_user_def
+                    sc_wrapper.split = sc_ext_exp_cb_split_user
+                else:
+                    sc_wrapper.red_ext = sc_ext_exp_cb_red
+                    sc_wrapper.red_stem = sc_ext_exp_cb_red
+                    sc_wrapper.red_up = sc_ext_exp_cb_up
+            elif sc.exp_f:
+                sc_wrapper.red_ext = sc_ext_exp_cb_red_user_to_ext
+                sc_wrapper.red_stem = sc_ext_exp_cb_red_user_to_stem
+                sc_wrapper.red_up = sc_ext_exp_cb_up_user
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        scs = fc.scs
+        sc_wrapper.n_seq = fc.n_seq
+        sc_wrapper.a2s = fc.a2s
+        if scs:
+            sc_wrapper.up_comparative = []
+            sc_wrapper.user_cb_comparative = []
+            sc_wrapper.user_data_comparative = []
+            provides_sc_up = False
+            provides_sc_user_cb = False
+            for s in range(fc.n_seq):
+                if scs[s]:
+                    sc_wrapper.up_comparative.append(scs[s].exp_energy_up)
+                    sc_wrapper.user_cb_comparative.append(scs[s].exp_f)
+                    sc_wrapper.user_data_comparative.append(scs[s].data)
+                    if scs[s].exp_energy_up:
+                        provides_sc_up = True
+                    if scs[s].exp_f:
+                        provides_sc_user_cb = True
+                    if provides_sc_up:
+                        if provides_sc_user_cb:
+                            sc_wrapper.red_ext = sc_ext_exp_cb_red_user_def_to_ext_comparative
+                            sc_wrapper.red_stem = sc_ext_exp_cb_red_user_def_to_stem_comparative
+                            sc_wrapper.red_up = sc_ext_exp_cb_up_user_def_comparative
+                            sc_wrapper.split = sc_ext_exp_cb_split_user_comparative
+                        else:
+                            sc_wrapper.red_ext = sc_ext_exp_cb_red_comparative
+                            sc_wrapper.red_stem = sc_ext_exp_cb_red_comparative
+                            sc_wrapper.red_up = sc_ext_exp_cb_up_comparative
+                    elif provides_sc_user_cb:
+                        sc_wrapper.red_ext = sc_ext_exp_cb_red_user_to_ext_comparative
+                        sc_wrapper.red_stem = sc_ext_exp_cb_red_user_to_stem_comparative
+                        sc_wrapper.red_up = sc_ext_exp_cb_up_user_comparative
+    return
+
+
+
 
 
 def get_constraints_helper(fc):
