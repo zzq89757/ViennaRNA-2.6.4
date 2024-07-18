@@ -1563,9 +1563,20 @@ def sc_int_exp_cb_up_bp_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -
 def sc_int_exp_cb_ext_up_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
     return sc_int_exp_cb_ext_up(i, j, k, l, data) * sc_int_exp_cb_ext_stack(i, j, k, l, data)
 
+def sc_int_exp_cb_up_bp_local(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp_local(i, j, k, l, data)
 
+def sc_int_exp_cb_up_bp(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp(i, j, k, l, data)
 
+def sc_int_exp_cb_bp_local_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
 
+def sc_int_exp_cb_bp_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
+
+def sc_int_exp_cb_up_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
 
 # init_sc_int_exp start ###########
 def init_sc_int_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_int_exp_dat):
