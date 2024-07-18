@@ -5844,6 +5844,75 @@ def sanitize_bp_span(fc:vrna_fold_compound_t, options:int):
 
     if md.max_bp_span <= 0 or md.max_bp_span > md.window_size:
         md.max_bp_span = md.window_size
+        
+        
+def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
+    sequence = None
+    sequences = None
+    md_p = fc.params.model_details
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        sequence = fc.sequence
+        fc.sequence = None
+        fc.length = 0
+
+        # 将输入序列分割为默认分隔符 '&'
+        sequences = vrna_strsplit(sequence, None)
+
+        # 将单个序列添加到折叠复合物
+        for seq in sequences:
+            vrna_sequence_add(fc, seq, VRNA_SEQUENCE_RNA)
+
+        if fc.strands > 1:
+            fc.cutpoint = fc.nucleotides[0].length + 1
+
+            if md_p.min_loop_size == TURN:
+                md_p.min_loop_size = 0
+
+        if not options & VRNA_OPTION_EVAL_ONLY:
+            if fc.strands > 1:
+                min_loop_size = md_p.min_loop_size
+                md_p.min_loop_size = 0
+                fc.ptype = vrna_ptypes(fc.sequence_encoding2, md_p) if aux & WITH_PTYPE else None
+                md_p.min_loop_size = min_loop_size
+            else:
+                fc.ptype = vrna_ptypes(fc.sequence_encoding2, md_p) if aux & WITH_PTYPE else None
+
+            fc.ptype_pf_compat = get_ptypes(fc.sequence_encoding2, md_p, 1) if aux & WITH_PTYPE_COMPAT else None
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        sequences = fc.sequences
+        fc.length = length = fc.length
+
+        fc.cons_seq = vrna_aln_consensus_sequence(sequences, md_p)
+        fc.S_cons = vrna_seq_encode_simple(fc.cons_seq, md_p)
+
+        fc.pscore = vrna_alloc(int, (length * (length + 1)) // 2 + 2)
+        fc.pscore_pf_compat = vrna_alloc(int, (length * (length + 1)) // 2 + 2) if aux & WITH_PTYPE_COMPAT else None
+
+        oldAliEn = fc.oldAliEn = md_p.oldAliEn
+
+        fc.S = vrna_alloc(short, fc.n_seq + 1)
+        fc.S5 = vrna_alloc(short, fc.n_seq + 1)
+        fc.S3 = vrna_alloc(short, fc.n_seq + 1)
+        fc.a2s = vrna_alloc(int, fc.n_seq + 1)
+        fc.Ss = vrna_alloc(char, fc.n_seq + 1)
+
+        for s in range(fc.n_seq):
+            vrna_aln_encode(fc.sequences[s], fc.S[s], fc.S5[s], fc.S3[s], fc.Ss[s], fc.a2s[s], md_p)
+
+        fc.S5[fc.n_seq] = None
+        fc.S3[fc.n_seq] = None
+        fc.a2s[fc.n_seq] = None
+        fc.Ss[fc.n_seq] = None
+        fc.S[fc.n_seq] = None
+
+    vrna_sequence_prepare(fc)
+
+    if not options & VRNA_OPTION_WINDOW and fc.length <= vrna_sequence_length_max(options):
+        fc.iindx = vrna_idx_row_wise(fc.length)
+        fc.jindx = vrna_idx_col_wise(fc.length)
+
 
     
 
