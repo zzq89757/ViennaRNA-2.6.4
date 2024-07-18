@@ -25,6 +25,13 @@ VRNA_CONSTRAINT_CONTEXT_INT_LOOP = 0x04
 VRNA_DECOMP_PAIR_ML_EXT = 23
 VRNA_DECOMP_ML_ML_ML = 5
 VRNA_DECOMP_ML_ML_STEM = 9
+VRNA_GQUAD_MAX_STACK_SIZE = 7
+VRNA_GQUAD_MIN_STACK_SIZE = 2
+VRNA_GQUAD_MAX_LINKER_LENGTH = 15
+VRNA_GQUAD_MIN_LINKER_LENGTH = 1
+NBPAIRS = 7
+VRNA_GQUAD_MIN_BOX_SIZE = ((4 * VRNA_GQUAD_MIN_STACK_SIZE) + (3 * VRNA_GQUAD_MIN_LINKER_LENGTH))
+VRNA_GQUAD_MAX_BOX_SIZE = ((4 * VRNA_GQUAD_MAX_STACK_SIZE) + (3 * VRNA_GQUAD_MAX_LINKER_LENGTH))
 
 
 VRNA_DECOMP_EXT_EXT_STEM = 18
@@ -132,6 +139,13 @@ class vrna_sc_type_e(Enum):
     VRNA_SC_WINDOW  = 1
 
 
+class vrna_sc_f:
+    ...
+    
+
+class vrna_sc_bt_f:
+    ...
+
 class vrna_sc_t:
     def __init__(self) -> None:
         self.type = vrna_sc_type_e
@@ -142,7 +156,7 @@ class vrna_sc_t:
         self.exp_energy_up = None  # FLT_OR_DBL **exp_energy_up
 
         self.up_storage = None  # int *up_storage
-        self.bp_storage = vrna_sc_bp_storage_t  # vrna_sc_bp_storage_t **bp_storage
+        # self.bp_storage = vrna_sc_bp_storage_t  # vrna_sc_bp_storage_t **bp_storage
 
         self.energy_bp = None  # int *energy_bp
         self.exp_energy_bp = None  # FLT_OR_DBL *exp_energy_bp
@@ -158,8 +172,8 @@ class vrna_sc_t:
         self.exp_f = vrna_sc_exp_f  # vrna_sc_exp_f exp_f
 
         self.data = None  # void *data
-        self.prepare_data = vrna_auxdata_prepare_f  # vrna_auxdata_prepare_f prepare_data
-        self.free_data = vrna_auxdata_free_f  # vrna_auxdata_free_f free_data
+        # self.prepare_data = vrna_auxdata_prepare_f  # vrna_auxdata_prepare_f prepare_data
+        # self.free_data = vrna_auxdata_free_f  # vrna_auxdata_free_f free_data
 
 
 class vrna_mx_mfe_t:
@@ -253,25 +267,25 @@ class vrna_fold_compound_t:
         self.strand_start = []  # unsigned int array
         self.strand_end = []  # unsigned int array
         self.strands = 0  # unsigned int
-        self.nucleotides = vrna_seq_t  # vrna_seq_t array
-        self.alignment = vrna_msa_t  # vrna_msa_t array
+        # self.nucleotides = vrna_seq_t  # vrna_seq_t array
+        # self.alignment = vrna_msa_t  # vrna_msa_t array
         self.hc = vrna_hc_t  # vrna_hc_t
         self.matrices = vrna_mx_mfe_t  # vrna_mx_mfe_t
         self.exp_matrices = vrna_mx_pf_t  # vrna_mx_pf_t
-        self.params = vrna_param_t  # vrna_param_t
+        # self.params = vrna_param_t  # vrna_param_t
         self.exp_params = vrna_exp_param_t  # vrna_exp_param_t
         self.iindx = 0  # int array
         self.jindx = 0  # int array
 
         # User-defined data fields
-        self.stat_cb = vrna_recursion_status_f  # vrna_recursion_status_f
+        # self.stat_cb = vrna_recursion_status_f  # vrna_recursion_status_f
         self.auxdata = 0  # void pointer
-        self.free_auxdata = vrna_auxdata_free_f  # vrna_auxdata_free_f
+        # self.free_auxdata = vrna_auxdata_free_f  # vrna_auxdata_free_f
 
         # Secondary Structure Decomposition (grammar) related data fields
-        self.domains_struc = vrna_sd_t  # vrna_sd_t
+        # self.domains_struc = vrna_sd_t  # vrna_sd_t
         self.domains_up = vrna_ud_t  # vrna_ud_t
-        self.aux_grammar = vrna_gr_aux_t  # vrna_gr_aux_t
+        # self.aux_grammar = vrna_gr_aux_t  # vrna_gr_aux_t
 
         # Data fields available for single/hybrid structure prediction
         self.sequence = ''  # char array
@@ -312,7 +326,7 @@ class vrna_fold_compound_t:
         # Additional data fields for local folding
         self.window_size = 0  # int
         self.ptype_local = 'ptype_local'  # char array of arrays
-        self.zscore_data = vrna_zsc_dat_t  # vrna_zsc_dat_t
+        # self.zscore_data = vrna_zsc_dat_t  # vrna_zsc_dat_t
 
 # data structure/class end ######################################
 
@@ -2487,6 +2501,162 @@ def vrna_get_ptype_md(i: int, j: int, md: vrna_md_t) -> int:
 def vrna_get_ptype(ij: int, ptype: str) -> int:
     tt = int(ptype[ij])
     return 7 if tt == 0 else tt
+
+
+################################################ build in remove ########################
+GASCONST = 1.98717
+Eular_const = 0.58
+PI = 3.141592653589793
+
+# math utils
+EUL = 0.57721566490153286060
+MAXLOG = 709.782712893384
+MACHEP = 2.2204460492503131e-16
+MAXNUM = 1.7976931348623157e+308
+MAXFAC = 31
+
+def expn(n, x):
+    BIG = 1.44115188075855872e+17  # Approximation, adjust as needed
+    
+    if n < 0 or x < 0:
+        raise ValueError("Invalid input: n and x must be non-negative")
+    
+    if x > MAXLOG:
+        return 0.0
+    
+    if x == 0.0:
+        if n < 2:
+            raise ValueError("Singularity: E_n(x) is undefined for n < 2")
+        else:
+            return 1.0 / (n - 1.0)
+    
+    if n == 0:
+        return math.exp(-x) / x
+    
+    # Expansion for large n
+    if n > 5000:
+        xk = x + n
+        yk = 1.0 / (xk * xk)
+        t = n
+        ans = yk * t * (6.0 * x * x - 8.0 * t * x + t * t)
+        ans = yk * (ans + t * (t - 2.0 * x))
+        ans = yk * (ans + t)
+        ans = (ans + 1.0) * math.exp(-x) / xk
+        return ans
+    
+    # Power series expansion
+    if x > 1.0:
+        psi = -EUL - math.log(x)
+        for i in range(1, n):
+            psi += 1.0 / i
+        
+        z = -x
+        xk = 0.0
+        yk = 1.0
+        pk = 1.0 - n
+        ans = 1.0 / pk if n != 1 else 0.0
+        
+        while True:
+            xk += 1.0
+            yk *= z / xk
+            pk += 1.0
+            if pk != 0.0:
+                ans += yk / pk
+            if ans != 0.0:
+                t = abs(yk / ans)
+            else:
+                t = 1.0
+            
+            if t <= MACHEP:
+                break
+        
+        k = int(xk)
+        t = n
+        r = n - 1
+        ans = (math.pow(z, r) * psi / math.gamma(t)) - ans
+        return ans
+    
+    # Continued fraction
+    k = 1
+    pkm2 = 1.0
+    qkm2 = x
+    pkm1 = 1.0
+    qkm1 = x + n
+    ans = pkm1 / qkm1
+    
+    while True:
+        k += 1
+        if k & 1:
+            yk = 1.0
+            xk = n + (k - 1) / 2
+        else:
+            yk = x
+            xk = k / 2
+        
+        pk = pkm1 * yk + pkm2 * xk
+        qk = qkm1 * yk + qkm2 * xk
+        
+        if qk != 0:
+            r = pk / qk
+            t = abs((ans - r) / r)
+            ans = r
+        else:
+            t = 1.0
+        
+        if abs(pk) > BIG:
+            pkm2 /= BIG
+            pkm1 /= BIG
+            qkm2 /= BIG
+            qkm1 /= BIG
+        
+        if t <= MACHEP:
+            break
+    
+    ans *= math.exp(-x)
+    return ans
+
+def tau_ss(T, backbonelen):
+    bjerrum_length_inv = 1 / bjerrum_length(T)
+    return min(1 / backbonelen, bjerrum_length_inv)
+
+def approx_hyper(y):
+    a = 1 / (pow(y, 6.)/pow(2 * PI, 6.) + 1)
+    b = pow(y, 4.)/(36 * pow(PI, 4.)) - pow(y, 3.) / (24 * PI * PI) + y * y / (2 * PI * PI) - y / 2
+    c = math.log(2 * PI / y) - 1.96351
+    return a * b + (1 - a) * c
+
+
+def ionic_strength(rho):
+    return rho
+
+
+def epsilonr(T):
+    return 5321 / T + 233.76 - 0.9297 * T + 1.417 * T * T / 1000 - 0.8292 * T * T * T / 1000000
+    
+    
+def bjerrum_length(T):
+    return 167100.052/(T * epsilonr(T))
+
+def kappa(rho, T):
+        return math.sqrt(bjerrum_length(T) * ionic_strength(rho)) / 8.1284
+
+def loop_salt_aux(kmlss, L, T, backbonelen):
+        a = (GASCONST / 1000.) * T * bjerrum_length(T) * L * backbonelen * tau_ss(T, backbonelen) * tau_ss(T, backbonelen)
+        b = math.log(kmlss) - math.log(PI / 2) + Eular_const + approx_hyper(kmlss) + 1 / kmlss * (1 - math.exp(-kmlss) + kmlss * expn(1, kmlss))
+        return a * b * 100
+
+def vrna_salt_loop(L, rho, T, backbonelen):
+        if L == 0:return 0
+        kmlss_ref = kappa(VRNA_MODEL_DEFAULT_SALT, T) * L * backbonelen
+        kmlss = kappa(rho, T) * L * backbonelen
+        correction = loop_salt_aux(kmlss, L, T, backbonelen) - loop_salt_aux(kmlss_ref, L, T, backbonelen)
+        return correction
+
+def vrna_salt_loop_int(L, rho, T, backbonelen):
+        correction = vrna_salt_loop(L, rho, T, backbonelen)
+        return int(correction + 0.5 - (correction < 0))
+
+################################################ build in remove ########################
 
 
 def exp_E_IntLoop(u1: int,
