@@ -1578,6 +1578,261 @@ def sc_int_exp_cb_bp_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> f
 def sc_int_exp_cb_up_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
     return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
 
+
+def sc_int_exp_cb_up_comparative(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.up_comparative[s]:
+            u1 = data.a2s[s][k - 1] - data.a2s[s][i]
+            u2 = data.a2s[s][j - 1] - data.a2s[s][l]
+
+            if u1 > 0:
+                sc *= data.up_comparative[s][data.a2s[s][i + 1]][u1]
+
+            if u2 > 0:
+                sc *= data.up_comparative[s][data.a2s[s][l + 1]][u2]
+
+    return sc
+
+def sc_int_exp_cb_bp_local_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+    
+    for s in range(data.n_seq):
+        if data.bp_local_comparative[s]:
+            sc *= data.bp_local_comparative[s][i][j - i]
+    
+    return sc
+
+def sc_int_exp_cb_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+    
+    for s in range(data.n_seq):
+        if data.stack_comparative[s]:
+            if (data.a2s[s][k - 1] == data.a2s[s][i]) and (data.a2s[s][j - 1] == data.a2s[s][l]):
+                sc *= (data.stack_comparative[s][data.a2s[s][i]] *
+                       data.stack_comparative[s][data.a2s[s][k]] *
+                       data.stack_comparative[s][data.a2s[s][l]] *
+                       data.stack_comparative[s][data.a2s[s][j]])
+    
+    return sc
+
+def sc_int_exp_cb_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+    
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, k, l, VRNA_DECOMP_PAIR_IL, data.user_data_comparative[s])
+    
+    return sc
+
+
+
+def sc_int_exp_cb_up_bp_local_stack_user_comparative(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up_comparative(i, j, k, l, data) * sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) * sc_int_exp_cb_stack_comparative(i, j, k, l, data) * sc_int_exp_cb_user_comparative(i, j, k, l, data)
+
+def sc_int_exp_cb_bp_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.bp_comparative[s]:
+            sc *= data.bp_comparative[s][data.idx[j] + i]
+
+    return sc
+
+
+
+def sc_int_exp_cb_up_bp_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_ext_up_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.up_comparative[s]:
+            u1 = data.a2s[s][i - 1]
+            u2 = data.a2s[s][k - 1] - data.a2s[s][j]
+            u3 = data.a2s[s][data.n] - data.a2s[s][l]
+
+            if u1 > 0:
+                sc *= data.up_comparative[s][1][u1]
+
+            if u2 > 0:
+                sc *= data.up_comparative[s][data.a2s[s][j + 1]][u2]
+
+            if u3 > 0:
+                sc *= data.up_comparative[s][data.a2s[s][l + 1]][u3]
+
+    return sc
+
+def sc_int_exp_cb_ext_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.stack_comparative[s]:
+            if (data.a2s[s][i] == 1 and
+                data.a2s[s][j] == data.a2s[s][k - 1] and
+                data.a2s[s][l] == data.a2s[s][data.n]):
+                sc *= (data.stack_comparative[s][data.a2s[s][i]] *
+                       data.stack_comparative[s][data.a2s[s][k]] *
+                       data.stack_comparative[s][data.a2s[s][l]] *
+                       data.stack_comparative[s][data.a2s[s][j]])
+
+    return sc
+
+
+def sc_int_exp_cb_ext_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, k, l, VRNA_DECOMP_PAIR_IL, data.user_data_comparative[s])
+
+    return sc
+
+
+
+def sc_int_exp_cb_ext_up_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_ext_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_ext_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_ext_user_comparative(i, j, k, l, data)
+    )
+
+
+
+
+def sc_int_exp_cb_up_bp_local_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_bp_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_ext_up_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_ext_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_ext_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_local_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_ext_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_ext_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_ext_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_local_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_stack_user_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_user_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_bp_local_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_bp_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_ext_up_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_ext_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_ext_stack_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_bp_local_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_up_bp_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_local_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_local_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data)
+    )
+
+def sc_int_exp_cb_bp_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_bp_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data)
+    )
+
+
+def sc_int_exp_cb_up_stack_comparative(i: int, j: int, k: int, l: int, data: sc_int_exp_dat) -> float:
+    return (
+        sc_int_exp_cb_up_comparative(i, j, k, l, data) *
+        sc_int_exp_cb_stack_comparative(i, j, k, l, data)
+    )
+
+
+
+
+
 # init_sc_int_exp start ###########
 def init_sc_int_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_int_exp_dat):
     sliding_window = 0
