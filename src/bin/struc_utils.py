@@ -58,7 +58,7 @@ from enum import Enum
 from typing import List, Optional, Callable
 
 class vrna_fc_s:
-    type:vrna_fc_type_e
+    type:vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE
     length: int
     strand_number: Optional[List[int]] = None
     strand_order: Optional[List[int]] = None
@@ -127,10 +127,10 @@ class vrna_fc_s:
 
 class vrna_hc_t:
     def __init__(self) -> None:
-        self.type = vrna_fc_type_e
+        self.type = vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value
         self.mx = ''
         self.up_ext = self.up_hp = self.up_int = self.up_ml = 0
-        self.f = vrna_hc_eval_f
+        self.f = vrna_hc_eval_f()
         self.data = None
      
      
@@ -139,16 +139,12 @@ class vrna_sc_type_e(Enum):
     VRNA_SC_WINDOW  = 1
 
 
-class vrna_sc_f:
-    ...
     
 
-class vrna_sc_bt_f:
-    ...
 
 class vrna_sc_t:
     def __init__(self) -> None:
-        self.type = vrna_sc_type_e
+        self.type = vrna_sc_type_e.VRNA_SC_DEFAULT.value
         self.n = 0
         self.state = 0  # unsigned char state
 
@@ -174,17 +170,227 @@ class vrna_sc_t:
         self.data = None  # void *data
         # self.prepare_data = vrna_auxdata_prepare_f  # vrna_auxdata_prepare_f prepare_data
         # self.free_data = vrna_auxdata_free_f  # vrna_auxdata_free_f free_data
+class vrna_basepair_t:
+    def __init__(self) -> None:
+        self.i = self.j = 0
+
+vrna_sc_f = Callable[[int, int, int, int, str, None], int]
+vrna_sc_bt_f = Callable[[int, int, int, int, str, None], vrna_basepair_t]
 
 
 class vrna_mx_mfe_t:
-    def __init__(self) -> None:
-        ...
+    def __init__(self):
+        self.type: vrna_mx_type_e.VRNA_MX_DEFAULT.value
+        self.length: int
+        self.strands: int
 
+        # Default DP matrices
+        self.c: Optional[List[int]] = None
+        self.f5: Optional[List[int]] = None
+        self.f3: Optional[List[int]] = None
+        self.fms5: Optional[List[List[int]]] = None
+        self.fms3: Optional[List[List[int]]] = None
+        self.fML: Optional[List[int]] = None
+        self.fM1: Optional[List[int]] = None
+        self.fM2: Optional[List[int]] = None
+        self.ggg: Optional[List[int]] = None
+        self.Fc: Optional[int] = None
+        self.FcH: Optional[int] = None
+        self.FcI: Optional[int] = None
+        self.FcM: Optional[int] = None
 
+        # Local Folding DP matrices using window approach
+        self.c_local: Optional[List[List[int]]] = None
+        self.f3_local: Optional[List[int]] = None
+        self.fML_local: Optional[List[List[int]]] = None
+        self.ggg_local: Optional[List[List[int]]] = None
+
+        # Distance Class DP matrices
+        self.E_F5: Optional[List[List[List[int]]]] = None
+        self.l_min_F5: Optional[List[List[int]]] = None
+        self.l_max_F5: Optional[List[List[int]]] = None
+        self.k_min_F5: Optional[List[int]] = None
+        self.k_max_F5: Optional[List[int]] = None
+
+        self.E_F3: Optional[List[List[List[int]]]] = None
+        self.l_min_F3: Optional[List[List[int]]] = None
+        self.l_max_F3: Optional[List[List[int]]] = None
+        self.k_min_F3: Optional[List[int]] = None
+        self.k_max_F3: Optional[List[int]] = None
+
+        self.E_C: Optional[List[List[List[int]]]] = None
+        self.l_min_C: Optional[List[List[int]]] = None
+        self.l_max_C: Optional[List[List[int]]] = None
+        self.k_min_C: Optional[List[int]] = None
+        self.k_max_C: Optional[List[int]] = None
+
+        self.E_M: Optional[List[List[List[int]]]] = None
+        self.l_min_M: Optional[List[List[int]]] = None
+        self.l_max_M: Optional[List[List[int]]] = None
+        self.k_min_M: Optional[List[int]] = None
+        self.k_max_M: Optional[List[int]] = None
+
+        self.E_M1: Optional[List[List[List[int]]]] = None
+        self.l_min_M1: Optional[List[List[int]]] = None
+        self.l_max_M1: Optional[List[List[int]]] = None
+        self.k_min_M1: Optional[List[int]] = None
+        self.k_max_M1: Optional[List[int]] = None
+
+        self.E_M2: Optional[List[List[List[int]]]] = None
+        self.l_min_M2: Optional[List[List[int]]] = None
+        self.l_max_M2: Optional[List[List[int]]] = None
+        self.k_min_M2: Optional[List[int]] = None
+        self.k_max_M2: Optional[List[int]] = None
+
+        self.E_Fc: Optional[List[List[int]]] = None
+        self.l_min_Fc: Optional[List[int]] = None
+        self.l_max_Fc: Optional[List[int]] = None
+        self.k_min_Fc: Optional[int] = None
+        self.k_max_Fc: Optional[int] = None
+
+        self.E_FcH: Optional[List[List[int]]] = None
+        self.l_min_FcH: Optional[List[int]] = None
+        self.l_max_FcH: Optional[List[int]] = None
+        self.k_min_FcH: Optional[int] = None
+        self.k_max_FcH: Optional[int] = None
+
+        self.E_FcI: Optional[List[List[int]]] = None
+        self.l_min_FcI: Optional[List[int]] = None
+        self.l_max_FcI: Optional[List[int]] = None
+        self.k_min_FcI: Optional[int] = None
+        self.k_max_FcI: Optional[int] = None
+
+        self.E_FcM: Optional[List[List[int]]] = None
+        self.l_min_FcM: Optional[List[int]] = None
+        self.l_max_FcM: Optional[List[int]] = None
+        self.k_min_FcM: Optional[int] = None
+        self.k_max_FcM: Optional[int] = None
+
+        # Auxiliary arrays for remaining set of coarse graining (k,l) > (k_max, l_max)
+        self.E_F5_rem: Optional[List[int]] = None
+        self.E_F3_rem: Optional[List[int]] = None
+        self.E_C_rem: Optional[List[int]] = None
+        self.E_M_rem: Optional[List[int]] = None
+        self.E_M1_rem: Optional[List[int]] = None
+        self.E_M2_rem: Optional[List[int]] = None
+
+        self.E_Fc_rem: Optional[int] = None
+        self.E_FcH_rem: Optional[int] = None
+        self.E_FcI_rem: Optional[int] = None
+        self.E_FcM_rem: Optional[int] = None
+
+        # Additional fields
+        # Uncomment the following if COUNT_STATES is defined
+        # self.N_F5: Optional[List[List[List[int]]]] = None
+        # self.N_C: Optional[List[List[List[int]]]] = None
+        # self.N_M: Optional[List[List[List[int]]]] = None
+        # self.N_M1: Optional[List[List[List[int]]]] = None
+
+class vrna_mx_type_e(Enum):
+    VRNA_MX_DEFAULT = 0,
+    VRNA_MX_WINDOW = 1,
+    VRNA_MX_2DFOLD = 2
 
 class vrna_mx_pf_t:
-    def __init__(self) -> None:
-        ...
+    def __init__(self):
+        self.type = vrna_mx_type_e.VRNA_MX_DEFAULT.value
+        self.length = 0
+        self.scale = 0.
+        self.expMLbase = 0.
+        
+        # Default PF matrices
+        self.q = None
+        self.qb = None
+        self.qm = None
+        self.qm1 = None
+        self.probs = None
+        self.q1k = None
+        self.qln = None
+        self.G = None
+        
+        self.qo = None
+        self.qm2 = None
+        self.qho = None
+        self.qio = None
+        self.qmo = None
+        
+        # Local Folding DP matrices using window approach
+        self.q_local = None
+        self.qb_local = None
+        self.qm_local = None
+        self.pR = None
+        self.qm2_local = None
+        self.QI5 = None
+        self.q2l = None
+        self.qmb = None
+        self.G_local = None
+        
+        # Distance Class DP matrices
+        self.Q = None
+        self.l_min_Q = None
+        self.l_max_Q = None
+        self.k_min_Q = None
+        self.k_max_Q = None
+        
+        self.Q_B = None
+        self.l_min_Q_B = None
+        self.l_max_Q_B = None
+        self.k_min_Q_B = None
+        self.k_max_Q_B = None
+        
+        self.Q_M = None
+        self.l_min_Q_M = None
+        self.l_max_Q_M = None
+        self.k_min_Q_M = None
+        self.k_max_Q_M = None
+        
+        self.Q_M1 = None
+        self.l_min_Q_M1 = None
+        self.l_max_Q_M1 = None
+        self.k_min_Q_M1 = None
+        self.k_max_Q_M1 = None
+        
+        self.Q_M2 = None
+        self.l_min_Q_M2 = None
+        self.l_max_Q_M2 = None
+        self.k_min_Q_M2 = None
+        self.k_max_Q_M2 = None
+        
+        self.Q_c = None
+        self.l_min_Q_c = None
+        self.l_max_Q_c = None
+        self.k_min_Q_c = None
+        self.k_max_Q_c = None
+        
+        self.Q_cH = None
+        self.l_min_Q_cH = None
+        self.l_max_Q_cH = None
+        self.k_min_Q_cH = None
+        self.k_max_Q_cH = None
+        
+        self.Q_cI = None
+        self.l_min_Q_cI = None
+        self.l_max_Q_cI = None
+        self.k_min_Q_cI = None
+        self.k_max_Q_cI = None
+        
+        self.Q_cM = None
+        self.l_min_Q_cM = None
+        self.l_max_Q_cM = None
+        self.k_min_Q_cM = None
+        self.k_max_Q_cM = None
+        
+        self.Q_rem = None
+        self.Q_B_rem = None
+        self.Q_M_rem = None
+        self.Q_M1_rem = None
+        self.Q_M2_rem = None
+        
+        self.Q_c_rem = None
+        self.Q_cH_rem = None
+        self.Q_cI_rem = None
+        self.Q_cM_rem = None
+
         
         
 class vrna_exp_param_t:
@@ -243,15 +449,21 @@ class vrna_exp_param_t:
         self.SaltMLclosing: int = 0
         self.SaltDPXInit: int = 0
 
-class vrna_ud_exp_f:
-    def __init__(self) -> None:
-        pass
+
+
+
+    
+
  
 class vrna_ud_t:
     def __init__(self) -> None:
         self.exp_energy_cb = vrna_ud_exp_f
+        self.uniq_motif_count = self.uniq_motif_size = self.motif_count = self.motif = self.motif_name = self.motif_size = self.motif_en = self.motif_type = 0
+        self.probs_add = vrna_ud_add_probs_f
      
-     
+  
+vrna_ud_add_probs_f = Callable[[int, int, int, float, None], None]
+vrna_ud_exp_f = Callable[[int, int, int, None], float]
 
    
   
@@ -259,7 +471,7 @@ class vrna_ud_t:
 class vrna_fold_compound_t:
     def __init__(self) -> None:
         # Common data fields
-        self.type = vrna_fc_type_e  # vrna_fc_type_e
+        self.type = vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value # vrna_fc_type_e
         self.length = 0  # unsigned int
         self.strand_number = []  # unsigned int array
         self.strand_order = []  # unsigned int array
@@ -269,11 +481,11 @@ class vrna_fold_compound_t:
         self.strands = 0  # unsigned int
         # self.nucleotides = vrna_seq_t  # vrna_seq_t array
         # self.alignment = vrna_msa_t  # vrna_msa_t array
-        self.hc = vrna_hc_t  # vrna_hc_t
-        self.matrices = vrna_mx_mfe_t  # vrna_mx_mfe_t
-        self.exp_matrices = vrna_mx_pf_t  # vrna_mx_pf_t
+        self.hc = vrna_hc_t()  # vrna_hc_t
+        self.matrices = vrna_mx_mfe_t()  # vrna_mx_mfe_t
+        self.exp_matrices = vrna_mx_pf_t()  # vrna_mx_pf_t
         # self.params = vrna_param_t  # vrna_param_t
-        self.exp_params = vrna_exp_param_t  # vrna_exp_param_t
+        self.exp_params = vrna_exp_param_t()  # vrna_exp_param_t
         self.iindx = 0  # int array
         self.jindx = 0  # int array
 
@@ -284,7 +496,7 @@ class vrna_fold_compound_t:
 
         # Secondary Structure Decomposition (grammar) related data fields
         # self.domains_struc = vrna_sd_t  # vrna_sd_t
-        self.domains_up = vrna_ud_t  # vrna_ud_t
+        self.domains_up = vrna_ud_t()  # vrna_ud_t
         # self.aux_grammar = vrna_gr_aux_t  # vrna_gr_aux_t
 
         # Data fields available for single/hybrid structure prediction
@@ -295,7 +507,7 @@ class vrna_fold_compound_t:
         self.sequence_encoding2 = 0  # short array
         self.ptype = 'ptype'  # char array
         self.ptype_pf_compat = 'ptype_pf_compat'  # char array
-        self.sc = vrna_sc_t  # vrna_sc_t
+        self.sc = vrna_sc_t()  # vrna_sc_t
 
         # Data fields for consensus structure prediction
         self.n_seq = 0  # unsigned int
@@ -309,7 +521,7 @@ class vrna_fold_compound_t:
         self.pscore = list[int]  # int array
         self.pscore_local = 0  # int array of arrays
         self.pscore_pf_compat = 0  # short array
-        self.scs = vrna_sc_t  # vrna_sc_t array of arrays
+        self.scs = vrna_sc_t()  # vrna_sc_t array of arrays
         self.oldAliEn = 0  # int
 
         # Additional data fields for Distance Class Partitioning
@@ -443,7 +655,7 @@ class constraints_helper:
 class hc_ext_def_dat:
     def __init__(self) -> None:
         self.n = self.mx = self.mx_window =self.sn = self.hc_up = self.hc_dat = None
-        self.hc_f = vrna_hc_eval_f
+        self.hc_f = vrna_hc_eval_f()
 
 
 def hc_ext_cb_def(i, j, k, l, d, data:hc_ext_def_dat):
@@ -599,7 +811,7 @@ def prepare_hc_ext_def(fc: vrna_fold_compound_t, dat: hc_ext_def_dat) -> Callabl
 class hc_hp_def_dat:
     def __init__(self) -> None:
         self.n = self.mx = self.mx_window = self.sn = self.hc_up = self.hc_dat = None
-        self.hc_f = vrna_hc_eval_f
+        self.hc_f = vrna_hc_eval_f()
 
 
 def hc_hp_cb_def(i, j, k, l, d, data:hc_hp_def_dat):
@@ -722,7 +934,7 @@ class hc_mb_def_dat:
         self.mx_window = None
         self.hc_up = None
         self.sn = None
-        self.hc_f = vrna_hc_eval_f
+        self.hc_f = vrna_hc_eval_f()
         self.hc_dat = None
 
 
@@ -5197,6 +5409,13 @@ def pf_create_bppm(vc:vrna_fold_compound_t, structure):
     with_ud = 1 if (domains_up and domains_up.exp_energy_cb) else 0
     with_ud_outside = 1 if (with_ud and domains_up.probs_add) else 0
 
+    print(f"qb is {qb}")
+    print(f"probs is {probs}")
+    print(f"circular is {circular}")
+    print(f"q1k is {q1k}")
+    print(f"qln is {qln}")
+    
+    # not into 
     if qb and probs and (circular or (q1k is not None and qln is not None)):
         with_gquad = pf_params.model_details.gquad
         Qmax = 0
@@ -5300,8 +5519,69 @@ def pf_create_bppm(vc:vrna_fold_compound_t, structure):
 
     return 1
 
+def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -> Optional[vrna_fold_compound_t]:
+    # Check if sequence is None
+    if sequence is None:
+        return None
 
-def generate_struc(probs, n):
+    # Sanity check for sequence length
+    length = len(sequence)
+    if length == 0:
+        print("vrna_fold_compound@data_structures.c: sequence length must be greater 0")
+        return None
+
+    # Check sequence length against addressable range
+    # if length > vrna_sequence_length_max(options):
+    if length > 1000000:
+        print(f"vrna_fold_compound@data_structures.c: sequence length of {length} exceeds addressable range")
+        return None
+
+    # Initialize fold compound
+    fc = init_fc_single()
+
+    # Set length and sequence in fold compound
+    fc.length = length
+    fc.sequence = sequence
+
+    aux_options = 0
+
+    # Get a copy of the model details
+    md = md_p if md_p else vrna_md_set_default()
+
+    # Add energy parameters
+    add_params(fc, md, options)
+
+    sanitize_bp_span(fc, options)
+
+    if options & VRNA_OPTION_WINDOW:
+        set_fold_compound(fc, options, aux_options)
+
+        if not (options & VRNA_OPTION_EVAL_ONLY):
+            # Add minimal hard constraint data structure
+            vrna_hc_init_window(fc)
+
+            # Add DP matrices
+            vrna_mx_add(fc, VRNA_MX_WINDOW, options)
+    else:
+        # Regular global structure prediction
+        aux_options |= WITH_PTYPE
+
+        if options & VRNA_OPTION_PF:
+            aux_options |= WITH_PTYPE_COMPAT
+
+        set_fold_compound(fc, options, aux_options)
+
+        if not (options & VRNA_OPTION_EVAL_ONLY):
+            # Add default hard constraints
+            vrna_hc_init(fc)
+
+            # Add DP matrices (if required)
+            vrna_mx_add(fc, VRNA_MX_DEFAULT, options)
+
+    return fc
+
+
+def generate_struc():
     struc = "(((((((((((((((((((((()))))))))))...)))))))))))"
     seq = "aactgcccactcagtacatcaaTTGATGTACTGCCAAGTGGGCAGTT"
     # The length of the sequence (or sequence alignment) vrna_fold_compound_t
@@ -5310,10 +5590,15 @@ def generate_struc(probs, n):
     # vrna_mx_pf_t *matrices
     
     # probs = matrices.probs
-    probs = [0] * n**2
-
-    return vrna_db_from_probs(probs, n)
+    # probs = [0] * n**2
+    vc = vrna_fold_compound(sequence,
+                                                &(opt->md),
+                                                VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
+    
+    vc = vrna_fold_compound_t()
+    print(vc)
+    return pf_create_bppm(vc, 'sss')
 
 if __name__ == "__main__":
-    print(generate_struc('s',1))
+    print(generate_struc())
 
