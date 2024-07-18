@@ -1433,6 +1433,327 @@ def init_sc_hp_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_hp_exp_dat):
                 elif provides_sc_bp:
                     sc_wrapper.pair = sc_hp_exp_cb_bp_local_comparative if sliding_window else sc_hp_exp_cb_bp_comparative
 
+# init_sc_hp_exp end #################
+
+# class for init_sc_int_exp start ###########
+class sc_int_exp_dat(sc_hp_exp_dat):
+    def __init__(self):
+        super().__init__()
+        self.stack = self.stack_comparative = 0.
+
+
+# function for init_sc_int_exp start ###########
+def sc_int_exp_cb_up(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    u1 = k - i - 1
+    u2 = j - l - 1
+    sc = 1.0
+
+    if u1 > 0:
+        sc *= data.up[i + 1][u1]
+
+    if u2 > 0:
+        sc *= data.up[l + 1][u2]
+
+    return sc
+
+def sc_int_exp_cb_bp_local(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return data.bp_local[i][j - i]
+
+def sc_int_exp_cb_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    if i + 1 == k and l + 1 == j:
+        sc *= data.stack[i] * data.stack[k] * data.stack[l] * data.stack[j]
+
+    return sc
+
+def sc_int_exp_cb_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return data.user_cb(i, j, k, l, VRNA_DECOMP_PAIR_IL, data.user_data)
+
+
+
+def sc_int_exp_cb_up_bp_local_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+
+def sc_int_exp_cb_bp(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return data.bp[data.idx[j] + i]
+
+def sc_int_exp_cb_up_bp_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+
+def sc_int_exp_cb_ext_up(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    u1 = i - 1
+    u2 = k - j - 1
+    u3 = data.n - l
+
+    if u1 > 0:
+        sc *= data.up[1][u1]
+
+    if u2 > 0:
+        sc *= data.up[j + 1][u2]
+
+    if u3 > 0:
+        sc *= data.up[l + 1][u3]
+
+    return sc
+
+def sc_int_exp_cb_ext_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    sc = 1.0
+
+    if i == 1 and j + 1 == k and l == data.n:
+        sc *= data.stack[i] * data.stack[k] * data.stack[l] * data.stack[j]
+
+    return sc
+
+
+def sc_int_exp_cb_ext_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return data.user_cb(i, j, k, l, VRNA_DECOMP_PAIR_IL, data.user_data)
+
+
+def sc_int_exp_cb_up_bp_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_ext_up(i, j, k, l, data) * sc_int_exp_cb_ext_stack(i, j, k, l, data) * sc_int_exp_cb_ext_user(i, j, k, l, data)
+
+
+def sc_int_exp_cb_ext_up_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_ext_up(i, j, k, l, data) * sc_int_exp_cb_ext_stack(i, j, k, l, data) * sc_int_exp_cb_ext_user(i, j, k, l, data)
+
+def sc_int_exp_cb_up_bp_local_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_up_bp_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_ext_up_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_ext_up(i, j, k, l, data) * sc_int_exp_cb_ext_user(i, j, k, l, data)
+
+def sc_int_exp_cb_up_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_up_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_bp_local_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_bp_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_ext_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_ext_stack(i, j, k, l, data) * sc_int_exp_cb_ext_user(i, j, k, l, data)
+
+def sc_int_exp_cb_bp_local_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_bp_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_stack_user(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_stack(i, j, k, l, data) * sc_int_exp_cb_user(i, j, k, l, data)
+
+def sc_int_exp_cb_up_bp_local_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp_local(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
+
+def sc_int_exp_cb_up_bp_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_up(i, j, k, l, data) * sc_int_exp_cb_bp(i, j, k, l, data) * sc_int_exp_cb_stack(i, j, k, l, data)
+
+def sc_int_exp_cb_ext_up_stack(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
+    return sc_int_exp_cb_ext_up(i, j, k, l, data) * sc_int_exp_cb_ext_stack(i, j, k, l, data)
+
+
+
+
+
+# init_sc_int_exp start ###########
+def init_sc_int_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_int_exp_dat):
+    sliding_window = 0
+    provides_sc_up = 0
+    provides_sc_bp = 0
+    provides_sc_stack = 0
+    provides_sc_user = 0
+
+    if fc.exp_matrices:
+        sliding_window = 1 if fc.exp_matrices.type == VRNA_MX_WINDOW else 0
+    elif (fc.type == VRNA_FC_TYPE_SINGLE) and (fc.sc):
+        sliding_window = 1 if fc.sc.type == VRNA_SC_WINDOW else 0
+    elif fc.hc:
+        sliding_window = 1 if fc.hc.type == VRNA_HC_WINDOW else 0
+
+    sc_wrapper.n = fc.length
+    sc_wrapper.n_seq = 1
+    sc_wrapper.a2s = None
+    sc_wrapper.idx = fc.jindx
+    sc_wrapper.up = None
+    sc_wrapper.up_comparative = None
+    sc_wrapper.bp = None
+    sc_wrapper.bp_comparative = None
+    sc_wrapper.bp_local = None
+    sc_wrapper.bp_local_comparative = None
+    sc_wrapper.stack = None
+    sc_wrapper.stack_comparative = None
+    sc_wrapper.user_cb = None
+    sc_wrapper.user_cb_comparative = None
+    sc_wrapper.user_data = None
+    sc_wrapper.user_data_comparative = None
+    sc_wrapper.pair = None
+    sc_wrapper.pair_ext = None
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        sc = fc.sc
+
+        if sc:
+            sc_wrapper.up = sc.exp_energy_up
+            sc_wrapper.bp = None if sliding_window else sc.exp_energy_bp
+            sc_wrapper.bp_local = sc.exp_energy_bp_local if sliding_window else None
+            sc_wrapper.stack = sc.exp_energy_stack
+            sc_wrapper.user_cb = sc.exp_f
+            sc_wrapper.user_data = sc.data
+
+            provides_sc_up = 1 if sc.exp_energy_up else 0
+            if sliding_window:
+                provides_sc_bp = 1 if sc.exp_energy_bp_local else 0
+            else:
+                provides_sc_bp = 1 if sc.exp_energy_bp else 0
+            provides_sc_stack = 1 if sc.exp_energy_stack else 0
+            provides_sc_user = 1 if sc.exp_f else 0
+
+            if provides_sc_user:
+                if provides_sc_up:
+                    if provides_sc_bp:
+                        if provides_sc_stack:
+                            sc_wrapper.pair = sc_int_exp_cb_up_bp_local_stack_user if sliding_window else sc_int_exp_cb_up_bp_stack_user
+                            sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_user
+                        else:
+                            sc_wrapper.pair = sc_int_exp_cb_up_bp_local_user if sliding_window else sc_int_exp_cb_up_bp_user
+                            sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_user
+                    elif provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_up_stack_user
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_user
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_up_user
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_user
+                elif provides_sc_bp:
+                    if provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_bp_local_stack_user if sliding_window else sc_int_exp_cb_bp_stack_user
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_user
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_bp_local_user if sliding_window else sc_int_exp_cb_bp_user
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_user
+                elif provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_stack_user
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_user
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_user
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_user
+            elif provides_sc_bp:
+                if provides_sc_up:
+                    if provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_up_bp_local_stack if sliding_window else sc_int_exp_cb_up_bp_stack
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_up_bp_local if sliding_window else sc_int_exp_cb_up_bp
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up
+                elif provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_bp_local_stack if sliding_window else sc_int_exp_cb_bp_stack
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_bp_local if sliding_window else sc_int_exp_cb_bp
+            elif provides_sc_up:
+                if provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_up_stack
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_up
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_up
+            elif provides_sc_stack:
+                sc_wrapper.pair = sc_int_exp_cb_stack
+                sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        sc_wrapper.n_seq = fc.n_seq
+        sc_wrapper.a2s = fc.a2s
+        scs = fc.scs
+
+        if scs:
+            sc_wrapper.up_comparative = [None] * fc.n_seq
+            sc_wrapper.bp_comparative = [None] * fc.n_seq
+            sc_wrapper.bp_local_comparative = [None] * fc.n_seq
+            sc_wrapper.stack_comparative = [None] * fc.n_seq
+            sc_wrapper.user_cb_comparative = [None] * fc.n_seq
+            sc_wrapper.user_data_comparative = [None] * fc.n_seq
+
+            for s in range(fc.n_seq):
+                if scs[s]:
+                    sliding_window = 1 if scs[s].type == VRNA_SC_WINDOW else 0
+                    sc_wrapper.up_comparative[s] = scs[s].exp_energy_up
+                    sc_wrapper.bp_comparative[s] = None if sliding_window else scs[s].exp_energy_bp
+                    sc_wrapper.bp_local_comparative[s] = scs[s].exp_energy_bp_local if sliding_window else None
+                    sc_wrapper.stack_comparative[s] = scs[s].exp_energy_stack
+                    sc_wrapper.user_cb_comparative[s] = scs[s].exp_f
+                    sc_wrapper.user_data_comparative[s] = scs[s].data
+
+                    provides_sc_up = 1 if scs[s].exp_energy_up else 0
+                    if sliding_window:
+                        provides_sc_bp = 1 if scs[s].exp_energy_bp_local else 0
+                    else:
+                        provides_sc_bp = 1 if scs[s].exp_energy_bp else 0
+                    provides_sc_stack = 1 if scs[s].exp_energy_stack else 0
+                    provides_sc_user = 1 if scs[s].exp_f else 0
+
+            if provides_sc_user:
+                if provides_sc_up:
+                    if provides_sc_bp:
+                        if provides_sc_stack:
+                            sc_wrapper.pair = sc_int_exp_cb_up_bp_local_stack_user_comparative if sliding_window else sc_int_exp_cb_up_bp_stack_user_comparative
+                            sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_user_comparative
+                        else:
+                            sc_wrapper.pair = sc_int_exp_cb_up_bp_local_user_comparative if sliding_window else sc_int_exp_cb_up_bp_user_comparative
+                            sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_user_comparative
+                    elif provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_up_stack_user_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_user_comparative
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_up_user_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_user_comparative
+                elif provides_sc_bp:
+                    if provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_bp_local_stack_user_comparative if sliding_window else sc_int_exp_cb_bp_stack_user_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_user_comparative
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_bp_local_user_comparative if sliding_window else sc_int_exp_cb_bp_user_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_user_comparative
+                elif provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_stack_user_comparative
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_user_comparative
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_user_comparative
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_user_comparative
+            elif provides_sc_bp:
+                if provides_sc_up:
+                    if provides_sc_stack:
+                        sc_wrapper.pair = sc_int_exp_cb_up_bp_local_stack_comparative if sliding_window else sc_int_exp_cb_up_bp_stack_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_comparative
+                    else:
+                        sc_wrapper.pair = sc_int_exp_cb_up_bp_local_comparative if sliding_window else sc_int_exp_cb_up_bp_comparative
+                        sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_comparative
+                elif provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_bp_local_stack_comparative if sliding_window else sc_int_exp_cb_bp_stack_comparative
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_comparative
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_bp_local_comparative if sliding_window else sc_int_exp_cb_bp_comparative
+            elif provides_sc_up:
+                if provides_sc_stack:
+                    sc_wrapper.pair = sc_int_exp_cb_up_stack_comparative
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_stack_comparative
+                else:
+                    sc_wrapper.pair = sc_int_exp_cb_up_comparative
+                    sc_wrapper.pair_ext = sc_int_exp_cb_ext_up_comparative
+            elif provides_sc_stack:
+                sc_wrapper.pair = sc_int_exp_cb_stack_comparative
+                sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_comparative
 
 
 def get_constraints_helper(fc):
