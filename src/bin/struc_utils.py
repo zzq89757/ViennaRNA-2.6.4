@@ -3391,9 +3391,27 @@ def compute_bpp_multibranch_comparative(fc,
     # Rotate ml_helpers arrays
     rotate_ml_helper_arrays_outer(ml_helpers)
 
+# bppm_circ constant and class start ######################
+
+
+
+
+# bppm_circ method start ######################
+def numerator_single(vc: vrna_fold_compound_t, i: int, j: int) -> float:
+    return 1.0
+
+def numerator_comparative(vc: vrna_fold_compound_t, i: int, j: int) -> float:
+    pscore: list[int] = vc.pscore  # precomputed array of pair types
+    kTn: float = vc.exp_params.kT / 10.0  # kT in cal/mol
+    jindx: list[int] = vc.jindx
+
+    return math.exp(pscore[jindx[j] + i] / kTn)
+
+
 
 import numpy as np
 
+# bppm_circ  start ######################
 def bppm_circ(fc, constraints):
     n = fc.length
     n_seq = 1 if fc.type == VRNA_FC_TYPE_SINGLE else fc.n_seq
@@ -3653,12 +3671,115 @@ def bppm_circ(fc, constraints):
                 probs[ij] = 0
                     
 
+# compute_bpp_external constant and class start 
 
 
 
 
+# compute_bpp_external method start 
+def vrna_exp_E_ext_stem(type:int, n5d:int, n3d:int, p:vrna_exp_param_t) -> float:
+    energy = 1.0
+    if n5d >= 0 and n3d >= 0:
+        energy = p.expmismatchExt[type][n5d][n3d]
+    elif (n5d >= 0):
+        energy = p.expdangle5[type][n5d]
+    elif (n3d >= 0):
+        energy = p.expdangle3[type][n3d]
 
-def compute_bpp_external(fc, constraints):
+    if (type > 2):
+        energy *= p.expTermAU
+
+    return energy
+
+def contrib_ext_pair(fc: vrna_fold_compound_t,
+                     i: int,
+                     j: int,
+                     constraints: constraints_helper) -> float:
+    type: int
+    ptype: str
+    S1: List[int]
+    s5: int
+    s3: int
+    sn: List[int]
+    n: int
+    jindx: List[int]
+    contribution: float
+    pf_params: vrna_exp_param_t
+    sc: vrna_sc_t
+
+    n = fc.length
+    pf_params = fc.exp_params
+    S1 = fc.sequence_encoding
+    sn = fc.strand_number
+    ptype = fc.ptype
+    jindx = fc.jindx
+    sc = fc.sc
+
+    type = vrna_get_ptype(jindx[j] + i, ptype)
+    s5 = S1[i - 1] if i > 1 and sn[i] == sn[i - 1] else -1
+    s3 = S1[j + 1] if j < n and sn[j + 1] == sn[j] else -1
+
+    contribution = vrna_exp_E_ext_stem(type, s5, s3, pf_params)
+
+    if sc and sc.exp_f:
+        contribution *= sc.exp_f(1, n, i, j, VRNA_DECOMP_EXT_STEM_OUTSIDE, sc.data)
+
+    return contribution
+
+
+def contrib_ext_pair_comparative(fc: vrna_fold_compound_t, i: int, j: int, constraints: constraints_helper) -> float:
+    type: int
+    S: List[List[int]]
+    S5: List[List[int]]
+    S3: List[List[int]]
+    s5: int
+    s3: int
+    a2s: List[List[int]]
+    n: int
+    s: int
+    n_seq: int
+    jindx: List[int]
+    pscore: List[int]
+    contribution: float
+    kTn: float
+    pf_params: vrna_exp_param_t
+    md: vrna_md_t
+    scs: List[vrna_sc_t]
+
+    n = fc.length
+    n_seq = fc.n_seq
+    jindx = fc.jindx
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    S = fc.S
+    S5 = fc.S5
+    S3 = fc.S3
+    a2s = fc.a2s
+    pscore = fc.pscore  # precomputed array of pair types
+    scs = fc.scs
+    kTn = pf_params.kT / 10.0  # kT in cal/mol
+
+    contribution = math.exp(pscore[jindx[j] + i] / kTn)
+
+    for s in range(n_seq):
+        type = vrna_get_ptype_md(S[s][i], S[s][j], md)
+        s5 = S5[s][i] if a2s[s][i] > 1 else -1
+        s3 = S3[s][j] if a2s[s][j] < a2s[s][n] else -1
+
+        contribution *= vrna_exp_E_ext_stem(type, s5, s3, pf_params)
+
+    if scs:
+        for s in range(n_seq):
+            if scs[s].exp_f:
+                contribution *= scs[s].exp_f(1, n, i, j, VRNA_DECOMP_EXT_STEM_OUTSIDE, scs[s].data)
+
+    return contribution
+
+
+
+
+# compute_bpp_external start 
+def compute_bpp_external(fc:vrna_fold_compound_t, constraints:constraints_helper):
     n = fc.length
     my_iindx = fc.iindx
     matrices = fc.exp_matrices
