@@ -2039,8 +2039,146 @@ sc_mb_exp_pair_cb = Callable[[int, int, sc_mb_exp_dat], float]
 
 
 # init_sc_mb_exp method start ################
+def sc_mb_exp_pair_cb_bp(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return data.bp[data.idx[j] + i]
+
+
+def sc_mb_exp_pair_cb_bp_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.bp_comparative[s]:
+            sc *= data.bp_comparative[s][data.idx[j] + i]
+    return sc
+
+
+def sc_mb_exp_pair_cb_bp_local(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return data.bp_local[i][j - i]
+
+
+def sc_mb_exp_pair_cb_bp_local_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.bp_local_comparative[s]:
+            sc *= data.bp_local_comparative[s][i][j - i]
+    return sc
+
+
+def sc_mb_exp_pair_cb_user(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return data.user_cb(i, j, i + 1, j - 1, VRNA_DECOMP_PAIR_ML, data.user_data)
+
+
+def sc_mb_exp_pair_ext_cb_user(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return data.user_cb(i, j, i - 1, j + 1, VRNA_DECOMP_PAIR_ML, data.user_data)
+
+
+def sc_mb_exp_pair_cb_user_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, i + 1, j - 1, VRNA_DECOMP_PAIR_ML, data.user_data_comparative[s])
+    return sc
+
+
+def sc_mb_exp_pair_ext_cb_user_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, i - 1, j + 1, VRNA_DECOMP_PAIR_ML, data.user_data_comparative[s])
+    return sc
+
+
+def sc_mb_exp_pair_cb_bp_user(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_pair_cb_bp(i, j, data) * sc_mb_exp_pair_cb_user(i, j, data)
+
+
+def sc_mb_exp_pair_cb_bp_user_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_pair_cb_bp_comparative(i, j, data) * sc_mb_exp_pair_cb_user_comparative(i, j, data)
+
+
+def sc_mb_exp_pair_cb_bp_local_user(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_pair_cb_bp_local(i, j, data) * sc_mb_exp_pair_cb_user(i, j, data)
+
+
+def sc_mb_exp_pair_cb_bp_local_user_comparative(i: int, j: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_pair_cb_bp_local_comparative(i, j, data) * sc_mb_exp_pair_cb_user_comparative(i, j, data)
+
+
+def sc_mb_exp_red_cb_up(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    l1 = k - i
+    l2 = j - l
+    sc = 1.0
+    if l1 > 0:
+        sc *= data.up[i][l1]
+    if l2 > 0:
+        sc *= data.up[l + 1][l2]
+    return sc
+
+
+def sc_mb_exp_red_cb_up_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.up_comparative[s]:
+            l1 = data.a2s[s][k] - data.a2s[s][i]
+            l2 = data.a2s[s][j] - data.a2s[s][l]
+            start2 = data.a2s[s][l] + 1
+            if l1 > 0:
+                sc *= data.up_comparative[s][data.a2s[s][i]][l1]
+            if l2 > 0:
+                sc *= data.up_comparative[s][start2][l2]
+    return sc
+
+
+def sc_mb_exp_red_cb_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return data.user_cb(i, j, k, l, VRNA_DECOMP_ML_ML, data.user_data)
+
+
+def sc_mb_exp_red_cb_user_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, k, l, VRNA_DECOMP_ML_ML, data.user_data_comparative[s])
+    return sc
+
+
+def sc_mb_exp_red_cb_up_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_red_cb_up(i, j, k, l, data) * sc_mb_exp_red_cb_user(i, j, k, l, data)
+
+
+def sc_mb_exp_red_cb_up_user_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_red_cb_up_comparative(i, j, k, l, data) * sc_mb_exp_red_cb_user_comparative(i, j, k, l, data)
+
+
+def sc_mb_exp_red_cb_stem_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return data.user_cb(i, j, k, l, VRNA_DECOMP_ML_STEM, data.user_data)
+
+
+def sc_mb_exp_red_cb_stem_user_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, k, l, VRNA_DECOMP_ML_STEM, data.user_data)
+    return sc
+
+
+def sc_mb_exp_red_cb_stem_up_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_red_cb_up(i, j, k, l, data) * sc_mb_exp_red_cb_stem_user(i, j, k, l, data)
+
+
+def sc_mb_exp_red_cb_stem_up_user_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return sc_mb_exp_red_cb_up_comparative(i, j, k, l, data) * sc_mb_exp_red_cb_stem_user_comparative(i, j, k, l, data)
+
+
 def sc_mb_exp_split_cb_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
     return data.user_cb(i, j, k, l, VRNA_DECOMP_ML_ML_ML, data.user_data)
+
+
+def sc_mb_exp_split_cb_user_comparative(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    sc = 1.0
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, k, l, VRNA_DECOMP_ML_ML_ML, data.user_data_comparative[s])
+    return sc
+
 
 
 
