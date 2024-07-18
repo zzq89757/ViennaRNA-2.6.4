@@ -1440,7 +1440,9 @@ class sc_int_exp_dat(sc_hp_exp_dat):
     def __init__(self):
         super().__init__()
         self.stack = self.stack_comparative = 0.
+        self.pair = self.pair_ext = sc_int_exp_cb
 
+sc_int_exp_cb = Callable[[int, int, int, int, sc_int_exp_dat], float]
 
 # function for init_sc_int_exp start ###########
 def sc_int_exp_cb_up(i:int, j:int, k:int, l:int, data:sc_int_exp_dat) -> float:
@@ -2021,6 +2023,203 @@ def init_sc_int_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_int_exp_dat):
                 sc_wrapper.pair = sc_int_exp_cb_stack_comparative
                 sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_comparative
 # init_sc_int_exp end ################
+
+# init_sc_mb_exp class start ################
+
+    
+
+class sc_mb_exp_dat(sc_int_exp_dat):
+    def __init__(self):
+        super().__init__()
+        self.red_stem = self.red_ml = self.decomp_ml = sc_mb_exp_red_cb
+        self.pair = self.pair_ext = sc_mb_exp_pair_cb
+        
+sc_mb_exp_red_cb = Callable[[int, int, int, int, sc_mb_exp_dat], float]   
+sc_mb_exp_pair_cb = Callable[[int, int, sc_mb_exp_dat], float]   
+
+
+# init_sc_mb_exp method start ################
+def sc_mb_exp_split_cb_user(i: int, j: int, k: int, l: int, data: sc_mb_exp_dat) -> float:
+    return data.user_cb(i, j, k, l, VRNA_DECOMP_ML_ML_ML, data.user_data)
+
+
+
+
+
+
+
+
+
+
+
+# init_sc_mb_exp start ################
+def init_sc_mb_exp(fc:vrna_fold_compound_t, sc_wrapper: sc_mb_exp_dat) -> None:
+    sliding_window: int
+    sc: vrna_sc_t
+    scs: Optional[List[vrna_sc_t]]
+
+    sc_wrapper.n = fc.length
+    sc_wrapper.n_seq = 1
+    sc_wrapper.idx = fc.jindx
+    sc_wrapper.a2s = None
+
+    sc_wrapper.up = None
+    sc_wrapper.up_comparative = None
+    sc_wrapper.bp = None
+    sc_wrapper.bp_comparative = None
+    sc_wrapper.bp_local = None
+    sc_wrapper.bp_local_comparative = None
+
+    sc_wrapper.user_cb = None
+    sc_wrapper.user_data = None
+    sc_wrapper.user_cb_comparative = None
+    sc_wrapper.user_data_comparative = None
+
+    sc_wrapper.pair = None
+    sc_wrapper.pair_ext = None
+    sc_wrapper.red_stem = None
+    sc_wrapper.red_ml = None
+    sc_wrapper.decomp_ml = None
+
+    sliding_window = 1 if fc.hc.type == VRNA_HC_WINDOW else 0
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        sc = fc.sc
+
+        if sc:
+            provides_sc_up = 0
+            provides_sc_bp = 0
+            provides_sc_user = 0
+
+            sc_wrapper.up = sc.exp_energy_up
+            sc_wrapper.user_cb = sc.exp_f
+            sc_wrapper.user_data = sc.data
+
+            if sliding_window:
+                sc_wrapper.bp_local = sc.exp_energy_bp_local
+            else:
+                sc_wrapper.bp = sc.exp_energy_bp
+
+            if sc.exp_energy_up:
+                provides_sc_up = 1
+
+            if sliding_window:
+                if sc.exp_energy_bp_local:
+                    provides_sc_bp = 1
+            elif sc.exp_energy_bp:
+                provides_sc_bp = 1
+
+            if sc.exp_f:
+                provides_sc_user = 1
+
+            if provides_sc_user:
+                sc_wrapper.decomp_ml = sc_mb_exp_split_cb_user
+                sc_wrapper.red_stem = sc_mb_exp_red_cb_stem_user
+                sc_wrapper.red_ml = sc_mb_exp_red_cb_user
+                sc_wrapper.pair = sc_mb_exp_pair_cb_user
+                if not sliding_window:
+                    sc_wrapper.pair_ext = sc_mb_exp_pair_ext_cb_user
+
+                if provides_sc_bp:
+                    if sliding_window:
+                        sc_wrapper.pair = sc_mb_exp_pair_cb_bp_local_user
+                    else:
+                        sc_wrapper.pair = sc_mb_exp_pair_cb_bp_user
+                        sc_wrapper.pair_ext = sc_mb_exp_pair_ext_cb_user
+
+                if provides_sc_up:
+                    sc_wrapper.red_stem = sc_mb_exp_red_cb_stem_up_user
+                    sc_wrapper.red_ml = sc_mb_exp_red_cb_up_user
+
+            elif provides_sc_bp:
+                if sliding_window:
+                    sc_wrapper.pair = sc_mb_exp_pair_cb_bp_local
+                else:
+                    sc_wrapper.pair = sc_mb_exp_pair_cb_bp
+
+                if provides_sc_up:
+                    sc_wrapper.red_stem = sc_mb_exp_red_cb_up
+                    sc_wrapper.red_ml = sc_mb_exp_red_cb_up
+
+            elif provides_sc_up:
+                sc_wrapper.red_stem = sc_mb_exp_red_cb_up
+                sc_wrapper.red_ml = sc_mb_exp_red_cb_up
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        sc_wrapper.a2s = fc.a2s
+        sc_wrapper.n_seq = fc.n_seq
+        scs = fc.scs
+
+        if scs:
+            provides_sc_up = 0
+            provides_sc_bp = 0
+            provides_sc_user = 0
+
+            sc_wrapper.up_comparative = [[] for _ in range(fc.n_seq)]
+            sc_wrapper.bp_comparative = [None] * fc.n_seq
+            sc_wrapper.bp_local_comparative = [[] for _ in range(fc.n_seq)]
+            sc_wrapper.user_cb_comparative = [None] * fc.n_seq
+            sc_wrapper.user_data_comparative = [None] * fc.n_seq
+
+            for s in range(fc.n_seq):
+                if scs[s]:
+                    sc_wrapper.up_comparative[s] = scs[s].exp_energy_up
+                    sc_wrapper.bp_comparative[s] = None if sliding_window else scs[s].exp_energy_bp
+                    sc_wrapper.bp_local_comparative[s] = scs[s].exp_energy_bp_local if sliding_window else None
+                    sc_wrapper.user_cb_comparative[s] = scs[s].exp_f
+                    sc_wrapper.user_data_comparative[s] = scs[s].data
+
+                    if scs[s].exp_energy_up:
+                        provides_sc_up = 1
+
+                    if sliding_window:
+                        if scs[s].exp_energy_bp_local:
+                            provides_sc_bp = 1
+                    elif scs[s].exp_energy_bp:
+                        provides_sc_bp = 1
+
+                    if scs[s].exp_f:
+                        provides_sc_user = 1
+
+            if provides_sc_user:
+                sc_wrapper.decomp_ml = sc_mb_exp_split_cb_user_comparative
+                sc_wrapper.red_stem = sc_mb_exp_red_cb_stem_user_comparative
+                sc_wrapper.red_ml = sc_mb_exp_red_cb_user_comparative
+                sc_wrapper.pair = sc_mb_exp_pair_cb_user_comparative
+                if not sliding_window:
+                    sc_wrapper.pair_ext = sc_mb_exp_pair_ext_cb_user_comparative
+
+                if provides_sc_bp:
+                    if sliding_window:
+                        sc_wrapper.pair = sc_mb_exp_pair_cb_bp_local_user_comparative
+                    else:
+                        sc_wrapper.pair = sc_mb_exp_pair_cb_bp_user_comparative
+                        sc_wrapper.pair_ext = sc_mb_exp_pair_ext_cb_user_comparative
+
+                if provides_sc_up:
+                    sc_wrapper.red_stem = sc_mb_exp_red_cb_stem_up_user_comparative
+                    sc_wrapper.red_ml = sc_mb_exp_red_cb_up_user_comparative
+
+            elif provides_sc_bp:
+                if sliding_window:
+                    sc_wrapper.pair = sc_mb_exp_pair_cb_bp_local_comparative
+                else:
+                    sc_wrapper.pair = sc_mb_exp_pair_cb_bp_comparative
+
+                if provides_sc_up:
+                    sc_wrapper.red_stem = sc_mb_exp_red_cb_up_comparative
+                    sc_wrapper.red_ml = sc_mb_exp_red_cb_up_comparative
+
+            elif provides_sc_up:
+                sc_wrapper.red_stem = sc_mb_exp_red_cb_up_comparative
+                sc_wrapper.red_ml = sc_mb_exp_red_cb_up_comparative
+
+
+
+
+
+
+
 
 def get_constraints_helper(fc):
     helpers = ConstraintsHelper()
