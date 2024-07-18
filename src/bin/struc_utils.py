@@ -1119,9 +1119,11 @@ def init_sc_ext_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_ext_exp_dat):
                         sc_wrapper.red_up = sc_ext_exp_cb_up_user_comparative
     return
 
+# constant define for init_sc_hp_exp ###########
+VRNA_MX_WINDOW = 1
+VRNA_SC_WINDOW = 1
 
-
-
+# class define for init_sc_hp_exp ###########
 class sc_hp_exp_dat(sc_ext_exp_dat):
     def __init__(self):
         super().__init__()
@@ -1129,7 +1131,166 @@ class sc_hp_exp_dat(sc_ext_exp_dat):
         self.bp = self.bp_comparative = self.bp_local = self.bp_local_comparative = 0.
         self.pair = self.pair_ext = sc_hp_exp_cb
 
+sc_hp_exp_cb = Callable[[int, int, sc_hp_exp_dat], float]
 
+# function define for init_sc_hp_exp ###########
+def sc_hp_exp_cb_ext_up(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    u1 = data.n - j
+    u2 = i - 1
+    sc = 1.0
+
+    if u1 > 0:
+        sc *= data.up[j + 1][u1]
+
+    if u2 > 0:
+        sc *= data.up[1][u2]
+
+    return sc
+
+def sc_hp_exp_cb_ext_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return data.user_cb(j, i, j, i,VRNA_DECOMP_PAIR_HP,data.user_data)
+
+def sc_hp_exp_cb_ext_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.
+    for s in range(data.n_seq):
+        if (data.user_cb_comparative[s]):
+            sc *= data.user_cb_comparative[s](j, i, j, i,
+                                         VRNA_DECOMP_PAIR_HP,
+                                         data.user_data_comparative[s])
+
+    return sc
+
+def sc_hp_exp_cb_ext_up_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_ext_up(i, j, data) * sc_hp_exp_cb_ext_user(i, j, data)
+
+
+def sc_hp_exp_cb_up(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return data.up[i + 1][j - i -1]
+
+def sc_hp_exp_cb_bp(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return data.bp[data.idx[j] + i]
+
+def sc_hp_exp_cb_bp_local(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return data.bp_local[i][j - i]
+
+def sc_hp_exp_cb_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return data.user_cb(i, j, i, j, VRNA_DECOMP_PAIR_HP, data.user_data)
+
+def sc_hp_exp_cb_up_bp_local_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up(i, j, data) * sc_hp_exp_cb_bp_local(i, j, data) * sc_hp_exp_cb_user(i, j, data)
+
+def sc_hp_exp_cb_up_bp_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up(i, j, data) * sc_hp_exp_cb_bp(i, j, data) * sc_hp_exp_cb_user(i, j, data)
+
+
+def sc_hp_exp_cb_up_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up(i, j, data) * sc_hp_exp_cb_user(i, j, data)
+
+def sc_hp_exp_cb_bp_local_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_bp_local(i, j, data) * sc_hp_exp_cb_user(i, j, data)
+
+def sc_hp_exp_cb_bp_user(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_bp(i, j, data) * sc_hp_exp_cb_user(i, j, data)
+
+
+
+def sc_hp_exp_cb_up_bp_local(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up(i, j, data) * sc_hp_exp_cb_bp_local(i, j, data)
+
+def sc_hp_exp_cb_up_bp(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up(i, j, data) * sc_hp_exp_cb_bp(i, j, data)
+
+
+
+def sc_hp_exp_cb_ext_up_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.up_comparative[s]:
+            u1 = data.a2s[s][data.n] - data.a2s[s][j]
+            u2 = data.a2s[s][i - 1]
+
+            if u1 > 0:
+                sc *= data.up[data.a2s[s][j + 1]][u1]
+
+            if u2 > 0:
+                sc *= data.up[1][u2]
+
+    return sc
+
+
+def sc_hp_exp_cb_ext_up_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_ext_up_comparative(i, j, data) * sc_hp_exp_cb_ext_user_comparative(i, j, data)
+
+
+def sc_hp_exp_cb_up_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.up_comparative[s]:
+            u = data.a2s[s][j - 1] - data.a2s[s][i]
+            sc *= data.up_comparative[s][data.a2s[s][i + 1]][u]
+
+    return sc
+
+
+def sc_hp_exp_cb_bp_local_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.bp_local_comparative[s]:
+            sc *= data.bp_local_comparative[s][i][j - i]
+
+    return sc
+
+def sc_hp_exp_cb_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.0
+
+    for s in range(data.n_seq):
+        if data.user_cb_comparative[s]:
+            sc *= data.user_cb_comparative[s](i, j, i, j,
+                                              VRNA_DECOMP_PAIR_HP,
+                                              data.user_data_comparative[s])
+
+    return sc
+
+
+def sc_hp_exp_cb_up_bp_local_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up_comparative(i, j, data) * sc_hp_exp_cb_bp_local_comparative(i, j, data) * sc_hp_exp_cb_user_comparative(i, j, data)
+
+
+def sc_hp_exp_cb_bp_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    sc = 1.
+    for s in range(data.n_seq):
+        if data.bp_comparative[s]:
+            sc *= data.bp_comparative[s][data.idx[j] + i]
+    return sc
+
+def sc_hp_exp_cb_up_bp_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up_comparative(i, j, data) * sc_hp_exp_cb_bp_comparative(i, j, data) * sc_hp_exp_cb_user_comparative(i, j, data)
+
+
+
+def sc_hp_exp_cb_up_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up_comparative(i, j, data) * sc_hp_exp_cb_user_comparative(i, j, data)
+
+def sc_hp_exp_cb_bp_local_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_bp_local_comparative(i, j, data) * sc_hp_exp_cb_user_comparative(i, j, data)
+
+def sc_hp_exp_cb_bp_user_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_bp_comparative(i, j, data) * sc_hp_exp_cb_user_comparative(i, j, data)
+
+def sc_hp_exp_cb_up_bp_local_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up_comparative(i, j, data) * sc_hp_exp_cb_bp_local_comparative(i, j, data)
+
+def sc_hp_exp_cb_up_bp_comparative(i:int, j:int, data:sc_hp_exp_dat) -> float:
+    return sc_hp_exp_cb_up_comparative(i, j, data) * sc_hp_exp_cb_bp_comparative(i, j, data)
+
+
+
+
+
+# init_sc_hp_exp start #################
 def init_sc_hp_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_hp_exp_dat):
     sliding_window = 0
 
