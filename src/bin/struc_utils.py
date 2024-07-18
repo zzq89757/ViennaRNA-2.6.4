@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 # constant define
@@ -174,7 +175,59 @@ class vrna_mx_pf_t:
         
 class vrna_exp_param_t:
     def __init__(self) -> None:
-        pass
+        self.id: int = 0  # An identifier for the data structure (deprecated)
+        self.expstack: List[List[float]] = [[0.0] * (NBPAIRS + 1) for _ in range(NBPAIRS + 1)]
+        self.exphairpin: List[float] = [0.0] * 31
+        self.expbulge: List[float] = [0.0] * (MAXLOOP + 1)
+        self.expinternal: List[float] = [0.0] * (MAXLOOP + 1)
+        self.expmismatchExt: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expmismatchI: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expmismatch23I: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expmismatch1nI: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expmismatchH: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expmismatchM: List[List[List[float]]] = [[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expdangle5: List[List[float]] = [[0.0] * 5 for _ in range(NBPAIRS + 1)]
+        self.expdangle3: List[List[float]] = [[0.0] * 5 for _ in range(NBPAIRS + 1)]
+        self.expint11: List[List[List[List[float]]]] = [[[[0.0] * 5 for _ in range(5)] for _ in range(NBPAIRS + 1)] for _ in range(NBPAIRS + 1)]
+        self.expint21: List[List[List[List[List[float]]]]] = [[[[[0.0] * 5 for _ in range(5)] for _ in range(5)] for _ in range(NBPAIRS + 1)] for _ in range(NBPAIRS + 1)]
+        self.expint22: List[List[List[List[List[float]]]]] = [[[[[0.0] * 5 for _ in range(5)] for _ in range(5)] for _ in range(5)] for _ in range(NBPAIRS + 1)]
+        self.expninio: List[List[float]] = [[0.0] * (MAXLOOP + 1) for _ in range(5)]
+        self.lxc: float = 0.0
+        self.expMLbase: float = 0.0
+        self.expMLintern: List[float] = [0.0] * (NBPAIRS + 1)
+        self.expMLclosing: float = 0.0
+        self.expTermAU: float = 0.0
+        self.expDuplexInit: float = 0.0
+        self.exptetra: List[float] = [0.0] * 40
+        self.exptri: List[float] = [0.0] * 40
+        self.exphex: List[float] = [0.0] * 40
+        self.Tetraloops: str = ""  # Assuming it's a string
+        self.expTriloop: List[float] = [0.0] * 40
+        self.Triloops: str = ""  # Assuming it's a string
+        self.Hexaloops: str = ""  # Assuming it's a string
+        self.expTripleC: float = 0.0
+        self.expMultipleCA: float = 0.0
+        self.expMultipleCB: float = 0.0
+        self.expgquad: List[List[float]] = [[0.0] * (3 * VRNA_GQUAD_MAX_LINKER_LENGTH + 1) for _ in range(VRNA_GQUAD_MAX_STACK_SIZE + 1)]
+        self.expgquadLayerMismatch: float = 0.0
+        self.gquadLayerMismatchMax: int = 0
+
+        self.kT: float = 0.0
+        self.pf_scale: float = 0.0  # Scaling factor to avoid over-/underflows
+
+        self.temperature: float = 0.0  # Temperature used for loop contribution scaling
+        self.alpha: float = 0.0  # Scaling factor for the thermodynamic temperature
+
+        self.model_details: vrna_md_t = vrna_md_t()  # Model details to be used in the recursions
+        self.param_file: str = ""  # The filename the parameters were derived from
+
+        self.expSaltStack: float = 0.0
+        self.expSaltLoop: List[float] = [0.0] * (MAXLOOP + 2)
+        self.SaltLoopDbl: List[float] = [0.0] * (MAXLOOP + 2)
+        self.SaltMLbase: int = 0
+        self.SaltMLintern: int = 0
+        self.SaltMLclosing: int = 0
+        self.SaltDPXInit: int = 0
 
 class vrna_ud_exp_f:
     def __init__(self) -> None:
@@ -353,7 +406,7 @@ def get_ml_helper_arrays(fc:vrna_fold_compound_t):
     return ml_helpers
 
 
-class ConstraintsHelper:
+class constraints_helper:
     def __init__(self):
         self.hc_dat_ext = None
         self.hc_eval_ext = None
@@ -2360,7 +2413,7 @@ def init_sc_mb_exp(fc:vrna_fold_compound_t, sc_wrapper: sc_mb_exp_dat) -> None:
 
 
 def get_constraints_helper(fc):
-    helpers = ConstraintsHelper()
+    helpers = constraints_helper()
 
     helpers.hc_eval_ext = prepare_hc_ext_def(fc, helpers.hc_dat_ext)
     helpers.hc_eval_hp = prepare_hc_hp_def(fc, helpers.hc_dat_hp)
@@ -2375,14 +2428,346 @@ def get_constraints_helper(fc):
     return helpers
 
 
+# compute_bpp_internal constant and class start ###############
+MAXALPHA = 20
+VRNA_MODEL_DEFAULT_SALT = 1.021
+K0 = 273.15
+
+
+class vrna_ep_t:
+    def __init__(self) -> None:
+        self.i = self.j = self.type = 0
+        self.p = 0.
+
+class vrna_md_t:
+    def __init__(self):
+        self.temperature = 0.0
+        self.betaScale = 0.0
+        self.pf_smooth = 0
+        self.dangles = 0
+        self.special_hp = 0
+        self.noLP = 0
+        self.noGU = 0
+        self.noGUclosure = 0
+        self.logML = 0
+        self.circ = 0
+        self.gquad = 0
+        self.uniq_ML = 0
+        self.energy_set = 0
+        self.backtrack = 0
+        self.backtrack_type = ''
+        self.compute_bpp = 0
+        self.nonstandards = ''
+        self.max_bp_span = 0
+        self.min_loop_size = 0
+        self.window_size = 0
+        self.oldAliEn = 0
+        self.ribo = 0
+        self.cv_fact = 0.0
+        self.nc_fact = 0.0
+        self.sfact = 0.0
+        self.rtype = [0] * 8
+        self.alias = [0] * (MAXALPHA + 1)
+        self.pair = [[0] * (MAXALPHA + 1) for _ in range(MAXALPHA + 1)]
+        self.pair_dist = [[0.0] * 7 for _ in range(7)]
+        self.salt = 0.0
+        self.saltMLLower = 0
+        self.saltMLUpper = 0
+        self.saltDPXInit = 0
+        self.saltDPXInitFact = 0.0
+        self.helical_rise = 0.0
+        self.backbone_length = 0.0
+
+# compute_bpp_internal method start ###############
+def vrna_get_ptype_md(i: int, j: int, md: vrna_md_t) -> int:
+    tt = int(md.pair[i][j])
+    return 7 if tt == 0 else tt
+
+
+def vrna_get_ptype(ij: int, ptype: str) -> int:
+    tt = int(ptype[ij])
+    return 7 if tt == 0 else tt
+
+
+def exp_E_IntLoop(u1: int,
+                  u2: int,
+                  type: int,
+                  type2: int,
+                  si1: int,
+                  sj1: int,
+                  sp1: int,
+                  sq1: int,
+                  P: vrna_exp_param_t) -> float:
+    ul: int
+    us: int
+    no_close: int = 0
+    z: float = 0.0
+    noGUclosure: int = P.model_details.noGUclosure
+    backbones: int
+    salt_stack_correction: float = P.expSaltStack
+    salt_loop_correction: float = 1.0
+
+    if (noGUclosure) and ((type2 == 3) or (type2 == 4) or (type == 3) or (type == 4)):
+        no_close = 1
+
+    if u1 > u2:
+        ul = u1
+        us = u2
+    else:
+        ul = u2
+        us = u1
+
+    # salt correction for loop
+    backbones = ul + us + 2
+
+    if P.model_details.salt != VRNA_MODEL_DEFAULT_SALT:
+        if backbones <= MAXLOOP + 1:
+            salt_loop_correction = P.expSaltLoop[backbones]
+        else:
+            salt_loop_correction = math.exp(-vrna_salt_loop_int(backbones, P.model_details.salt, P.temperature + K0, P.model_details.backbone_length) * 10.0 / P.kT)
+
+    if ul == 0:
+        # stack
+        z = P.expstack[type][type2] * salt_stack_correction
+    elif not no_close:
+        if us == 0:
+            # bulge
+            z = P.expbulge[ul]
+            if ul == 1:
+                z *= P.expstack[type][type2]
+            else:
+                if type > 2:
+                    z *= P.expTermAU
+                if type2 > 2:
+                    z *= P.expTermAU
+            return z * salt_loop_correction
+        elif us == 1:
+            if ul == 1:
+                # 1x1 loop
+                return P.expint11[type][type2][si1][sj1] * salt_loop_correction
+            elif ul == 2:
+                # 2x1 loop
+                if u1 == 1:
+                    return P.expint21[type][type2][si1][sq1][sj1] * salt_loop_correction
+                else:
+                    return P.expint21[type2][type][sq1][si1][sp1] * salt_loop_correction
+            else:
+                # 1xn loop
+                z = P.expinternal[ul + us] * P.expmismatch1nI[type][si1][sj1] * P.expmismatch1nI[type2][sq1][sp1]
+                return z * P.expninio[2][ul - us] * salt_loop_correction
+        elif us == 2:
+            if ul == 2:
+                # 2x2 loop
+                return P.expint22[type][type2][si1][sp1][sq1][sj1] * salt_loop_correction
+            elif ul == 3:
+                # 2x3 loop
+                z = P.expinternal[5] * P.expmismatch23I[type][si1][sj1] * P.expmismatch23I[type2][sq1][sp1]
+                return z * P.expninio[2][1] * salt_loop_correction
+
+        # generic interior loop (no else here!)
+        z = P.expinternal[ul + us] * P.expmismatchI[type][si1][sj1] * P.expmismatchI[type2][sq1][sp1]
+        return z * P.expninio[2][ul - us] * salt_loop_correction
+
+    return z
+
+    
+def compute_gquad_prob_internal(fc: vrna_fold_compound_t, l: int) -> None:
+    n: int = fc.length
+    S1: List[int] = fc.sequence_encoding
+    ptype: str = fc.ptype
+    my_iindx: List[int] = fc.iindx
+    jindx: List[int] = fc.jindx
+    pf_params: vrna_exp_param_t = fc.exp_params
+    G: List[float] = fc.exp_matrices.G
+    probs: List[float] = fc.exp_matrices.probs
+    scale: List[float] = fc.exp_matrices.scale
+
+    expintern: List[float] = pf_params.expinternal
+
+    if l < n - 3:
+        for k in range(2, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            i: int = k - 1
+            for j in range(min(l + MAXLOOP + 1, n), l + 3, -1):
+                ij: int = my_iindx[i] - j
+                type: int = ord(ptype[jindx[j] + i])
+                if not type:
+                    continue
+
+                u1: int = j - l - 1
+                qe: float = pf_params.expTermAU if type > 2 else 1.0
+                tmp2 += probs[ij] * qe * expintern[u1] * pf_params.expmismatchI[type][S1[i + 1]][S1[j - 1]] * scale[u1 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+    if l < n - 1:
+        for k in range(3, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            for i in range(max(1, k - MAXLOOP - 1), k - 1):
+                u1: int = k - i - 1
+                for j in range(l + 2, min(l + MAXLOOP - u1 + 1, n) + 1):
+                    ij: int = my_iindx[i] - j
+                    type: int = ord(ptype[jindx[j] + i])
+                    if not type:
+                        continue
+
+                    u2: int = j - l - 1
+                    qe: float = pf_params.expTermAU if type > 2 else 1.0
+                    tmp2 += probs[ij] * qe * (expintern[u1 + u2]) * pf_params.expmismatchI[type][S1[i + 1]][S1[j - 1]] * scale[u1 + u2 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+    if l < n:
+        for k in range(4, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            j: int = l + 1
+            for i in range(max(1, k - MAXLOOP - 1), k - 3):
+                ij: int = my_iindx[i] - j
+                type: int = ord(ptype[jindx[j] + i])
+                if not type:
+                    continue
+
+                u2: int = k - i - 1
+                qe: float = pf_params.expTermAU if type > 2 else 1.0
+                tmp2 += probs[ij] * qe * (expintern[u2]) * pf_params.expmismatchI[type][S1[i + 1]][S1[j - 1]] * scale[u2 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+def compute_gquad_prob_internal_comparative(fc: vrna_fold_compound_t, l: int) -> None:
+    n: int = fc.length
+    n_seq: int = fc.n_seq
+    S: List[List[int]] = fc.S
+    S5: List[List[int]] = fc.S5
+    S3: List[List[int]] = fc.S3
+    a2s: List[List[int]] = fc.a2s
+    my_iindx: List[int] = fc.iindx
+    pf_params: vrna_exp_param_t = fc.exp_params
+    G: List[float] = fc.exp_matrices.G
+    qb: List[float] = fc.exp_matrices.qb
+    probs: List[float] = fc.exp_matrices.probs
+    scale: List[float] = fc.exp_matrices.scale
+    md: vrna_md_t = pf_params.model_details
+
+    expintern: List[float] = pf_params.expinternal
+
+    if l < n - 3:
+        for k in range(2, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            i: int = k - 1
+            for j in range(min(l + MAXLOOP + 1, n), l + 3, -1):
+                ij: int = my_iindx[i] - j
+                if qb[ij] == 0.0:
+                    continue
+
+                qe: float = 1.0
+                u1: int = j - l - 1
+
+                for s in range(n_seq):
+                    type: int = vrna_get_ptype_md(S[s][i], S[s][j], md)
+                    u1_local: int = a2s[s][j - 1] - a2s[s][l]
+                    qe *= (expintern[u1_local])
+
+                    if md.dangles == 2:
+                        qe *= (pf_params.expmismatchI[type][S3[s][i]][S5[s][j]])
+
+                    if type > 2:
+                        qe *= (pf_params.expTermAU)
+
+                tmp2 += probs[ij] * qe * scale[u1 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+    if l < n - 1:
+        for k in range(3, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            for i in range(max(1, k - MAXLOOP - 1), k):
+                u1: int = k - i - 1
+                for j in range(l + 2, min(l + MAXLOOP - u1 + 1, n) + 1):
+                    ij: int = my_iindx[i] - j
+                    if qb[ij] == 0.0:
+                        continue
+
+                    qe: float = 1.0
+                    u2: int = j - l - 1
+
+                    for s in range(n_seq):
+                        type: int = vrna_get_ptype_md(S[s][i], S[s][j], md)
+                        u1_local: int = a2s[s][k - 1] - a2s[s][i]
+                        u2_local: int = a2s[s][j - 1] - a2s[s][l]
+                        qe *= (expintern[u1_local + u2_local])
+
+                        if md.dangles == 2:
+                            qe *= (pf_params.expmismatchI[type][S3[s][i]][S5[s][j]])
+
+                        if type > 2:
+                            qe *= (pf_params.expTermAU)
+
+                    tmp2 += probs[ij] * qe * scale[u1 + u2 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+    if l < n:
+        for k in range(4, l - VRNA_GQUAD_MIN_BOX_SIZE + 2):
+            kl: int = my_iindx[k] - l
+            if G[kl] == 0.0:
+                continue
+
+            tmp2: float = 0.0
+            j: int = l + 1
+            for i in range(max(1, k - MAXLOOP - 1), k - 3):
+                ij: int = my_iindx[i] - j
+                if qb[ij] == 0.0:
+                    continue
+
+                qe: float = 1.0
+                u2: int = k - i - 1
+
+                for s in range(n_seq):
+                    type: int = vrna_get_ptype_md(S[s][i], S[s][j], md)
+                    u2_local: int = a2s[s][k - 1] - a2s[s][i]
+                    qe *= (expintern[u2_local])
+
+                    if md.dangles == 2:
+                        qe *= (pf_params.expmismatchI[type][S3[s][i]][S5[s][j]])
+
+                    if type > 2:
+                        qe *= (pf_params.expTermAU)
+
+                tmp2 += probs[ij] * qe * scale[u2 + 2]
+
+            probs[kl] += tmp2 * G[kl]
+
+
+
+
 def compute_bpp_internal(fc:vrna_fold_compound_t,
                          l,
-                         bp_correction,
+                         bp_correction:list[vrna_ep_t],
                          corr_cnt,
                          corr_size,
                          Qmax,
                          ov,
-                         constraints):
+                         constraints:constraints_helper):
     import math
     from sys import float_info
 
