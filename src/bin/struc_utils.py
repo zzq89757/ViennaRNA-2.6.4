@@ -2020,7 +2020,7 @@ def init_sc_int_exp(fc:vrna_fold_compound_t, sc_wrapper:sc_int_exp_dat):
             elif provides_sc_stack:
                 sc_wrapper.pair = sc_int_exp_cb_stack_comparative
                 sc_wrapper.pair_ext = sc_int_exp_cb_ext_stack_comparative
-# 
+# init_sc_int_exp end ################
 
 def get_constraints_helper(fc):
     helpers = ConstraintsHelper()
