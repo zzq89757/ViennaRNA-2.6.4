@@ -2878,14 +2878,63 @@ def compute_bpp_internal(fc:vrna_fold_compound_t,
     if md.gquad:
         compute_gquad_prob_internal(fc, l)
 
+# compute_bpp_multibranch constant and class start ####################
+class helper_arrays:
+    def __init__(self) -> None:
+        self. prm_l = self.prm_l1 = self.prml = self.pmlu = self.prm_MLbu = 0.
+        self.ud_max_size = 0
 
 
-def compute_bpp_multibranch(fc,
+
+# compute_bpp_multibranch method start ####################
+def exp_E_MLstem(type: int, si1: int, sj1: int, P: vrna_exp_param_t) -> float:
+    energy: float = 1.0
+
+    if si1 >= 0 and sj1 >= 0:
+        energy = P.expmismatchM[type][si1][sj1]
+    elif si1 >= 0:
+        energy = P.expdangle5[type][si1]
+    elif sj1 >= 0:
+        energy = P.expdangle3[type][sj1]
+
+    if type > 2:
+        energy *= P.expTermAU
+
+    energy *= P.expMLintern[type]
+    return energy  # Casting to FLT_OR_DBL not necessary in Python
+
+def rotate_ml_helper_arrays_outer(ml_helpers:helper_arrays):
+    # rotate prm_l and prm_l1 arrays
+    tmp = ml_helpers.prm_l1
+    ml_helpers.prm_l1 = ml_helpers.prm_l
+    ml_helpers.prm_l = tmp
+    
+    # rotate pmlu entries required for unstructured domain feature
+    if ml_helpers.pmlu:
+        tmp = ml_helpers.pmlu[ml_helpers.ud_max_size]
+        
+        for u in range(ml_helpers.ud_max_size, 0, -1):
+            ml_helpers.pmlu[u] = ml_helpers.pmlu[u - 1]
+        
+        ml_helpers.pmlu[0] = tmp
+        
+        for u in range(ml_helpers.ud_max_size + 1):
+            ml_helpers.prm_MLbu[u] = 0.0
+
+def rotate_ml_helper_arrays_inner(ml_helpers:helper_arrays):
+    # rotate prm_MLbu entries required for unstructured domain feature
+    if ml_helpers.prm_MLbu:
+        for u in range(ml_helpers.ud_max_size, 0, -1):
+            ml_helpers.prm_MLbu[u] = ml_helpers.prm_MLbu[u - 1]
+
+
+# compute_bpp_multibranch  start ####################
+def compute_bpp_multibranch(fc:vrna_fold_compound_t,
                             l,
-                            ml_helpers,
+                            ml_helpers:helper_arrays,
                             Qmax,
                             ov,
-                            constraints):
+                            constraints:constraints_helper):
     import math
     from sys import float_info
 
