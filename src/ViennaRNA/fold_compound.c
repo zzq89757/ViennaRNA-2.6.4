@@ -195,7 +195,7 @@ vrna_fold_compound(const char       *sequence,
   unsigned int          length, aux_options;
   vrna_fold_compound_t  *fc;
   vrna_md_t             md;
-  printf("vrna_fold_compound called, seq is %c", sequence);
+  printf("vrna_fold_compound called, seq is %s", sequence);
   if (sequence == NULL)
     return NULL;
 

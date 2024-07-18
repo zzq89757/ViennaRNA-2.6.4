@@ -57,8 +57,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Callable
 
-class vrna_fc_s:
-    type:vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE
+class vrna_fold_compound_t:
+    type:vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value
     length: int
     strand_number: Optional[List[int]] = None
     strand_order: Optional[List[int]] = None
@@ -66,21 +66,22 @@ class vrna_fc_s:
     strand_start: Optional[List[int]] = None
     strand_end: Optional[List[int]] = None
     strands: int = 0
-    nucleotides: Optional[List[str]] = None
-    alignment: Optional[List[str]] = None
-    hc: Optional[str] = None  # This should be updated to the correct type
-    matrices: Optional[str] = None  # This should be updated to the correct type
-    exp_matrices: Optional[str] = None  # This should be updated to the correct type
-    params: Optional[str] = None  # This should be updated to the correct type
-    exp_params: Optional[str] = None  # This should be updated to the correct type
+    cutpoint: int = 0
+    nucleotides: Optional[List[str]] = vrna_seq_t
+    alignment: Optional[List[str]] = vrna_msa_t
+    hc: Optional[str] = vrna_hc_t  # This should be updated to the correct type
+    matrices: Optional[str] = vrna_mx_mfe_t  # This should be updated to the correct type
+    exp_matrices: Optional[str] = vrna_mx_pf_t  # This should be updated to the correct type
+    params: Optional[str] = vrna_param_t  # This should be updated to the correct type
+    exp_params: Optional[str] = vrna_exp_param_t  # This should be updated to the correct type
     iindx: Optional[List[int]] = None
     jindx: Optional[List[int]] = None
-    stat_cb: Optional[Callable] = None
+    stat_cb: Optional[Callable] = vrna_recursion_status_f
     auxdata: Optional[object] = None
-    free_auxdata: Optional[Callable] = None
-    domains_struc: Optional[str] = None  # This should be updated to the correct type
-    domains_up: Optional[str] = None  # This should be updated to the correct type
-    aux_grammar: Optional[str] = None  # This should be updated to the correct type
+    free_auxdata: Optional[Callable] = vrna_auxdata_free_f
+    domains_struc: Optional[str] = vrna_sd_t  # This should be updated to the correct type
+    domains_up: Optional[str] = vrna_ud_t  # This should be updated to the correct type
+    aux_grammar: Optional[str] = vrna_gr_aux_t  # This should be updated to the correct type
 
     # Fields for single/hybrid structure prediction
     sequence: Optional[str] = None
@@ -90,7 +91,7 @@ class vrna_fc_s:
     sequence_encoding2: Optional[List[int]] = None
     ptype: Optional[str] = None
     ptype_pf_compat: Optional[str] = None
-    sc: Optional[str] = None  # This should be updated to the correct type
+    sc: Optional[str] = vrna_sc_t  # This should be updated to the correct type
 
     # Fields for consensus structure prediction
     sequences: Optional[List[str]] = None
@@ -105,7 +106,7 @@ class vrna_fc_s:
     pscore: Optional[List[int]] = None
     pscore_local: Optional[List[List[int]]] = None
     pscore_pf_compat: Optional[List[int]] = None
-    scs: Optional[List[str]] = None  # This should be updated to the correct type
+    scs: Optional[List[str]] = vrna_sc_t  # This should be updated to the correct type
     oldAliEn: int = 0
 
     # Fields for Distance Class Partitioning
@@ -468,7 +469,7 @@ vrna_ud_exp_f = Callable[[int, int, int, None], float]
    
   
 
-class vrna_fold_compound_t:
+class vrna_fold_compound_t_:
     def __init__(self) -> None:
         # Common data fields
         self.type = vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value # vrna_fc_type_e
@@ -5519,6 +5520,336 @@ def pf_create_bppm(vc:vrna_fold_compound_t, structure):
 
     return 1
 
+# vrna_fold_compound ####################
+def nullify(fc: vrna_fold_compound_t):
+    if fc:
+        fc.length            = 0
+        fc.strands           = 0
+        fc.cutpoint          = -1
+        fc.strand_number     = None
+        fc.strand_order      = None
+        fc.strand_order_uniq = None
+        fc.strand_start      = None
+        fc.strand_end        = None
+        fc.nucleotides       = None
+        fc.alignment         = None
+
+        fc.hc            = None
+        fc.matrices      = None
+        fc.exp_matrices  = None
+        fc.params        = None
+        fc.exp_params    = None
+        fc.iindx         = None
+        fc.jindx         = None
+
+        fc.stat_cb       = None
+        fc.auxdata       = None
+        fc.free_auxdata  = None
+
+        fc.domains_struc = None
+        fc.domains_up    = None
+        fc.aux_grammar   = None
+
+        if fc.type == VRNA_FC_TYPE_SINGLE:
+            fc.sequence            = None
+            fc.sequence_encoding   = None
+            fc.encoding5           = None
+            fc.encoding3           = None
+            fc.sequence_encoding2  = None
+            fc.ptype               = None
+            fc.ptype_pf_compat     = None
+            fc.sc                  = None
+
+        elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+            fc.sequences         = None
+            fc.n_seq             = 0
+            fc.cons_seq          = None
+            fc.S_cons            = None
+            fc.S                 = None
+            fc.S5                = None
+            fc.S3                = None
+            fc.Ss                = None
+            fc.a2s               = None
+            fc.pscore            = None
+            fc.pscore_local      = None
+            fc.pscore_pf_compat  = None
+            fc.scs               = None
+            fc.oldAliEn          = 0
+
+        fc.maxD1         = 0
+        fc.maxD2         = 0
+        fc.reference_pt1 = None
+        fc.reference_pt2 = None
+        fc.referenceBPs1 = None
+        fc.referenceBPs2 = None
+        fc.bpdist        = None
+        fc.mm1           = None
+        fc.mm2           = None
+
+        fc.window_size = -1
+        fc.ptype_local = None
+        # Uncomment the following line if VRNA_WITH_SVM is defined in your context
+        # fc.zscore_data = None
+
+def init_fc_single():
+    init = vrna_fold_compound_t()
+    init.type = VRNA_FC_TYPE_SINGLE
+    fc = vrna_fold_compound_t()
+    if fc:
+        fc.type = init.type
+        nullify(fc)
+    return fc
+
+def vrna_md_copy(md_to: vrna_md_t, md_from: vrna_md_t) -> vrna_md_t:
+    if md_from is None:
+        return None
+
+    if md_to is None:
+        md_to = vrna_md_t()
+
+    if md_to != md_from:
+        md_to.rtype = md_from.rtype.copy()
+        md_to.alias = md_from.alias.copy()
+        md_to.nonstandards = md_from.nonstandards.copy()
+        md_to.pair = [row.copy() for row in md_from.pair]
+        md_to.pair_dist = [row.copy() for row in md_from.pair_dist]
+        # Copy other fields as necessary
+
+    return md_to
+
+def vrna_md_set_default(md:vrna_md_t):
+            if md:
+                defaults = vrna_md_t()
+                vrna_md_copy(md, defaults)
+    
+    
+
+
+
+
+ 
+def vrna_params(md=None):
+    if md:
+        return get_scaled_params(md)
+    else:
+        md = vrna_md_t()
+        vrna_md_set_default(md)
+        return get_scaled_params(md)  
+
+
+def get_scaled_exp_params(md, pfs):
+    pf = vrna_exp_param_t()
+
+    if last_parameter_file() is not None:
+        pf.param_file = last_parameter_file()
+
+    pf.model_details = md
+    pf.temperature = md.temperature
+    pf.alpha = md.betaScale
+    pf.kT = kT = md.betaScale * (md.temperature + K0) * GASCONST  # kT in cal/mol
+    pf.pf_scale = pfs
+    pf_smooth = md.pf_smooth
+    TT = (md.temperature + K0) / Tmeasure
+    salt = md.salt
+    saltStandard = VRNA_MODEL_DEFAULT_SALT
+
+    pf.lxc = lxc37 * TT
+    pf.expDuplexInit = RESCALE_BF(DuplexInit37, DuplexInitdH, TT, kT)
+    pf.expTermAU = RESCALE_BF(TerminalAU37, TerminalAUdH, TT, kT)
+    pf.expMLbase = RESCALE_BF(ML_BASE37, ML_BASEdH, TT, kT)
+    pf.expMLclosing = RESCALE_BF(ML_closing37, ML_closingdH, TT, kT)
+    pf.expgquadLayerMismatch = RESCALE_BF(GQuadLayerMismatch37, GQuadLayerMismatchH, TT, kT)
+    pf.gquadLayerMismatchMax = GQuadLayerMismatchMax
+
+    for i in range(VRNA_GQUAD_MIN_STACK_SIZE, VRNA_GQUAD_MAX_STACK_SIZE + 1):
+        for j in range(3 * VRNA_GQUAD_MIN_LINKER_LENGTH, 3 * VRNA_GQUAD_MAX_LINKER_LENGTH + 1):
+            GQuadAlpha_T = RESCALE_dG(GQuadAlpha37, GQuadAlphadH, TT)
+            GQuadBeta_T = RESCALE_dG(GQuadBeta37, GQuadBetadH, TT)
+            GT = GQuadAlpha_T * (i - 1) + GQuadBeta_T * math.log(j - 2)
+            pf.expgquad[i][j] = math.exp(-TRUNC_MAYBE(GT) * 10.0 / kT)
+
+    for i in range(31):
+        pf.exphairpin[i] = RESCALE_BF(hairpin37[i], hairpindH[i], TT, kT)
+
+    for i in range(MIN2(30, MAXLOOP) + 1):
+        pf.expbulge[i] = RESCALE_BF(bulge37[i], bulgedH[i], TT, kT)
+        pf.expinternal[i] = RESCALE_BF(internal_loop37[i], internal_loopdH[i], TT, kT)
+
+    if salt == saltStandard:
+        for i in range(MIN2(30, MAXLOOP) + 1):
+            pf.SaltLoopDbl[i] = 0.0
+            pf.expSaltLoop[i] = 1.0
+        for i in range(31, MAXLOOP + 1):
+            pf.SaltLoopDbl[i] = 0.0
+            pf.expSaltLoop[i] = 1.0
+    else:
+        for i in range(MIN2(30, MAXLOOP) + 1):
+            pf.SaltLoopDbl[i] = vrna_salt_loop(i, salt, saltT, md.backbone_length)
+            saltLoop = int(pf.SaltLoopDbl[i] + 0.5 - (pf.SaltLoopDbl[i] < 0))
+            pf.expSaltLoop[i] = math.exp(-saltLoop * 10.0 / kT)
+        for i in range(31, MAXLOOP + 1):
+            pf.SaltLoopDbl[i] = vrna_salt_loop(i, salt, saltT, md.backbone_length)
+            saltLoop = int(pf.SaltLoopDbl[i] + 0.5 - (pf.SaltLoopDbl[i] < 0))
+            pf.expSaltLoop[i] = math.exp(-saltLoop * 10.0 / kT)
+
+    if james_rule:
+        pf.expinternal[2] = math.exp(-80 * 10.0 / kT)
+
+    GT = RESCALE_dG(bulge37[30], bulgedH[30], TT)
+    for i in range(31, MAXLOOP + 1):
+        pf.expbulge[i] = math.exp(-TRUNC_MAYBE(GT + (pf.lxc * math.log(i / 30.0))) * 10.0 / kT)
+
+    GT = RESCALE_dG(internal_loop37[30], internal_loopdH[30], TT)
+    for i in range(31, MAXLOOP + 1):
+        pf.expinternal[i] = math.exp(-TRUNC_MAYBE(GT + (pf.lxc * math.log(i / 30.0))) * 10.0 / kT)
+
+    GT = RESCALE_dG(ninio37, niniodH, TT)
+    for j in range(MAXLOOP + 1):
+        pf.expninio[2][j] = math.exp(-MIN2(MAX_NINIO, j * TRUNC_MAYBE(GT)) * 10.0 / kT)
+
+    for i in range(0, len(Tetraloops) // 7):
+        pf.exptetra[i] = RESCALE_BF(Tetraloop37[i], TetraloopdH[i], TT, kT)
+
+    for i in range(0, len(Triloops) // 5):
+        pf.exptri[i] = RESCALE_BF(Triloop37[i], TriloopdH[i], TT, kT)
+
+    for i in range(0, len(Hexaloops) // 9):
+        pf.exphex[i] = RESCALE_BF(Hexaloop37[i], HexaloopdH[i], TT, kT)
+
+    for i in range(NBPAIRS + 1):
+        pf.expMLintern[i] = RESCALE_BF(ML_intern37, ML_interndH, TT, kT)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(5):
+            if md.dangles:
+                pf.expdangle5[i][j] = RESCALE_BF_SMOOTH(dangle5_37[i][j], dangle5_dH[i][j], TT, kT)
+                pf.expdangle3[i][j] = RESCALE_BF_SMOOTH(dangle3_37[i][j], dangle3_dH[i][j], TT, kT)
+            else:
+                pf.expdangle3[i][j] = pf.expdangle5[i][j] = 1
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            pf.expstack[i][j] = RESCALE_BF(stack37[i][j], stackdH[i][j], TT, kT)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(5):
+            for k in range(5):
+                pf.expmismatchI[i][j][k] = RESCALE_BF(mismatchI37[i][j][k], mismatchIdH[i][j][k], TT, kT)
+                pf.expmismatch1nI[i][j][k] = RESCALE_BF(mismatch1nI37[i][j][k], mismatch1nIdH[i][j][k], TT, kT)
+                pf.expmismatchH[i][j][k] = RESCALE_BF(mismatchH37[i][j][k], mismatchHdH[i][j][k], TT, kT)
+                pf.expmismatch23I[i][j][k] = RESCALE_BF(mismatch23I37[i][j][k], mismatch23IdH[i][j][k], TT, kT)
+                if md.dangles:
+                    pf.expmismatchM[i][j][k] = RESCALE_BF_SMOOTH(mismatchM37[i][j][k], mismatchMdH[i][j][k], TT, kT)
+                    pf.expmismatchExt[i][j][k] = RESCALE_BF_SMOOTH(mismatchExt37[i][j][k], mismatchExtdH[i][j][k], TT, kT)
+                else:
+                    pf.expmismatchM[i][j][k] = pf.expmismatchExt[i][j][k] = 1.0
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    pf.expint11[i][j][k][l] = RESCALE_BF(int11_37[i][j][k][l], int11_dH[i][j][k][l], TT, kT)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    for m in range(5):
+                        pf.expint21[i][j][k][l][m] = RESCALE_BF(int21_37[i][j][k][l][m], int21_dH[i][j][k][l][m], TT, kT)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    for m in range(5):
+                        for n in range(5):
+                            pf.expint22[i][j][k][l][m][n] = RESCALE_BF(int22_37[i][j][k][l][m][n], int22_dH[i][j][k][l][m][n], TT, kT)
+
+    pf.Tetraloops = Tetraloops
+    pf.Triloops = Triloops
+    pf.Hexaloops = Hexaloops
+
+    pf.SaltMLbase = pf.SaltMLclosing = pf.SaltDPXInit = 0.0
+
+    if salt == saltStandard:
+        pf.expSaltStack = 1.0
+    else:
+        pf.expSaltStack = math.exp(-vrna_salt_stack(salt, saltT, md.helical_rise) * 10.0 / kT)
+        vrna_salt_ml(pf.SaltLoopDbl, md.saltMLLower, md.saltMLUpper, pf.SaltMLbase, pf.SaltMLclosing)
+        if md.saltDPXInit != VRNA_MODEL_DEFAULT_SALT_DPXINIT:
+            pf.SaltDPXInit = md.saltDPXInit
+        elif md.saltDPXInit:
+            pf.SaltDPXInit = vrna_salt_duplex_init(md)
+        pf.expMLclosing *= math.exp(-pf.SaltMLbase * 10.0 / kT)
+        pf.expMLclosing *= math.exp(-pf.SaltMLclosing * 10.0 / kT)
+        pf.expMLbase *= math.exp(-pf.SaltMLbase * 10.0 / kT)
+        for i in range(NBPAIRS + 1):
+            pf.expMLintern[i] *= math.exp(-pf.SaltMLbase * 10.0 / kT)
+        pf.expDuplexInit *= math.exp(-pf.SaltDPXInit * 10.0 / kT)
+
+    return pf
+
+   
+
+def vrna_exp_params(md):
+    if md:
+        return get_scaled_exp_params(md, -1.0)
+    else:
+        md = vrna_md_t()
+        vrna_md_set_default(md)
+        return get_scaled_exp_params(md, -1.0)
+
+    
+def vrna_params_prepare(fc:vrna_fold_compound_t, options:int):
+    if fc:
+        md_p = fc.params.model_details
+
+        if options & VRNA_OPTION_PF:
+            if fc.exp_params:
+                if fc.exp_params.model_details != md_p:
+                    fc.exp_params = None
+
+            if not fc.exp_params:
+                if fc.type == VRNA_FC_TYPE_SINGLE:
+                    fc.exp_params = vrna_exp_params(md_p)
+                else:
+                    fc.exp_params = vrna_exp_params_comparative(fc.n_seq, md_p)
+# too long to read , chaos ##########################  
+                
+def add_params(fc: vrna_fold_compound_t, md_p: vrna_md_t, options: int):
+    if fc.params:
+        if fc.params.model_details != md_p:
+            fc.params = None
+    
+    if not fc.params:
+        fc.params = vrna_params(md_p)
+    
+    vrna_params_prepare(fc, options)
+    
+    
+def sanitize_bp_span(fc:vrna_fold_compound_t, options:int):
+    md = fc.params.model_details
+
+    # 确保 min_loop_size, max_bp_span 和 window_size 合理
+    if options & VRNA_OPTION_WINDOW:
+        if md.window_size <= 0:
+            md.window_size = fc.length
+        elif md.window_size > fc.length:
+            md.window_size = fc.length
+
+        fc.window_size = md.window_size
+    else:
+        # 非局部折叠模式
+        md.window_size = fc.length
+
+    if md.max_bp_span <= 0 or md.max_bp_span > md.window_size:
+        md.max_bp_span = md.window_size
+
+    
+
+
+
+
 def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -> Optional[vrna_fold_compound_t]:
     # Check if sequence is None
     if sequence is None:
@@ -5546,7 +5877,7 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
     aux_options = 0
 
     # Get a copy of the model details
-    md = md_p if md_p else vrna_md_set_default()
+    md = md_p if md_p else vrna_md_set_default(md)
 
     # Add energy parameters
     add_params(fc, md, options)
@@ -5583,7 +5914,7 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
 
 def generate_struc():
     struc = "(((((((((((((((((((((()))))))))))...)))))))))))"
-    seq = "aactgcccactcagtacatcaaTTGATGTACTGCCAAGTGGGCAGTT"
+    seq = "aactgcccactcagtacatcaa&TTGATGTACTGCCAAGTGGGCAGTT"
     # The length of the sequence (or sequence alignment) vrna_fold_compound_t
     # n = vc.length
     n = len(struc)
@@ -5591,13 +5922,9 @@ def generate_struc():
     
     # probs = matrices.probs
     # probs = [0] * n**2
-    vc = vrna_fold_compound(sequence,
-                                                &(opt->md),
-                                                VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
-    
-    vc = vrna_fold_compound_t()
-    print(vc)
-    return pf_create_bppm(vc, 'sss')
+    vc = vrna_fold_compound(seq,opt.md,VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
+
+    return pf_create_bppm(vc, None)
 
 if __name__ == "__main__":
     print(generate_struc())

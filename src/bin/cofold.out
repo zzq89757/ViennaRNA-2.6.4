@@ -1,34 +1,34 @@
-probs is :0.000000probs is :0.000000>primer_f6,temp_r6
+vrna_fold_compound called, seq is AAAACCCGCCTGGCTGACCGCC&GGCGGTCAGCCAGGCGGGCCATvrna_fold_compound called, seq is GGCGGTCAGCCAGGCGGGCCAT>primer_f6,temp_r6
 AAAAcccgcctggctgaccgcc&GGCGGTCAGCCAGGCGGGCCAT
 ....((((((((((((((((((&)))))))))))))))))).... (-43.70)
 ....((((((((((((((((((&)))))))))))))))))).... [-43.71]
  frequency of mfe structure in ensemble 0.977115; delta G binding=-37.45
-probs is :0.000000probs is :0.000000>primer_f5,temp_r5
+vrna_fold_compound called, seq is TCAATAATGACGTATGTAAAA&GGGAACATACGTCATTATTGAvrna_fold_compound called, seq is GGGAACATACGTCATTATTGA>primer_f5,temp_r5
 tcaataatgacgtatgtAAAA&GGGAACATACGTCATTATTGA
 (((((((((((((((((....&....))))))))))))))))) (-22.70)
 (((((((((((((((((....&....))))))))))))))))) [-22.77]
  frequency of mfe structure in ensemble 0.886024; delta G binding=-22.34
-probs is :0.000000probs is :0.000000>primer_f4,temp_r4
+vrna_fold_compound called, seq is AACTGCCCACTCAGTACATCAA&TTGATGTACTGCCAAGTGGGCAGTTvrna_fold_compound called, seq is TTGATGTACTGCCAAGTGGGCAGTT>primer_f4,temp_r4
 aactgcccactcagtacatcaa&TTGATGTACTGCCAAGTGGGCAGTT
 ((((((((((((((((((((((&)))))))))))...))))))))))) (-33.40)
 ((((((((((((((((((((((&)))))))))))...))))))))))) [-33.70]
  frequency of mfe structure in ensemble 0.614982; delta G binding=-24.20
-probs is :0.000000probs is :0.000000>primer_f3,temp_r3
+vrna_fold_compound called, seq is CCCCTATTAAAGACGTCAATGAC&GTCATTGACGTCAATAGGGGvrna_fold_compound called, seq is GTCATTGACGTCAATAGGGG>primer_f3,temp_r3
 cccctattAAAgacgtcaatgac&GTCATTGACGTCAATAGGGG
 ((((((((...((((((((((((&)))))))))))))))))))) (-29.90)
 ((((((((...((((((((((((&)))))))))))))))))))) [-29.96]
  frequency of mfe structure in ensemble 0.904287; delta G binding=-29.39
-probs is :0.000000probs is :0.000000>primer_f2,temp_r2
+vrna_fold_compound called, seq is TGACTTATGGGACTTTCCTACTTGGCAG&CTGCCAAGTAGGAAAGTCCCATAAGGTCAvrna_fold_compound called, seq is CTGCCAAGTAGGAAAGTCCCATAAGGTCA>primer_f2,temp_r2
 tgacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
 ((((((((((((((((((((((((((((&)))))))))))))))))))))))).)))) (-48.20)
 ((((((((((((((((((((((((((((&))))))))))))))))))))))))},))) [-48.72]
  frequency of mfe structure in ensemble 0.430813; delta G binding=-45.35
-probs is :0.000000probs is :0.000000>primer_f1,temp_r1
+vrna_fold_compound called, seq is TGAACTTATGGGACTTTCCTACTTGGCAG&CTGCCAAGTAGGAAAGTCCCATAAGGTCAvrna_fold_compound called, seq is CTGCCAAGTAGGAAAGTCCCATAAGGTCA>primer_f1,temp_r1
 tgaacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
 (((.(((((((((((((((((((((((((&))))))))))))))))))))))))).))) (-48.60)
 (({.(((((((((((((((((((((((((&))))))))))))))))))))))))).})) [-48.93]
  frequency of mfe structure in ensemble 0.584786; delta G binding=-45.61
-probs is :0.000000probs is :0.000000>primer_f,temp_r
+vrna_fold_compound called, seq is TTAGTCATCGCTACCAGGATGGTGATGCGGTTTTGGCA&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAAvrna_fold_compound called, seq is TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA>primer_f,temp_r
 ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA
 (((((((((((((.....((((((((((((((((((((&)))))))))))))))))))).....))))))))))))) (-57.00)
 ((((((((((((({{,..{(((((((((((((((((((&))))))))))))))))))))}},..,)))))))))))) [-57.91]
