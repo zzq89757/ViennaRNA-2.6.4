@@ -968,7 +968,7 @@ class sc_ext_exp_dat:
 sc_ext_exp_cb = Callable[[int, int, int, int, sc_ext_exp_dat], float]
 sc_ext_exp_red_up = Callable[[int, int, sc_ext_exp_dat], float]
 sc_ext_exp_split = Callable[[int, int, int, sc_ext_exp_dat], float]
-vrna_sc_exp_f = Callable[[int, int, int, int, str, None], float]
+vrna_sc_exp_f = Callable[[int, int, int, int, int, None], float]
 
 
 def sc_ext_exp_cb_red(i:int, j:int, k:int, l:int, data:sc_ext_exp_dat) -> float:
@@ -3805,7 +3805,7 @@ def compute_bpp_external(fc:vrna_fold_compound_t, constraints:constraints_helper
                 probs[ij] *= contrib_f(fc, i, j, constraints)
 
 
-def multistrand_update_Y5(fc, l, Y5, Y5p, constraints):
+def multistrand_update_Y5(fc:vrna_fold_compound_t, l, Y5, Y5p, constraints:constraints_helper):
     n = fc.length
     sn = fc.strand_number
     se = fc.strand_end
@@ -3879,7 +3879,7 @@ def multistrand_update_Y5(fc, l, Y5, Y5p, constraints):
                 Y5[s] += qtmp
 
 
-def multistrand_update_Y3(fc, l, Y3, Y3p, constraints):
+def multistrand_update_Y3(fc:vrna_fold_compound_t, l, Y3, Y3p, constraints:constraints_helper):
     n = fc.length
     sn = fc.strand_number
     ss = fc.strand_start
@@ -3944,7 +3944,7 @@ def multistrand_update_Y3(fc, l, Y3, Y3p, constraints):
                     Y3[s][k] += Y3p[s][k - 1]
 
 
-def multistrand_contrib(fc, l, Y5, Y3, constraints, Qmax, ov):
+def multistrand_contrib(fc:vrna_fold_compound_t, l, Y5, Y3, constraints:constraints_helper, Qmax, ov):
     sn = fc.strand_number
     ss = fc.strand_start
     se = fc.strand_end
@@ -3986,7 +3986,146 @@ def multistrand_contrib(fc, l, Y5, Y3, constraints, Qmax, ov):
             probs[kl] += tmp * qtmp
 
 
-def ud_outside_ext_loops(vc):
+# ud_outside_ext_loops method start
+from typing import Optional, List
+
+def vrna_nucleotide_IUPAC_identity(nt: str, mask: str) -> int:
+    n1: str
+    n2: str
+    p: Optional[str]
+
+    p = None
+    n1 = nt.upper()
+    n2 = mask.upper()
+
+    if n1 == 'A':
+        p = n2 in "ARMWDHVN"
+    elif n1 == 'C':
+        p = n2 in "CYMSBHVN"
+    elif n1 == 'G':
+        p = n2 in "GRKSBDVN"
+    elif n1 == 'T':
+        p = n2 in "TYKWBDHN"
+    elif n1 == 'U':
+        p = n2 in "UYKWBDHN"
+    elif n1 == 'I':
+        p = n2 in "IN"
+    elif n1 == 'R':
+        p = n2 in "AGR"
+    elif n1 == 'Y':
+        p = n2 in "CTUY"
+    elif n1 == 'K':
+        p = n2 in "GTUK"
+    elif n1 == 'M':
+        p = n2 in "ACM"
+    elif n1 == 'S':
+        p = n2 in "GCS"
+    elif n1 == 'W':
+        p = n2 in "ATUW"
+    elif n1 == 'B':
+        p = n2 in "GCTBU"
+    elif n1 == 'D':
+        p = n2 in "AGTUD"
+    elif n1 == 'H':
+        p = n2 in "ACTUH"
+    elif n1 == 'V':
+        p = n2 in "ACGV"
+    elif n1 == 'N':
+        p = n2 in "ACGTUN"
+
+    return 1 if p else 0
+
+
+def get_motifs(vc: vrna_fold_compound_t, i: int, loop_type: int) -> Optional[List[int]]:
+    k: int
+    j: int
+    u: int
+    n: int
+    cnt: int
+    guess: int
+    sequence: str
+    domains_up: vrna_ud_t
+    motif_list: Optional[List[int]]
+
+    sequence = vc.sequence
+    n = int(vc.length)
+    domains_up = vc.domains_up
+
+    cnt = 0
+    guess = domains_up.motif_count
+    motif_list = [0] * (guess + 1)
+
+    # collect list of motif numbers we find that start at position i
+    for k in range(domains_up.motif_count):
+        if not (domains_up.motif_type[k] & loop_type):
+            continue
+        
+        j = i + domains_up.motif_size[k] - 1
+        if j <= n:
+            # only consider motif that does not exceed sequence length (does not work for circular RNAs!)
+            for u in range(i, j + 1):
+                if not vrna_nucleotide_IUPAC_identity(sequence[u - 1], domains_up.motif[k][u - i]):
+                    break
+            
+            if u > j:  # got a complete motif match
+                motif_list[cnt] = k
+                cnt += 1
+
+    if cnt == 0:
+        return None
+
+    motif_list = motif_list[:cnt]
+    motif_list.append(-1)  # end of list marker
+
+    return motif_list
+
+
+def vrna_ud_get_motif_size_at(vc: vrna_fold_compound_t, i: int, loop_type: int):
+    if vc and vc.domains_up:
+        k: int
+        l: int
+        cnt: int
+        ret: Optional[List[int]]
+        ptr: Optional[List[int]]
+
+        ret = None
+        if i > 0 and i <= vc.length:
+            ptr = get_motifs(vc, i, loop_type)
+            if ptr:
+                k = 0
+                while ptr[k] != -1:
+                    ptr[k] = vc.domains_up.motif_size[ptr[k]]
+                    k += 1
+
+                # make the list unique
+                ret = [-1] * (k + 1)
+                cnt = 0
+                k = 0
+                while ptr[k] != -1:
+                    l = 0
+                    while l < cnt:
+                        if ptr[k] == ret[l]:
+                            break
+                        l += 1
+
+                    if l == cnt:
+                        ret[cnt] = ptr[k]
+                        ret[cnt + 1] = -1
+                        cnt += 1
+                    k += 1
+
+                # resize ret array
+                ret = ret[:cnt + 1]
+
+
+        return ret
+
+    return None
+
+
+
+# ud_outside_ext_loops start
+def ud_outside_ext_loops(vc:vrna_fold_compound_t):
     n = vc.length
     q1k = vc.exp_matrices.q1k
     qln = vc.exp_matrices.qln
@@ -4027,7 +4166,11 @@ def ud_outside_ext_loops(vc):
                                                  domains_up.data)
                 cnt += 1
 
-            
+          
+          
+# ud_outside_hp_loops start
+
+
 def ud_outside_hp_loops(vc):
     n = vc.length
     my_iindx = vc.iindx
@@ -4094,6 +4237,156 @@ def ud_outside_hp_loops(vc):
                                              domains_up.data)
 
                 cnt += 1
+
+
+# ud_outside_int_loops start
+
+
+def vrna_get_ptype_window(i: int, j: int, ptype: List[str]) -> int:
+    tt = ord(ptype[i][j - i])
+
+    return 7 if tt == 0 else tt
+
+
+eval_hc = Callable[[int, int, int, int, None], int]
+
+from typing import Optional, List
+
+def exp_E_interior_loop(fc: vrna_fold_compound_t,
+                        i: int,
+                        j: int,
+                        k: int,
+                        l: int) -> float:
+    sliding_window: int
+    type_: int
+    type2: int
+    ptype: Optional[str]
+    ptype_local: Optional[List[str]]
+    hc_mx: Optional[List[int]]
+    hc_mx_local: Optional[List[List[int]]]
+    eval_loop: int
+    hc_decompose_ij: int
+    hc_decompose_kl: int
+    qbt1: float
+    q_temp: float
+    scale: List[float]
+    pf_params: vrna_exp_param_t
+    md: vrna_md_t
+    domains_up: Optional[vrna_ud_t]
+    evaluate: eval_hc
+    hc_dat_local: hc_int_def_dat
+    sc_wrapper: sc_int_exp_dat
+
+    sliding_window = 1 if fc.hc.type == VRNA_HC_WINDOW else 0
+    n = fc.length
+    n_seq = 1 if fc.type == VRNA_FC_TYPE_SINGLE else fc.n_seq
+    ptype = None if fc.type == VRNA_FC_TYPE_SINGLE else (fc.ptype if not sliding_window else None)
+    ptype_local = None if fc.type == VRNA_FC_TYPE_SINGLE else (fc.ptype_local if sliding_window else None)
+    S1 = fc.sequence_encoding if fc.type == VRNA_FC_TYPE_SINGLE else None
+    SS = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S
+    S5 = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S5
+    S3 = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.S3
+    a2s = None if fc.type == VRNA_FC_TYPE_SINGLE else fc.a2s
+    jindx = fc.jindx
+    hc_mx = None if sliding_window else fc.hc.mx
+    hc_mx_local = fc.hc.matrix_local if sliding_window else None
+    hc_up = fc.hc.up_int
+    pf_params = fc.exp_params
+    sn = fc.strand_number
+    md = pf_params.model_details
+    scale = fc.exp_matrices.scale
+    domains_up = fc.domains_up
+    rtype = md.rtype
+    qbt1 = 0.0
+    u1 = k - i - 1
+    u2 = j - l - 1
+
+    if sn[k] != sn[i] or sn[j] != sn[l]:
+        return qbt1
+
+    if hc_up[l + 1] < u2:
+        return qbt1
+
+    if hc_up[i + 1] < u1:
+        return qbt1
+
+    evaluate = prepare_hc_int_def(fc, hc_dat_local)
+    init_sc_int_exp(fc, sc_wrapper)
+
+    hc_decompose_ij = hc_mx_local[i][j - i] if sliding_window else hc_mx[n * i + j]
+    hc_decompose_kl = hc_mx_local[k][l - k] if sliding_window else hc_mx[n * k + l]
+    eval_loop = 1 if (hc_decompose_ij & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) and (hc_decompose_kl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC) else 0
+
+    if eval_loop and evaluate(i, j, k, l, hc_dat_local):
+        q_temp = 0.0
+
+        if fc.type == VRNA_FC_TYPE_SINGLE:
+            type_ = vrna_get_ptype_window(i, j, ptype_local) if sliding_window else vrna_get_ptype(jindx[j] + i, ptype)
+            type2 = rtype[vrna_get_ptype_window(k, l, ptype_local)] if sliding_window else rtype[vrna_get_ptype(jindx[l] + k, ptype)]
+
+            q_temp = exp_E_IntLoop(u1,
+                                   u2,
+                                   type_,
+                                   type2,
+                                   S1[i + 1],
+                                   S1[j - 1],
+                                   S1[k - 1],
+                                   S1[l + 1],
+                                   pf_params)
+        elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+            q_temp = 1.0
+
+            for s in range(n_seq):
+                u1_local = a2s[s][k - 1] - a2s[s][i]
+                u2_local = a2s[s][j - 1] - a2s[s][l]
+                type_ = vrna_get_ptype_md(SS[s][i], SS[s][j], md)
+                type2 = vrna_get_ptype_md(SS[s][l], SS[s][k], md)
+
+                q_temp *= exp_E_IntLoop(u1_local,
+                                        u2_local,
+                                        type_,
+                                        type2,
+                                        S3[s][i],
+                                        S5[s][j],
+                                        S5[s][k],
+                                        S3[s][l],
+                                        pf_params)
+
+        if sc_wrapper.pair:
+            q_temp *= sc_wrapper.pair(i, j, k, l, sc_wrapper)
+
+        qbt1 += q_temp * scale[u1 + u2 + 2]
+
+        if domains_up and domains_up.exp_energy_cb:
+            qq5 = qq3 = 0.0
+
+            if u1 > 0:
+                qq5 = domains_up.exp_energy_cb(fc,
+                                               i + 1, k - 1,
+                                               VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                               domains_up.data)
+
+            if u2 > 0:
+                qq3 = domains_up.exp_energy_cb(fc,
+                                               l + 1, j - 1,
+                                               VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                               domains_up.data)
+
+            qbt1 += q_temp * qq5 * scale[u1 + u2 + 2]
+            qbt1 += q_temp * qq3 * scale[u1 + u2 + 2]
+            qbt1 += q_temp * qq5 * qq3 * scale[u1 + u2 + 2]
+
+
+    return qbt1
+
+def vrna_exp_E_interior_loop(fc: vrna_fold_compound_t,
+                             i: int,
+                             j: int,
+                             k: int,
+                             l: int) -> float:
+    if fc:
+        return exp_E_interior_loop(fc, i, j, k, l)
+    return 0.0
 
 
 def ud_outside_int_loops(vc):
@@ -4456,6 +4749,229 @@ def ud_outside_mb_loops(vc):
                                              domains_up.data)
 
                 cnt += 1
+
+
+# vrna_exp_E_hp_loop start ############
+# Python 中模拟 C 函数 hc_hp_cb_def_window 的功能
+def hc_hp_cb_def_window(i: int, j: int, k: int, l: int, d: int, data: hc_hp_def_dat) -> int:
+    dat = data  # 假设 data 是 HcHpDefDat 类的实例
+
+    eval_result = 0
+    u = j - i - 1
+
+    # 检查 mx_window 和 hc_up 的条件
+    if dat.mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP:
+        eval_result = 1
+        if dat.hc_up[i + 1] < u:
+            eval_result = 0
+
+    return eval_result
+
+
+def hc_hp_cb_def_user_window(i: int, j: int, k: int, l: int, d: int, data: hc_hp_def_dat) -> int:
+    # 数据类型的转换
+    dat = data  # 假设 data 是 struct hc_hp_def_dat *
+
+    # 调用 hc_hp_cb_def_window
+    eval_result = hc_hp_cb_def_window(i, j, k, l, d, data)
+    # 检查 hc_f 的返回值
+    eval_result = eval_result if dat.hc_f(i, j, k, l, d, dat.hc_dat) else 0
+
+    return eval_result
+# 模拟私有函数 prepare_hc_hp_def_window
+def prepare_hc_hp_def_window(fc: vrna_fold_compound_t, dat: hc_hp_def_dat):
+    # 设置 dat 的属性
+    dat.mx_window = fc.hc.matrix_local
+    dat.hc_up = fc.hc.up_hp
+    dat.n = fc.length
+    dat.sn = fc.strand_number
+
+    # 检查是否有 fc.hc.f 函数
+    if fc.hc.f:
+        dat.hc_f = fc.hc.f
+        dat.hc_dat = fc.hc.data
+        return hc_hp_cb_def_user_window  # 返回模拟函数指针
+
+    return hc_hp_cb_def_window  # 返回另一个模拟函数指针
+
+
+def exp_E_Hairpin(u: int, type: int, si1: int, sj1: int, string: str, P:vrna_exp_param_t) -> float:
+    q = 0.0
+    kT = P.kT  # kT in cal/mol
+    salt_correction = 1.0
+
+    if P.model_details.salt != VRNA_MODEL_DEFAULT_SALT:
+        if u <= MAXLOOP:
+            salt_correction = P.expSaltLoop[u + 1]
+        else:
+            salt_correction = math.exp(-vrna_salt_loop_int(u + 1, P.model_details.salt, P.temperature + K0, P.model_details.backbone_length) * 10.0 / kT)
+
+    if u <= 30:
+        q = P.exphairpin[u]
+    else:
+        q = P.exphairpin[30] * math.exp(-(P.lxc * math.log(u / 30.0)) * 10.0 / kT)
+
+    q *= salt_correction
+
+    if u < 3:
+        return q  # should only be the case when folding alignments
+
+    if string and P.model_details.special_hp:
+        if u == 4:
+            tl = string[:6]
+            ts = P.Tetraloops.find(tl)
+            if ts != -1:
+                if type != 7:
+                    return P.exptetra[ts // 7] * salt_correction
+                else:
+                    q *= P.exptetra[ts // 7]
+        elif u == 6:
+            tl = string[:8]
+            ts = P.Hexaloops.find(tl)
+            if ts != -1:
+                return P.exphex[ts // 9] * salt_correction
+        elif u == 3:
+            tl = string[:5]
+            ts = P.Triloops.find(tl)
+            if ts != -1:
+                return P.exptri[ts // 6] * salt_correction
+
+            if type > 2:
+                return q * P.expTermAU
+            else:
+                return q
+
+    q *= P.expmismatchH[type][si1][sj1]
+
+    return q
+
+# Python 中模拟 C 函数 exp_eval_hp_loop 的功能
+def exp_eval_hp_loop(fc: vrna_fold_compound_t, i: int, j: int) -> float:
+    P = fc.exp_params
+    md = P.model_details
+    sn = fc.strand_number
+    scale = fc.exp_matrices.scale
+    domains_up = fc.domains_up
+
+    sc_wrapper = sc_hp_exp_dat()
+    init_sc_hp_exp(fc, sc_wrapper)
+
+    q = 0.0
+
+    if sn[j] != sn[i]:
+        return q
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        S = fc.sequence_encoding
+        S2 = fc.sequence_encoding2
+        u = j - i - 1
+        type = vrna_get_ptype_md(S2[i], S2[j], md)
+
+        if sn[j] == sn[i]:
+            q = exp_E_Hairpin(u, type, S[i + 1], S[j - 1], fc.sequence[i - 1:], P)
+        else:
+            # 处理外部 hairpin loop 的情况
+            pass
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        SS = fc.S
+        S5 = fc.S5
+        S3 = fc.S3
+        Ss = fc.Ss
+        a2s = fc.a2s
+        n_seq = fc.n_seq
+        qbt1 = 1.0
+
+        for s in range(n_seq):
+            u = a2s[s][j - 1] - a2s[s][i]
+            if a2s[s][i] < 1:
+                continue
+
+            type = vrna_get_ptype_md(SS[s][i], SS[s][j], md)
+            qbt1 *= exp_E_Hairpin(u, type, S3[s][i], S5[s][j], Ss[s][a2s[s][i] - 1:], P)
+
+        q = qbt1
+
+    # 添加软约束
+    if sc_wrapper.pair:
+        q *= sc_wrapper.pair(i, j, sc_wrapper)
+
+    if domains_up and domains_up.exp_energy_cb:
+        q += q * domains_up.exp_energy_cb(fc, i + 1, j - 1, VRNA_UNSTRUCTURED_DOMAIN_HP_LOOP, domains_up.data)
+
+    q *= scale[j - i + 1]
+
+
+    return q
+
+
+# Python 中模拟 C 函数 exp_eval_ext_hp_loop 的功能
+def exp_eval_ext_hp_loop(fc: vrna_fold_compound_t, i: int, j: int) -> float:
+    n = fc.length
+    P = fc.exp_params
+    md = P.model_details
+    noGUclosure = md.noGUclosure
+    scale = fc.exp_matrices.scale
+    domains_up = fc.domains_up
+
+    sc_wrapper = sc_hp_exp_dat()
+    init_sc_hp_exp(fc, sc_wrapper)
+
+    q = 0.0
+    u1 = n - j
+    u2 = i - 1
+
+    if (u1 + u2) < 3:
+        return q
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        sequence = fc.sequence
+        S = fc.sequence_encoding
+        S2 = fc.sequence_encoding2
+        type = vrna_get_ptype_md(S2[j], S2[i], md)
+
+        if (type == 3 or type == 4) and noGUclosure:
+            return q
+
+        loopseq = sequence[j - 1:] + sequence[:i]
+        loopseq = loopseq[:u1 + u2 + 2]
+
+        q = exp_E_Hairpin(u1 + u2, type, S[j + 1], S[i - 1], loopseq, P)
+
+    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+        SS = fc.S
+        S5 = fc.S5
+        S3 = fc.S3
+        Ss = fc.Ss
+        a2s = fc.a2s
+        n_seq = fc.n_seq
+        qbt1 = 1.0
+
+        for s in range(n_seq):
+            u1_local = a2s[s][n] - a2s[s][j]
+            u2_local = a2s[s][i - 1]
+            loopseq = Ss[s][a2s[s][j] - 1:] + Ss[s][:a2s[s][i]]
+            loopseq = loopseq[:u1_local + u2_local + 2]
+
+            type = vrna_get_ptype_md(SS[s][j], SS[s][i], md)
+            qbt1 *= exp_E_Hairpin(u1_local + u2_local, type, S3[s][j], S5[s][i], loopseq, P)
+
+        q = qbt1
+
+    # 添加软约束
+    if sc_wrapper.pair_ext:
+        q *= sc_wrapper.pair_ext(i, j, sc_wrapper)
+
+    if domains_up and domains_up.exp_energy_cb:
+        q += q * domains_up.exp_energy_cb(fc, j + 1, i - 1, VRNA_UNSTRUCTURED_DOMAIN_HP_LOOP, domains_up.data)
+
+    q *= scale[u1 + u2]
+
+
+    return q
+
+
+
 
 
 def vrna_exp_E_hp_loop(fc, i, j):
