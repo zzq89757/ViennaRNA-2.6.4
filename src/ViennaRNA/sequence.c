@@ -185,7 +185,6 @@ vrna_sequence_add(vrna_fold_compound_t  *vc,
                  NULL,
                  &(vc->params->model_details),
                  options);
-
     /* increase strands counter */
     vc->strands++;
 

@@ -256,9 +256,11 @@ vrna_mx_add(vrna_fold_compound_t  *vc,
   ret = 1;
 
   if (options & VRNA_OPTION_MFE)
+    printf("into vrna_mx_mfe_add \n");
     ret &= vrna_mx_mfe_add(vc, mx_type, options);
 
   if (options & VRNA_OPTION_PF)
+    printf("into vrna_mx_pf_add \n");
     ret &= vrna_mx_pf_add(vc, mx_type, options);
 
   return ret;

@@ -57,73 +57,22 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Callable
 
-class vrna_fold_compound_t:
-    type:vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value
-    length: int
-    strand_number: Optional[List[int]] = None
-    strand_order: Optional[List[int]] = None
-    strand_order_uniq: Optional[List[int]] = None
-    strand_start: Optional[List[int]] = None
-    strand_end: Optional[List[int]] = None
-    strands: int = 0
-    cutpoint: int = 0
-    nucleotides: Optional[List[str]] = vrna_seq_t
-    alignment: Optional[List[str]] = vrna_msa_t
-    hc: Optional[str] = vrna_hc_t  # This should be updated to the correct type
-    matrices: Optional[str] = vrna_mx_mfe_t  # This should be updated to the correct type
-    exp_matrices: Optional[str] = vrna_mx_pf_t  # This should be updated to the correct type
-    params: Optional[str] = vrna_param_t  # This should be updated to the correct type
-    exp_params: Optional[str] = vrna_exp_param_t  # This should be updated to the correct type
-    iindx: Optional[List[int]] = None
-    jindx: Optional[List[int]] = None
-    stat_cb: Optional[Callable] = vrna_recursion_status_f
-    auxdata: Optional[object] = None
-    free_auxdata: Optional[Callable] = vrna_auxdata_free_f
-    domains_struc: Optional[str] = vrna_sd_t  # This should be updated to the correct type
-    domains_up: Optional[str] = vrna_ud_t  # This should be updated to the correct type
-    aux_grammar: Optional[str] = vrna_gr_aux_t  # This should be updated to the correct type
-
-    # Fields for single/hybrid structure prediction
-    sequence: Optional[str] = None
-    sequence_encoding: Optional[List[int]] = None
-    encoding5: Optional[List[int]] = None
-    encoding3: Optional[List[int]] = None
-    sequence_encoding2: Optional[List[int]] = None
-    ptype: Optional[str] = None
-    ptype_pf_compat: Optional[str] = None
-    sc: Optional[str] = vrna_sc_t  # This should be updated to the correct type
-
-    # Fields for consensus structure prediction
-    sequences: Optional[List[str]] = None
-    n_seq: int = 0
-    cons_seq: Optional[str] = None
-    S_cons: Optional[List[int]] = None
-    S: Optional[List[List[int]]] = None
-    S5: Optional[List[List[int]]] = None
-    S3: Optional[List[List[int]]] = None
-    Ss: Optional[List[str]] = None
-    a2s: Optional[List[List[int]]] = None
-    pscore: Optional[List[int]] = None
-    pscore_local: Optional[List[List[int]]] = None
-    pscore_pf_compat: Optional[List[int]] = None
-    scs: Optional[List[str]] = vrna_sc_t  # This should be updated to the correct type
-    oldAliEn: int = 0
-
-    # Fields for Distance Class Partitioning
-    maxD1: int = 0
-    maxD2: int = 0
-    reference_pt1: Optional[List[int]] = None
-    reference_pt2: Optional[List[int]] = None
-    referenceBPs1: Optional[List[int]] = None
-    referenceBPs2: Optional[List[int]] = None
-    bpdist: Optional[List[int]] = None
-    mm1: Optional[List[int]] = None
-    mm2: Optional[List[int]] = None
-
-    # Fields for local folding
-    window_size: int = 0
-    ptype_local: Optional[List[str]] = None
-    zscore_data: Optional[str] = None  # This should be updated to the correct type
+class vrna_seq_t:
+    def __init__(self,
+                 seq_type: int,               # Assuming vrna_seq_type_e is an integer or enum
+                 name: Optional[str] = None,
+                 string: Optional[str] = None,
+                 encoding: Optional[List[int]] = None,
+                 encoding5: Optional[List[int]] = None,
+                 encoding3: Optional[List[int]] = None,
+                 length: int = 0):
+        self.type = seq_type
+        self.name = name
+        self.string = string
+        self.encoding = encoding if encoding is not None else []
+        self.encoding5 = encoding5 if encoding5 is not None else []
+        self.encoding3 = encoding3 if encoding3 is not None else []
+        self.length = length
 
 
 class vrna_hc_t:
@@ -467,6 +416,78 @@ vrna_ud_add_probs_f = Callable[[int, int, int, float, None], None]
 vrna_ud_exp_f = Callable[[int, int, int, None], float]
 
    
+
+
+
+class vrna_fold_compound_t:
+    type:vrna_fc_type_e.VRNA_FC_TYPE_COMPARATIVE.value
+    length: int
+    strand_number: Optional[List[int]] = None
+    strand_order: Optional[List[int]] = None
+    strand_order_uniq: Optional[List[int]] = None
+    strand_start: Optional[List[int]] = None
+    strand_end: Optional[List[int]] = None
+    strands: int = 0
+    cutpoint: int = 0
+    nucleotides: Optional[List[str]] = vrna_seq_t
+    # alignment: Optional[List[str]] = vrna_msa_t
+    hc: Optional[str] = vrna_hc_t  # This should be updated to the correct type
+    matrices: Optional[str] = vrna_mx_mfe_t  # This should be updated to the correct type
+    exp_matrices: Optional[str] = vrna_mx_pf_t  # This should be updated to the correct type
+    params: Optional[str] = vrna_param_t  # This should be updated to the correct type
+    exp_params: Optional[str] = vrna_exp_param_t  # This should be updated to the correct type
+    iindx: Optional[List[int]] = None
+    jindx: Optional[List[int]] = None
+    stat_cb: Optional[Callable] = vrna_recursion_status_f
+    auxdata: Optional[object] = None
+    free_auxdata: Optional[Callable] = vrna_auxdata_free_f
+    domains_struc: Optional[str] = vrna_sd_t  # This should be updated to the correct type
+    domains_up: Optional[str] = vrna_ud_t  # This should be updated to the correct type
+    aux_grammar: Optional[str] = vrna_gr_aux_t  # This should be updated to the correct type
+
+    # Fields for single/hybrid structure prediction
+    sequence: Optional[str] = None
+    sequence_encoding: Optional[List[int]] = None
+    encoding5: Optional[List[int]] = None
+    encoding3: Optional[List[int]] = None
+    sequence_encoding2: Optional[List[int]] = None
+    ptype: Optional[str] = None
+    ptype_pf_compat: Optional[str] = None
+    sc: Optional[str] = vrna_sc_t  # This should be updated to the correct type
+
+    # Fields for consensus structure prediction
+    sequences: Optional[List[str]] = None
+    n_seq: int = 0
+    cons_seq: Optional[str] = None
+    S_cons: Optional[List[int]] = None
+    S: Optional[List[List[int]]] = None
+    S5: Optional[List[List[int]]] = None
+    S3: Optional[List[List[int]]] = None
+    Ss: Optional[List[str]] = None
+    a2s: Optional[List[List[int]]] = None
+    pscore: Optional[List[int]] = None
+    pscore_local: Optional[List[List[int]]] = None
+    pscore_pf_compat: Optional[List[int]] = None
+    scs: Optional[List[str]] = vrna_sc_t  # This should be updated to the correct type
+    oldAliEn: int = 0
+
+    # Fields for Distance Class Partitioning
+    maxD1: int = 0
+    maxD2: int = 0
+    reference_pt1: Optional[List[int]] = None
+    reference_pt2: Optional[List[int]] = None
+    referenceBPs1: Optional[List[int]] = None
+    referenceBPs2: Optional[List[int]] = None
+    bpdist: Optional[List[int]] = None
+    mm1: Optional[List[int]] = None
+    mm2: Optional[List[int]] = None
+
+    # Fields for local folding
+    window_size: int = 0
+    ptype_local: Optional[List[str]] = None
+    zscore_data: Optional[str] = None  # This should be updated to the correct type
+
+
   
 
 class vrna_fold_compound_t_:
@@ -2727,106 +2748,6 @@ MAXLOG = 709.782712893384
 MACHEP = 2.2204460492503131e-16
 MAXNUM = 1.7976931348623157e+308
 MAXFAC = 31
-
-def expn(n, x):
-    BIG = 1.44115188075855872e+17  # Approximation, adjust as needed
-    
-    if n < 0 or x < 0:
-        raise ValueError("Invalid input: n and x must be non-negative")
-    
-    if x > MAXLOG:
-        return 0.0
-    
-    if x == 0.0:
-        if n < 2:
-            raise ValueError("Singularity: E_n(x) is undefined for n < 2")
-        else:
-            return 1.0 / (n - 1.0)
-    
-    if n == 0:
-        return math.exp(-x) / x
-    
-    # Expansion for large n
-    if n > 5000:
-        xk = x + n
-        yk = 1.0 / (xk * xk)
-        t = n
-        ans = yk * t * (6.0 * x * x - 8.0 * t * x + t * t)
-        ans = yk * (ans + t * (t - 2.0 * x))
-        ans = yk * (ans + t)
-        ans = (ans + 1.0) * math.exp(-x) / xk
-        return ans
-    
-    # Power series expansion
-    if x > 1.0:
-        psi = -EUL - math.log(x)
-        for i in range(1, n):
-            psi += 1.0 / i
-        
-        z = -x
-        xk = 0.0
-        yk = 1.0
-        pk = 1.0 - n
-        ans = 1.0 / pk if n != 1 else 0.0
-        
-        while True:
-            xk += 1.0
-            yk *= z / xk
-            pk += 1.0
-            if pk != 0.0:
-                ans += yk / pk
-            if ans != 0.0:
-                t = abs(yk / ans)
-            else:
-                t = 1.0
-            
-            if t <= MACHEP:
-                break
-        
-        k = int(xk)
-        t = n
-        r = n - 1
-        ans = (math.pow(z, r) * psi / math.gamma(t)) - ans
-        return ans
-    
-    # Continued fraction
-    k = 1
-    pkm2 = 1.0
-    qkm2 = x
-    pkm1 = 1.0
-    qkm1 = x + n
-    ans = pkm1 / qkm1
-    
-    while True:
-        k += 1
-        if k & 1:
-            yk = 1.0
-            xk = n + (k - 1) / 2
-        else:
-            yk = x
-            xk = k / 2
-        
-        pk = pkm1 * yk + pkm2 * xk
-        qk = qkm1 * yk + qkm2 * xk
-        
-        if qk != 0:
-            r = pk / qk
-            t = abs((ans - r) / r)
-            ans = r
-        else:
-            t = 1.0
-        
-        if abs(pk) > BIG:
-            pkm2 /= BIG
-            pkm1 /= BIG
-            qkm2 /= BIG
-            qkm1 /= BIG
-        
-        if t <= MACHEP:
-            break
-    
-    ans *= math.exp(-x)
-    return ans
 
 def tau_ss(T, backbonelen):
     bjerrum_length_inv = 1 / bjerrum_length(T)
@@ -5623,18 +5544,18 @@ def vrna_md_set_default(md:vrna_md_t):
                 vrna_md_copy(md, defaults)
     
     
-
+from .remove import Duplex, Tmeasure, expn
 
 
 
  
 def vrna_params(md=None):
     if md:
-        return get_scaled_params(md)
+        return Duplex.get_scaled_params(md)
     else:
         md = vrna_md_t()
         vrna_md_set_default(md)
-        return get_scaled_params(md)  
+        return Duplex.get_scaled_params(md)  
 
 
 def get_scaled_exp_params(md, pfs):
@@ -5799,6 +5720,180 @@ def vrna_exp_params(md):
         vrna_md_set_default(md)
         return get_scaled_exp_params(md, -1.0)
 
+
+
+def get_exp_params_ali(md: vrna_md_t, n_seq: int, pfs: float) -> vrna_exp_param_t:
+    pf = vrna_exp_param_t()
+    pf.model_details = md
+    pf.alpha = md.betaScale
+    pf.temperature = md.temperature
+    pf.pf_scale = pfs
+    pf.kT = kTn = float(n_seq) * md.betaScale * (md.temperature + K0) * GASCONST  # kT in cal/mol
+    pf_smooth = md.pf_smooth
+    TT = (md.temperature + K0) / Tmeasure
+    salt = md.salt
+    saltStandard = VRNA_MODEL_DEFAULT_SALT
+
+    pf.lxc = lxc37 * TT
+    pf.expDuplexInit = RESCALE_BF(DuplexInit37, DuplexInitdH, TT, kTn)
+    pf.expTermAU = RESCALE_BF(TerminalAU37, TerminalAUdH, TT, kTn)
+    pf.expMLbase = RESCALE_BF(ML_BASE37, ML_BASEdH, TT, kTn / n_seq)
+    pf.expMLclosing = RESCALE_BF(ML_closing37, ML_closingdH, TT, kTn)
+    pf.expgquadLayerMismatch = RESCALE_BF(GQuadLayerMismatch37, GQuadLayerMismatchH, TT, kTn)
+    pf.gquadLayerMismatchMax = GQuadLayerMismatchMax
+
+    for i in range(VRNA_GQUAD_MIN_STACK_SIZE, VRNA_GQUAD_MAX_STACK_SIZE + 1):
+        for j in range(3 * VRNA_GQUAD_MIN_LINKER_LENGTH, 3 * VRNA_GQUAD_MAX_LINKER_LENGTH + 1):
+            GQuadAlpha_T = RESCALE_dG(GQuadAlpha37, GQuadAlphadH, TT)
+            GQuadBeta_T = RESCALE_dG(GQuadBeta37, GQuadBetadH, TT)
+            GT = GQuadAlpha_T * (i - 1) + GQuadBeta_T * math.log(j - 2)
+            pf.expgquad[i][j] = math.exp(-TRUNC_MAYBE(GT) * 10.0 / kTn)
+
+    for i in range(31):
+        pf.exphairpin[i] = RESCALE_BF(hairpin37[i], hairpindH[i], TT, kTn)
+    for i in range(3):
+        GT = 600 * TT  # Penalty
+        pf.exphairpin[i] = math.exp(-GT * 10.0 / kTn)
+
+    for i in range(min(31, MAXLOOP) + 1):
+        pf.expbulge[i] = RESCALE_BF(bulge37[i], bulgedH[i], TT, kTn)
+        pf.expinternal[i] = RESCALE_BF(internal_loop37[i], internal_loopdH[i], TT, kTn)
+        pf.SaltLoopDbl[i] = 0.0 if salt == saltStandard else vrna_salt_loop(i, salt, saltT, md.backbone_length)
+        saltLoop = int(pf.SaltLoopDbl[i] + 0.5 - (pf.SaltLoopDbl[i] < 0))
+        pf.expSaltLoop[i] = math.exp(-saltLoop * 10.0 / kTn)
+
+    if salt == saltStandard:
+        for i in range(min(31, MAXLOOP) + 1):
+            pf.SaltLoopDbl[i] = 0.0
+            pf.expSaltLoop[i] = 1.0
+        for i in range(31, MAXLOOP + 1):
+            pf.SaltLoopDbl[i] = 0.0
+            pf.expSaltLoop[i] = 1.0
+    else:
+        for i in range(min(31, MAXLOOP) + 1):
+            pf.SaltLoopDbl[i] = vrna_salt_loop(i, salt, saltT, md.backbone_length)
+            saltLoop = int(pf.SaltLoopDbl[i] + 0.5 - (pf.SaltLoopDbl[i] < 0))
+            pf.expSaltLoop[i] = math.exp(-saltLoop * 10.0 / kTn)
+        for i in range(31, MAXLOOP + 1):
+            pf.SaltLoopDbl[i] = vrna_salt_loop(i, salt, saltT, md.backbone_length)
+            saltLoop = int(pf.SaltLoopDbl[i] + 0.5 - (pf.SaltLoopDbl[i] < 0))
+            pf.expSaltLoop[i] = math.exp(-saltLoop * 10.0 / kTn)
+
+    if james_rule:
+        pf.expinternal[2] = math.exp(-80 * 10.0 / kTn)
+
+    GT = RESCALE_dG(bulge37[30], bulgedH[30], TT)
+    for i in range(31, MAXLOOP + 1):
+        pf.expbulge[i] = math.exp(-(GT + (pf.lxc * math.log(i / 30.0))) * 10.0 / kTn)
+
+    GT = RESCALE_dG(internal_loop37[30], internal_loopdH[30], TT)
+    for i in range(31, MAXLOOP + 1):
+        pf.expinternal[i] = math.exp(-(GT + (pf.lxc * math.log(i / 30.0))) * 10.0 / kTn)
+
+    GT = RESCALE_dG(ninio37, niniodH, TT)
+    for j in range(MAXLOOP + 1):
+        pf.expninio[2][j] = math.exp(-min(MAX_NINIO, j * GT) * 10.0 / kTn)
+
+    for i in range(0, len(Tetraloops) // 7):
+        pf.exptetra[i] = RESCALE_BF(Tetraloop37[i], TetraloopdH[i], TT, kTn)
+
+    for i in range(0, len(Triloops) // 5):
+        pf.exptri[i] = RESCALE_BF(Triloop37[i], TriloopdH[i], TT, kTn)
+
+    for i in range(0, len(Hexaloops) // 9):
+        pf.exphex[i] = RESCALE_BF(Hexaloop37[i], HexaloopdH[i], TT, kTn)
+
+    for i in range(NBPAIRS + 1):
+        pf.expMLintern[i] = RESCALE_BF(ML_intern37, ML_interndH, TT, kTn)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(5):
+            if md.dangles:
+                pf.expdangle5[i][j] = RESCALE_BF_SMOOTH(dangle5_37[i][j], dangle5_dH[i][j], TT, kTn)
+                pf.expdangle3[i][j] = RESCALE_BF_SMOOTH(dangle3_37[i][j], dangle3_dH[i][j], TT, kTn)
+            else:
+                pf.expdangle3[i][j] = pf.expdangle5[i][j] = 1.0
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            pf.expstack[i][j] = RESCALE_BF(stack37[i][j], stackdH[i][j], TT, kTn)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(5):
+            for k in range(5):
+                pf.expmismatchI[i][j][k] = RESCALE_BF(mismatchI37[i][j][k], mismatchIdH[i][j][k], TT, kTn)
+                pf.expmismatch1nI[i][j][k] = RESCALE_BF(mismatch1nI37[i][j][k], mismatch1nIdH[i][j][k], TT, kTn)
+                pf.expmismatchH[i][j][k] = RESCALE_BF(mismatchH37[i][j][k], mismatchHdH[i][j][k], TT, kTn)
+                pf.expmismatch23I[i][j][k] = RESCALE_BF(mismatch23I37[i][j][k], mismatch23IdH[i][j][k], TT, kTn)
+                if md.dangles:
+                    pf.expmismatchM[i][j][k] = RESCALE_BF_SMOOTH(mismatchM37[i][j][k], mismatchMdH[i][j][k], TT, kTn)
+                    pf.expmismatchExt[i][j][k] = RESCALE_BF_SMOOTH(mismatchExt37[i][j][k], mismatchExtdH[i][j][k], TT, kTn)
+                else:
+                    pf.expmismatchM[i][j][k] = pf.expmismatchExt[i][j][k] = 1.0
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    pf.expint11[i][j][k][l] = RESCALE_BF(int11_37[i][j][k][l], int11_dH[i][j][k][l], TT, kTn)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    for m in range(5):
+                        pf.expint21[i][j][k][l][m] = RESCALE_BF(int21_37[i][j][k][l][m], int21_dH[i][j][k][l][m], TT, kTn)
+
+    for i in range(NBPAIRS + 1):
+        for j in range(NBPAIRS + 1):
+            for k in range(5):
+                for l in range(5):
+                    for m in range(5):
+                        for n in range(5):
+                            pf.expint22[i][j][k][l][m][n] = RESCALE_BF(int22_37[i][j][k][l][m][n], int22_dH[i][j][k][l][m][n], TT, kTn)
+
+    pf.Tetraloops = Tetraloops
+    pf.Triloops = Triloops
+    pf.Hexaloops = Hexaloops
+
+    pf.SaltMLbase = pf.SaltMLclosing = pf.SaltDPXInit = 0.0
+
+    if salt == saltStandard:
+        pf.expSaltStack = 1.0
+    else:
+        pf.expSaltStack = math.exp(-Duplex.vrna_salt_stack(salt, saltT, md.helical_rise) * 10.0 / kTn)
+        Duplex.vrna_salt_ml(pf.SaltLoopDbl, md.saltMLLower, md.saltMLUpper, pf.SaltMLbase, pf.SaltMLclosing)
+
+        if md.saltDPXInit != VRNA_MODEL_DEFAULT_SALT_DPXINIT:
+            pf.SaltDPXInit = md.saltDPXInit
+        elif md.saltDPXInit:
+            pf.SaltDPXInit = Duplex.vrna_salt_duplex_init(md)
+
+        pf.expMLclosing *= math.exp(-pf.SaltMLbase * 10.0 / kTn)
+        pf.expMLclosing *= math.exp(-pf.SaltMLclosing * 10.0 / kTn)
+        pf.expMLbase *= math.exp(-pf.SaltMLbase * 10.0 / kTn)
+        for i in range(NBPAIRS + 1):
+            pf.expMLintern[i] *= math.exp(-pf.SaltMLbase * 10.0 / kTn)
+
+        pf.expDuplexInit *= math.exp(-pf.SaltDPXInit * 10.0 / kTn)
+
+    return pf
+
+
+
+
+
+def vrna_exp_params_comparative(n_seq: int, md: vrna_md_t) -> vrna_exp_param_t:
+    if md:
+        return get_exp_params_ali(md, n_seq, -1.0)
+    else:
+        md = vrna_md_t()
+        vrna_md_set_default(md)
+        return get_exp_params_ali(md, n_seq, -1.0)
+
+
+
+VRNA_OPTION_PF = 1 << 1
     
 def vrna_params_prepare(fc:vrna_fold_compound_t, options:int):
     if fc:
@@ -5844,8 +5939,296 @@ def sanitize_bp_span(fc:vrna_fold_compound_t, options:int):
 
     if md.max_bp_span <= 0 or md.max_bp_span > md.window_size:
         md.max_bp_span = md.window_size
+
+def vrna_strsplit(string: Optional[str], delimiter: Optional[str] = '&') -> Optional[List[str]]:
+    if not string:
+        return None
+    
+    if delimiter:
+        delim = delimiter[0]
+    else:
+        delim = '&'
+    
+    # Split the string using the given delimiter
+    split = string.split(delim)
+    
+    # Remove empty strings if any
+    split = [s for s in split if s]
+
+    # Return the split list
+    return split
+import ctypes
+def vrna_realloc(ptr, size):
+    # Placeholder for actual realloc function
+    return ctypes.cast(ptr, ctypes.POINTER(ctypes.c_ubyte * size)).contents
+
+def vrna_sequence_add(vc:vrna_fold_compound_t, string:str, options:int) -> int:
+    if vc and vc.type == VRNA_FC_TYPE_SINGLE and string:
+        add_length = len(string)
+
+        # Reallocate nucleotides
+        vc.nucleotides = vrna_realloc(vc.nucleotides,
+                                      ctypes.sizeof(ctypes.POINTER(ctypes.c_void_p)) * (vc.strands + 1))
+
+        # Dummy placeholder for actual sequence setting
+        # set_sequence(vc.nucleotides[vc.strands], string, None, vc.params.contents.model_details, options)
+
+        # Increase strands counter
+        vc.strands += 1
+
+        # Reallocate sequence
+        new_sequence_length = vc.length + add_length + 1
+        vc.sequence = vrna_realloc(vc.sequence,
+                                   ctypes.sizeof(ctypes.c_char) * new_sequence_length)
+        vc.sequence[vc.length:vc.length + add_length] = string.encode('utf-8')
+
+        # Reallocate encoding
+        new_encoding_length = vc.length + add_length + 2
+        vc.sequence_encoding = vrna_realloc(vc.sequence_encoding,
+                                            ctypes.sizeof(ctypes.c_short) * new_encoding_length)
+
+        # Dummy placeholder for actual encoding adjustment
+        # vc.sequence_encoding[vc.length + 1:vc.length + add_length + 1] = vc.nucleotides[vc.strands - 1].encoding[1:]
+
+        # Restore circular encoding
+        vc.sequence_encoding[vc.length + add_length + 1] = vc.sequence_encoding[1]
+        vc.sequence_encoding[0] = vc.sequence_encoding[vc.length + add_length]
+
+        # Reallocate and adjust encoding2
+        vc.sequence_encoding2 = vrna_realloc(vc.sequence_encoding2,
+                                             ctypes.sizeof(ctypes.c_short) * new_encoding_length)
         
+        # Dummy placeholder for actual encoding2 adjustment
+        # enc = vrna_seq_encode_simple(vc.nucleotides[vc.strands - 1].string, vc.params.contents.model_details)
+        # vc.sequence_encoding2[vc.length + 1:vc.length + add_length + 1] = enc[1:]
         
+        vc.sequence_encoding2[vc.length + add_length + 1] = vc.sequence_encoding2[1]
+        vc.sequence_encoding2[0] = vc.length + add_length
+
+        # Increase length property of the fold compound
+        vc.length += add_length
+
+        return 1
+
+    return 0
+
+
+def vrna_idx_col_wise(length: int) -> List[int]:
+    idx = [0] * (length + 1)
+
+    for i in range(1, length + 1):
+        idx[i] = (i * (i - 1)) // 2
+
+    return idx
+
+
+
+def vrna_ptypes(S: List[int], md: vrna_md_t) -> str:
+    import numpy as np
+
+    n = S[0]
+    min_loop_size = md.min_loop_size
+
+    if n > 1000000:
+        print("vrna_ptypes@alphabet.c: sequence length of %d exceeds addressable range" % n)
+        return None
+
+    ptype = np.zeros(((n * (n + 1)) // 2 + 2,), dtype=np.uint8)
+    idx = vrna_idx_col_wise(n)
+
+    for k in range(1, n - min_loop_size):
+        for l in range(1, 3):
+            i = k
+            j = i + min_loop_size + l
+            if j > n:
+                continue
+
+            type_ = md.pair[S[i]][S[j]]
+            ntype = 0
+            otype = 0
+            while i >= 1 and j <= n:
+                if i > 1 and j < n:
+                    ntype = md.pair[S[i - 1]][S[j + 1]]
+
+                if md.noLP and not otype and not ntype:
+                    type_ = 0  # i.j can only form isolated pairs
+
+                ptype[idx[j] + i] = type_
+                otype = type_
+                type_ = ntype
+                i -= 1
+                j += 1
+
+    return ptype.tobytes()
+
+def wrap_get_ptypes(S: List[int], md: vrna_md_t) -> Optional[str]:
+    if S:
+        n = S[0]
+        ptype = bytearray((n * (n + 1)) // 2 + 2)
+        idx = vrna_idx_row_wise(n)
+        min_loop_size = md.min_loop_size
+
+        for k in range(1, n - min_loop_size):
+            for l in range(1, 3):  # l ranges from 1 to 2 inclusive
+                type_ = 0
+                ntype = 0
+                otype = 0
+                i = k
+                j = i + min_loop_size + l
+                if j > n:
+                    continue
+
+                type_ = md.pair[S[i]][S[j]]
+                while (i >= 1) and (j <= n):
+                    if (i > 1) and (j < n):
+                        ntype = md.pair[S[i - 1]][S[j + 1]]
+
+                    if md.noLP and (otype == 0) and (ntype == 0):
+                        type_ = 0  # i.j can only form isolated pairs
+
+                    ptype[idx[i] - j] = chr(type_)
+                    otype = type_
+                    type_ = ntype
+                    i -= 1
+                    j += 1
+
+        return ptype.decode('ascii')
+    else:
+        return None
+
+
+
+def get_ptypes(S: List[int], md: vrna_md_t, idx_type: int) -> Optional[str]:
+    if S:
+        if len(S) > 1000000:
+            print(
+                f"get_ptypes@alphabet.c: sequence length of {S[0]} exceeds addressable range"
+            )
+            return None
+
+        if idx_type:
+            return wrap_get_ptypes(S, md)
+        else:
+            return vrna_ptypes(S, md)
+    else:
+        return None
+
+Law_and_Order = "_ACGUTXKI"
+
+def vrna_nucleotide_decode(enc: int, md: Optional[vrna_md_t]) -> str:
+    if md:
+        if md.energy_set > 0:
+            return chr(enc + ord('A') - 1)
+        else:
+            return Law_and_Order[enc]
+    else:
+        return chr(0)
+
+
+
+def vrna_aln_consensus_sequence(alignment: List[str], md_p: Optional[vrna_md_t]) -> Optional[str]:
+    if alignment:
+        n = len(alignment[0])
+        if n > 0:
+            # Check alignment for consistency
+            for s in range(1, len(alignment)):
+                if len(alignment[s]) != n:
+                    print(
+                        f"vrna_aln_consensus_sequence: Length of aligned sequence #{s + 1} does not match length of first sequence\n"
+                        f"{alignment[s]}\n\n"
+                    )
+                    return None
+
+            n_seq = len(alignment)
+
+            md = md_p if md_p else vrna_md_set_default()
+
+            consensus = [''] * n
+
+            for i in range(n):
+                freq = [0] * 8
+
+                for s in range(n_seq):
+                    nucleotide = alignment[s][i]
+                    encoded = Duplex.vrna_nucleotide_encode(nucleotide, md)
+                    freq[encoded] += 1
+
+                max_freq = max(freq)
+                c = freq.index(max_freq)
+
+                if c > 4:
+                    c += 1  # Skip T
+
+                consensus[i] = vrna_nucleotide_decode(c, md)
+
+            return ''.join(consensus)
+    return None
+
+
+VRNA_SEQ_RNA = 1
+
+
+
+
+
+def vrna_sequence_prepare(fc: vrna_fold_compound_t) -> None:
+    if fc:
+        if fc.strand_number is not None:
+            del fc.strand_number
+        if fc.strand_order is not None:
+            del fc.strand_order
+        if fc.strand_order_uniq is not None:
+            del fc.strand_order_uniq
+        if fc.strand_start is not None:
+            del fc.strand_start
+        if fc.strand_end is not None:
+            del fc.strand_end
+
+        fc.strand_order = None
+        fc.strand_order_uniq = None
+        fc.strand_start = None
+        fc.strand_end = None
+
+        fc.strand_number = [0] * (fc.length + 2)
+
+        if fc.type == VRNA_FC_TYPE_SINGLE:
+            fc.strand_order_uniq = list(range(fc.strands + 1))
+            fc.strand_order = list(range(fc.strands + 1))
+
+            fc.strand_start = [0] * (fc.strands + 1)
+            fc.strand_end = [0] * (fc.strands + 1)
+
+            fc.strand_start[0] = 1
+            fc.strand_end[0] = fc.strand_start[0] + fc.nucleotides[0].length - 1
+
+            for cnt in range(1, fc.strands):
+                fc.strand_start[cnt] = fc.strand_end[cnt - 1] + 1
+                fc.strand_end[cnt] = fc.strand_start[cnt] + fc.nucleotides[cnt].length - 1
+                for i in range(fc.strand_start[cnt], fc.strand_end[cnt] + 1):
+                    fc.strand_number[i] = cnt
+
+            fc.strand_number[0] = fc.strand_number[1]
+            fc.strand_number[fc.length + 1] = fc.strand_number[fc.length]
+
+        elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+            fc.nucleotides = [None] * (fc.strands + 1)
+            fc.nucleotides[0] = vrna_seq_t(string=None, type=VRNA_SEQ_RNA, length=fc.length)
+
+            fc.strand_order_uniq = [0, 1]
+            fc.strand_order = [0, 1]
+
+            fc.strand_start = [0, 1]
+            fc.strand_end = [0, 1]
+            fc.strand_start[0] = 1
+            fc.strand_end[0] = fc.strand_start[0] + fc.length - 1
+
+VRNA_SEQUENCE_RNA = 1
+VRNA_OPTION_EVAL_ONLY = 1 << 3
+WITH_PTYPE = 1
+WITH_PTYPE_COMPAT = 2
+VRNA_OPTION_WINDOW = 1 << 4
+
+
 def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
     sequence = None
     sequences = None
@@ -5866,8 +6249,8 @@ def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
         if fc.strands > 1:
             fc.cutpoint = fc.nucleotides[0].length + 1
 
-            if md_p.min_loop_size == TURN:
-                md_p.min_loop_size = 0
+            # if md_p.min_loop_size == TURN:
+            #     md_p.min_loop_size = 0
 
         if not options & VRNA_OPTION_EVAL_ONLY:
             if fc.strands > 1:
@@ -5909,7 +6292,7 @@ def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
 
     vrna_sequence_prepare(fc)
 
-    if not options & VRNA_OPTION_WINDOW and fc.length <= vrna_sequence_length_max(options):
+    if not options & VRNA_OPTION_WINDOW and fc.length <= 1000000:
         fc.iindx = vrna_idx_row_wise(fc.length)
         fc.jindx = vrna_idx_col_wise(fc.length)
 
@@ -5979,8 +6362,9 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
             vrna_mx_add(fc, VRNA_MX_DEFAULT, options)
 
     return fc
-
-
+VRNA_OPTION_DEFAULT = 0
+VRNA_OPTION_HYBRID = 1 << 2
+from .remove import vrna_md_t
 def generate_struc():
     struc = "(((((((((((((((((((((()))))))))))...)))))))))))"
     seq = "aactgcccactcagtacatcaa&TTGATGTACTGCCAAGTGGGCAGTT"
@@ -5991,7 +6375,7 @@ def generate_struc():
     
     # probs = matrices.probs
     # probs = [0] * n**2
-    vc = vrna_fold_compound(seq,opt.md,VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
+    vc = vrna_fold_compound(seq,vrna_md_t(),VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
 
     return pf_create_bppm(vc, None)
 

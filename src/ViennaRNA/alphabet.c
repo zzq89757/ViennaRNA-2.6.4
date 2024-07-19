@@ -291,14 +291,15 @@ vrna_seq_encode(const char  *sequence,
 
   if (sequence && md) {
     S = vrna_seq_encode_simple(sequence, md);
-
     l = (unsigned int)strlen(sequence);
-
+    printf("len is %d\n",l);
     for (i = 1; i <= l; i++)
       S[i] = md->alias[S[i]];
 
     S[l + 1]  = S[1];
     S[0]      = S[l];
+    for (i = 1; i <= l; i++)
+      printf("%d-", S[i]);
   }
 
   return S;
@@ -316,13 +317,12 @@ vrna_seq_encode_simple(const char *sequence,
     l = (unsigned int)strlen(sequence);
     S = (short *)vrna_alloc(sizeof(short) * (l + 2));
 
+
     for (i = 1; i <= l; i++) /* make numerical encoding of sequence */
       S[i] = (short)vrna_nucleotide_encode(sequence[i - 1], md);
-
     S[l + 1]  = S[1];
     S[0]      = (short)l;
   }
-
   return S;
 }
 
@@ -354,7 +354,6 @@ vrna_nucleotide_encode(char       c,
         code--;           /* make T and U equivalent */
     }
   }
-
   return code;
 }
 

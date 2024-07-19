@@ -26277,13 +26277,14 @@ class Duplex():
         c = c.upper()
         if md:
             law_and_order = "ACGUT"
-            pos = law_and_order.find(c)
+            pos = law_and_order.find(c) + 1
             if pos == -1:
                 code = 0
             else:
                 code = pos
             if code > 4:
                 code -= 1  # make T and U equivalent
+        print(code, end = "()")
         return code
 
     @staticmethod    

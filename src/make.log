@@ -1,114 +1,37 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
-  CC       fold_compound.lo
-  CC       search/BoyerMoore.lo
-  CC       commands.lo
-  CC       combinatorics.lo
-  CC       utils/svm_utils.lo
-  CCLD     libRNA_utils.la
-  CC       plotting/alignments.lo
-  CC       plotting/layouts.lo
-  CC       plotting/probabilities.lo
-  CC       plotting/structures.lo
-  CC       plotting/plot_utils.lo
-  CC       plotting/RNApuzzler/RNApuzzler.lo
-  CC       plotting/RNApuzzler/RNAturtle.lo
-  CCLD     libRNA_plotting.la
-  CC       params/io.lo
-  CC       params/params.lo
-  CC       params/convert.lo
-  CC       params/salt.lo
-  CCLD     libRNA_params.la
-  CC       eval.lo
-  CC       eval_covariance.lo
-  CC       eval_wrappers.lo
-  CCLD     libRNA_eval.la
-  CC       loops/external.lo
-  CC       loops/external_bt.lo
-  CC       loops/external_pf.lo
-  CC       loops/hairpin.lo
-  CC       loops/hairpin_bt.lo
-  CC       loops/hairpin_pf.lo
-  CC       loops/internal.lo
-  CC       loops/internal_bt.lo
-  CC       loops/internal_pf.lo
-  CC       loops/multibranch.lo
-  CC       loops/multibranch_bt.lo
-  CC       loops/multibranch_pf.lo
-  CCLD     libRNA_loops.la
-  CC       move_set.lo
-  CC       landscape/move.lo
-  CC       landscape/findpath.lo
-  CC       landscape/neighbor.lo
-  CC       landscape/local_neighbors.lo
-  CC       landscape/walk.lo
-  CCLD     libRNA_landscape.la
-  CC       utils/libRNA_utils_sse41_la-higher_order_functions_sse41.lo
-  CCLD     libRNA_utils_sse41.la
-  CC       utils/libRNA_utils_avx512_la-higher_order_functions_avx512.lo
-  CCLD     libRNA_utils_avx512.la
+  CC       alphabet.lo
   CXXLD    libRNA_conv.la
   CXXLD    libRNA.la
   GEN      libRNA.a
 Making all in bin
-  CC       RNAfold.o
-  CC       gengetopt_helpers.lo
-  CC       input_id_helpers.lo
-  CC       modified_bases_helpers.lo
-  CCLD     libhelpers.la
   CCLD     RNAfold
-  CC       RNAeval.o
   CCLD     RNAeval
-  CC       RNAheat.o
   CCLD     RNAheat
-  CC       RNApdist.o
   CCLD     RNApdist
-  CC       RNAdistance.o
   CCLD     RNAdistance
-  CC       RNAinverse.o
   CCLD     RNAinverse
-  CC       RNAplot.o
   CCLD     RNAplot
-  CC       RNAsubopt.o
   CCLD     RNAsubopt
-  CC       RNALfold.o
   CCLD     RNALfold
-  CC       RNAcofold.o
   CCLD     RNAcofold
-  CC       RNApaln.o
   CCLD     RNApaln
-  CC       RNAduplex.o
   CCLD     RNAduplex
-  CC       RNAalifold.o
   CCLD     RNAalifold
-  CC       RNAplfold.o
   CCLD     RNAplfold
-  CC       RNAup.o
   CCLD     RNAup
-  CC       RNAaliduplex.o
   CCLD     RNAaliduplex
-  CC       RNALalifold.o
   CCLD     RNALalifold
-  CC       RNA2Dfold.o
   CCLD     RNA2Dfold
-  CC       RNAparconv.o
   CCLD     RNAparconv
-  CC       RNAPKplex.o
   CCLD     RNAPKplex
-  CC       RNAplex.o
   CCLD     RNAplex
-  CC       RNAsnoop.o
   CCLD     RNAsnoop
-  CC       RNApvmin.o
   CCLD     RNApvmin
-  CC       RNAdos.o
   CCLD     RNAdos
-  CC       RNAmultifold.o
   CCLD     RNAmultifold
 Making all in Utils
   CCLD     b2ct
-  CC       popt.o
   CCLD     popt
-  CC       ct2db.o
   CCLD     ct2db

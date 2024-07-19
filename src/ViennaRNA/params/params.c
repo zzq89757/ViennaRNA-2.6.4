@@ -386,6 +386,7 @@ vrna_params_prepare(vrna_fold_compound_t  *fc,
       }
 
       if (!fc->exp_params)
+        // printf("into exp\n");
         fc->exp_params = (fc->type == VRNA_FC_TYPE_SINGLE) ? \
                          vrna_exp_params(md_p) : \
                          vrna_exp_params_comparative(fc->n_seq, md_p);

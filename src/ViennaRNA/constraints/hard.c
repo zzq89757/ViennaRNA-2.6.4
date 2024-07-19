@@ -719,6 +719,7 @@ default_pair_constraint(vrna_fold_compound_t  *fc,
         }
 
         if (md->noLP) {
+          // printf("into noLP\n");
           /* check, whether this nucleotide can actually stack with anything or only forms isolated pairs */
           can_stack = VRNA_CONSTRAINT_CONTEXT_NONE;
 
@@ -742,6 +743,7 @@ default_pair_constraint(vrna_fold_compound_t  *fc,
       break;
 
     case VRNA_FC_TYPE_COMPARATIVE:
+      printf("into comp\n");
       if ((sn[i] != sn[j]) ||
           (((j - i + 1) <= md->max_bp_span) && ((j - i - 1) >= md->min_loop_size))) {
         int min_score = md->cv_fact * MINPSCORE;
@@ -963,7 +965,7 @@ default_hc_bp(vrna_fold_compound_t  *fc,
   if (options & VRNA_OPTION_WINDOW) {
   } else {
     n = fc->length;
-
+    printf("into else\n");
     for (j = n; j > 1; j--) {
       for (i = 1; i < j; i++) {
         hc->mx[n * i + j] = default_pair_constraint(fc, i, j);

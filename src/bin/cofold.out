@@ -1,35 +1,112 @@
-vrna_fold_compound called, seq is AAAACCCGCCTGGCTGACCGCC&GGCGGTCAGCCAGGCGGGCCATvrna_fold_compound called, seq is GGCGGTCAGCCAGGCGGGCCAT>primer_f6,temp_r6
+22X1X1X1X1X2X2X2X3X2X2X4X3X3X2X4X3X1X2X2X3X2X2Xlen is 22
+1-1-1-1-2-2-2-3-2-2-4-3-3-2-4-3-1-2-2-3-2-2-22X1X1X1X1X2X2X2X3X2X2X4X3X3X2X4X3X1X2X2X3X2X2X22X3X3X2X3X3X4X2X1X3X2X2X1X3X3X2X3X3X3X2X2X1X4Xlen is 22
+3-3-2-3-3-4-2-1-3-2-2-1-3-3-2-3-3-3-2-2-1-4-22X3X3X2X3X3X4X2X1X3X2X2X1X3X3X2X3X3X3X2X2X1X4Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+22X3X3X2X3X3X4X2X1X3X2X2X1X3X3X2X3X3X3X2X2X1X4Xlen is 22
+3-3-2-3-3-4-2-1-3-2-2-1-3-3-2-3-3-3-2-2-1-4-22X3X3X2X3X3X4X2X1X3X2X2X1X3X3X2X3X3X3X2X2X1X4Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f6,temp_r6
 AAAAcccgcctggctgaccgcc&GGCGGTCAGCCAGGCGGGCCAT
-....((((((((((((((((((&)))))))))))))))))).... (-43.70)
-....((((((((((((((((((&)))))))))))))))))).... [-43.71]
- frequency of mfe structure in ensemble 0.977115; delta G binding=-37.45
-vrna_fold_compound called, seq is TCAATAATGACGTATGTAAAA&GGGAACATACGTCATTATTGAvrna_fold_compound called, seq is GGGAACATACGTCATTATTGA>primer_f5,temp_r5
+....((((((((((((((((((&)))))))))))))))))).... (-44.80)
+....((((((((((((((((((&)))))))))))))))))).... [-44.82]
+ frequency of mfe structure in ensemble 0.963489; delta G binding=-34.90
+21X4X2X1X1X4X1X1X4X3X1X2X3X4X1X4X3X4X1X1X1X1Xlen is 21
+4-2-1-1-4-1-1-4-3-1-2-3-4-1-4-3-4-1-1-1-1-21X4X2X1X1X4X1X1X4X3X1X2X3X4X1X4X3X4X1X1X1X1X21X3X3X3X1X1X2X1X4X1X2X3X4X2X1X4X4X1X4X4X3X1Xlen is 21
+3-3-3-1-1-2-1-4-1-2-3-4-2-1-4-4-1-4-4-3-1-21X3X3X3X1X1X2X1X4X1X2X3X4X2X1X4X4X1X4X4X3X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+21X3X3X3X1X1X2X1X4X1X2X3X4X2X1X4X4X1X4X4X3X1Xlen is 21
+3-3-3-1-1-2-1-4-1-2-3-4-2-1-4-4-1-4-4-3-1-21X3X3X3X1X1X2X1X4X1X2X3X4X2X1X4X4X1X4X4X3X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f5,temp_r5
 tcaataatgacgtatgtAAAA&GGGAACATACGTCATTATTGA
-(((((((((((((((((....&....))))))))))))))))) (-22.70)
-(((((((((((((((((....&....))))))))))))))))) [-22.77]
- frequency of mfe structure in ensemble 0.886024; delta G binding=-22.34
-vrna_fold_compound called, seq is AACTGCCCACTCAGTACATCAA&TTGATGTACTGCCAAGTGGGCAGTTvrna_fold_compound called, seq is TTGATGTACTGCCAAGTGGGCAGTT>primer_f4,temp_r4
+(((((((((((((((((....&....))))))))))))))))) (-23.70)
+{((((((((((((((((....&....))))))))))))))))} [-24.01]
+ frequency of mfe structure in ensemble 0.601376; delta G binding=-22.98
+22X1X1X2X4X3X2X2X2X1X2X4X2X1X3X4X1X2X1X4X2X1X1Xlen is 22
+1-1-2-4-3-2-2-2-1-2-4-2-1-3-4-1-2-1-4-2-1-1-22X1X1X2X4X3X2X2X2X1X2X4X2X1X3X4X1X2X1X4X2X1X1X25X4X4X3X1X4X3X4X1X2X4X3X2X2X1X1X3X4X3X3X3X2X1X3X4X4Xlen is 25
+4-4-3-1-4-3-4-1-2-4-3-2-2-1-1-3-4-3-3-3-2-1-3-4-4-25X4X4X3X1X4X3X4X1X2X4X3X2X2X1X1X3X4X3X3X3X2X1X3X4X4Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+25X4X4X3X1X4X3X4X1X2X4X3X2X2X1X1X3X4X3X3X3X2X1X3X4X4Xlen is 25
+4-4-3-1-4-3-4-1-2-4-3-2-2-1-1-3-4-3-3-3-2-1-3-4-4-25X4X4X3X1X4X3X4X1X2X4X3X2X2X1X1X3X4X3X3X3X2X1X3X4X4Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f4,temp_r4
 aactgcccactcagtacatcaa&TTGATGTACTGCCAAGTGGGCAGTT
-((((((((((((((((((((((&)))))))))))...))))))))))) (-33.40)
-((((((((((((((((((((((&)))))))))))...))))))))))) [-33.70]
- frequency of mfe structure in ensemble 0.614982; delta G binding=-24.20
-vrna_fold_compound called, seq is CCCCTATTAAAGACGTCAATGAC&GTCATTGACGTCAATAGGGGvrna_fold_compound called, seq is GTCATTGACGTCAATAGGGG>primer_f3,temp_r3
+(((((((((((((((((((((.&.))))))))))...))))))))))) (-33.50)
+{((((((((((((((((((((,&,))))))))))...))))))))))} [-34.33]
+ frequency of mfe structure in ensemble 0.262164; delta G binding=-23.33
+23X2X2X2X2X4X1X4X4X1X1X1X3X1X2X3X4X2X1X1X4X3X1X2Xlen is 23
+2-2-2-2-4-1-4-4-1-1-1-3-1-2-3-4-2-1-1-4-3-1-2-23X2X2X2X2X4X1X4X4X1X1X1X3X1X2X3X4X2X1X1X4X3X1X2X20X3X4X2X1X4X4X3X1X2X3X4X2X1X1X4X1X3X3X3X3Xlen is 20
+3-4-2-1-4-4-3-1-2-3-4-2-1-1-4-1-3-3-3-3-20X3X4X2X1X4X4X3X1X2X3X4X2X1X1X4X1X3X3X3X3Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+20X3X4X2X1X4X4X3X1X2X3X4X2X1X1X4X1X3X3X3X3Xlen is 20
+3-4-2-1-4-4-3-1-2-3-4-2-1-1-4-1-3-3-3-3-20X3X4X2X1X4X4X3X1X2X3X4X2X1X1X4X1X3X3X3X3Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f3,temp_r3
 cccctattAAAgacgtcaatgac&GTCATTGACGTCAATAGGGG
 ((((((((...((((((((((((&)))))))))))))))))))) (-29.90)
-((((((((...((((((((((((&)))))))))))))))))))) [-29.96]
- frequency of mfe structure in ensemble 0.904287; delta G binding=-29.39
-vrna_fold_compound called, seq is TGACTTATGGGACTTTCCTACTTGGCAG&CTGCCAAGTAGGAAAGTCCCATAAGGTCAvrna_fold_compound called, seq is CTGCCAAGTAGGAAAGTCCCATAAGGTCA>primer_f2,temp_r2
+((((((((...((((((((((((&)))))))))))))))))))) [-30.01]
+ frequency of mfe structure in ensemble 0.839569; delta G binding=-28.22
+28X4X3X1X2X4X4X1X4X3X3X3X1X2X4X4X4X2X2X4X1X2X4X4X3X3X2X1X3Xlen is 28
+4-3-1-2-4-4-1-4-3-3-3-1-2-4-4-4-2-2-4-1-2-4-4-3-3-2-1-3-28X4X3X1X2X4X4X1X4X3X3X3X1X2X4X4X4X2X2X4X1X2X4X4X3X3X2X1X3X29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xlen is 29
+2-4-3-2-2-1-1-3-4-1-3-3-1-1-1-3-4-2-2-2-1-4-1-1-3-3-4-2-1-29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xlen is 29
+2-4-3-2-2-1-1-3-4-1-3-3-1-1-1-3-4-2-2-2-1-4-1-1-3-3-4-2-1-29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f2,temp_r2
 tgacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
 ((((((((((((((((((((((((((((&)))))))))))))))))))))))).)))) (-48.20)
-((((((((((((((((((((((((((((&))))))))))))))))))))))))},))) [-48.72]
- frequency of mfe structure in ensemble 0.430813; delta G binding=-45.35
-vrna_fold_compound called, seq is TGAACTTATGGGACTTTCCTACTTGGCAG&CTGCCAAGTAGGAAAGTCCCATAAGGTCAvrna_fold_compound called, seq is CTGCCAAGTAGGAAAGTCCCATAAGGTCA>primer_f1,temp_r1
+{(((((((((((((((((((((((((((&)))))))))))))))))))))))))}))} [-49.41]
+ frequency of mfe structure in ensemble 0.139779; delta G binding=-40.13
+29X4X3X1X1X2X4X4X1X4X3X3X3X1X2X4X4X4X2X2X4X1X2X4X4X3X3X2X1X3Xlen is 29
+4-3-1-1-2-4-4-1-4-3-3-3-1-2-4-4-4-2-2-4-1-2-4-4-3-3-2-1-3-29X4X3X1X1X2X4X4X1X4X3X3X3X1X2X4X4X4X2X2X4X1X2X4X4X3X3X2X1X3X29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xlen is 29
+2-4-3-2-2-1-1-3-4-1-3-3-1-1-1-3-4-2-2-2-1-4-1-1-3-3-4-2-1-29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xlen is 29
+2-4-3-2-2-1-1-3-4-1-3-3-1-1-1-3-4-2-2-2-1-4-1-1-3-3-4-2-1-29X2X4X3X2X2X1X1X3X4X1X3X3X1X1X1X3X4X2X2X2X1X4X1X1X3X3X4X2X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f1,temp_r1
 tgaacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
 (((.(((((((((((((((((((((((((&))))))))))))))))))))))))).))) (-48.60)
-(({.(((((((((((((((((((((((((&))))))))))))))))))))))))).})) [-48.93]
- frequency of mfe structure in ensemble 0.584786; delta G binding=-45.61
-vrna_fold_compound called, seq is TTAGTCATCGCTACCAGGATGGTGATGCGGTTTTGGCA&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAAvrna_fold_compound called, seq is TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA>primer_f,temp_r
+{({.(((((((((((((((((((((((((&))))))))))))))))))))))))).})} [-49.34]
+ frequency of mfe structure in ensemble 0.303151; delta G binding=-40.58
+38X4X4X1X3X4X2X1X4X2X3X2X4X1X2X2X1X3X3X1X4X3X3X4X3X1X4X3X2X3X3X4X4X4X4X3X3X2X1Xlen is 38
+4-4-1-3-4-2-1-4-2-3-2-4-1-2-2-1-3-3-1-4-3-3-4-3-1-4-3-2-3-3-4-4-4-4-3-3-2-1-38X4X4X1X3X4X2X1X4X2X3X2X4X1X2X2X1X3X3X1X4X3X3X4X3X1X4X3X2X3X3X4X4X4X4X3X3X2X1X38X4X3X2X2X1X1X1X1X2X2X3X2X1X4X2X1X2X2X1X4X3X3X4X1X1X4X1X3X2X3X1X4X3X1X2X4X1X1Xlen is 38
+4-3-2-2-1-1-1-1-2-2-3-2-1-4-2-1-2-2-1-4-3-3-4-1-1-4-1-3-2-3-1-4-3-1-2-4-1-1-38X4X3X2X2X1X1X1X1X2X2X3X2X1X4X2X1X2X2X1X4X3X3X4X1X1X4X1X3X2X3X1X4X3X1X2X4X1X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+38X4X3X2X2X1X1X1X1X2X2X3X2X1X4X2X1X2X2X1X4X3X3X4X1X1X4X1X3X2X3X1X4X3X1X2X4X1X1Xlen is 38
+4-3-2-2-1-1-1-1-2-2-3-2-1-4-2-1-2-2-1-4-3-3-4-1-1-4-1-3-2-3-1-4-3-1-2-4-1-1-38X4X3X2X2X1X1X1X1X2X2X3X2X1X4X2X1X2X2X1X4X3X3X4X1X1X4X1X3X2X3X1X4X3X1X2X4X1X1Xinto col row
+into !(options & VRNA_OPTION_EVAL_ONLY)
+into else
+into else
+>primer_f,temp_r
 ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA
-(((((((((((((.....((((((((((((((((((((&)))))))))))))))))))).....))))))))))))) (-57.00)
-((((((((((((({{,..{(((((((((((((((((((&))))))))))))))))))))}},..,)))))))))))) [-57.91]
- frequency of mfe structure in ensemble 0.227173; delta G binding=-50.08
+.((((((((((((.....((((((((((((((((((((&)))))))))))))))))))).....)))))))))))). (-57.10)
+,(((((((((((({{,..{(((((((((((((((((({&})))))))))))))))))))}},..,))))))))))), [-58.62]
+ frequency of mfe structure in ensemble 0.0851957; delta G binding=-42.58
