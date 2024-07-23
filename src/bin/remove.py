@@ -26542,7 +26542,7 @@ class Duplex():
     # params
     @staticmethod
     def get_scaled_params(md:vrna_md_t):
-        lxc37=107.9
+        lxc37 = 107.9
         myid = 0
         params = vrna_param_s()
         tempf = (md.temperature + K0) / Tmeasure
