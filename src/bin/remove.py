@@ -26774,16 +26774,6 @@ class Duplex():
 
         # 返回结果
         return mfe   
-    
-    def struc2seq(self, subopt_item):
-        # s1 s2 position
-        s1_struc, s2_struc = subopt_item.structure.split("&")
-        s1_end = subopt_item.i
-        s1_start = s1_end - len(s1_struc) + 1
-        s2_start = subopt_item.j
-        s2_end = s2_start + len(s2_struc) - 1 
-        
-        # switch struct to seq
         
         
     
@@ -26824,8 +26814,6 @@ class Duplex():
                 subopt[n_subopt].s2_end = s2_end
                 subopt[n_subopt].structure = struc
                 # start end info
-                # self.struc2seq(subopt[n_subopt])
-                # subopt[n_subopt].s1_start = 
                 n_subopt += 1
 
         # Free all static globals
