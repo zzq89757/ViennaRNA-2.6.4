@@ -26284,7 +26284,6 @@ class Duplex():
                 code = pos
             if code > 4:
                 code -= 1  # make T and U equivalent
-        print(code, end = "()")
         return code
 
     @staticmethod    
@@ -26361,7 +26360,7 @@ class Duplex():
 
     @staticmethod
     def vrna_E_ext_stem(type, n5d, n3d, P:vrna_param_s):
-        # print(type, end=",")
+
         energy = 0
         if n5d >= 0 and n3d >= 0:
             energy += P.mismatchExt[type][n5d][n3d]
@@ -26371,9 +26370,7 @@ class Duplex():
             energy += P.dangle3[type][n3d]
         if type > 2:
             energy += P.TerminalAU
-        # print(int(type),end=",")
-        # print(int(n5d),end=",")
-        # print(int(n3d),end=",")
+            
         return energy
     
     @staticmethod
@@ -26495,15 +26492,9 @@ class Duplex():
 
         if j < self.n2:
             j += 1
-        # print(i,end = "\t")
-        # print(i0,end = "\t")
-        # print(j,end = "\t")
-        # print(j0,end = "\n")
         # strcut to seq 
         seq1 = self.s1[i:i0]
         seq2 = self.s2[j0:j]
-        # print(seq1)
-        # print(seq2)
         
         struc = ''.join(st1[max(i - 1, 0):i0]) + '&' + ''.join(st2[j0 - 1:j])
 
@@ -26777,7 +26768,12 @@ class Duplex():
         
         
     
-    def  duplex_subopt(self, delta, w = 5):
+    def  duplex_subopt(self, delta = 10, w = 5):
+        '''
+        默认展示自由能在mfe(最小自由能) + delta * 100 范围内的结果;
+        delta 默认为10;
+        w 为窗口大小 默认值为 5
+        '''
         n_max = 16
         n_subopt = 0
         # 计算并获取最低自由能结构 mfe
@@ -26834,13 +26830,10 @@ if __name__ == "__main__":
     d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
     d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
-    all = d.duplex_subopt(10)
+    all = d.duplex_subopt()
     
     for mfe in all:
         if not mfe.structure:continue
         print(mfe.structure, end="\t")
         print(f"{mfe.energy} Kal/Mol\t ({ mfe.s1_start},{mfe.s1_end})\t({mfe.s2_start},{mfe.s2_end})")
-        # print(mfe.energy, end="\t")
-        # print(mfe.i, end="\t")
-        # print(mfe.j)
         
