@@ -26772,7 +26772,8 @@ class Duplex():
         '''
         默认展示自由能在mfe(最小自由能) + delta * 100 范围内的结果;
         delta 默认为10;
-        w 为窗口大小 默认值为 5
+        w 为窗口大小 默认值为 5;
+        推荐固定阈值 -12 Kal/Mol
         '''
         n_max = 16
         n_subopt = 0
@@ -26828,7 +26829,7 @@ class Duplex():
 
 if __name__ == "__main__":
     d = Duplex("CTTCCTCGGGTTCAAAGCTGGATT","GTCCAGTTTTCCCAGGAAT")
-    d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
+    # d = Duplex("ggagttgttacgacattttggaaagtcccgttgattttggtgccaaaacaaactcccattgacgtcaatggggtggag","ccaccccattatattcaatgggagtttgttttggcaaacccaatcaacgggactttccaaaatgtcgtaacaac")
     # d = Duplex("CTTCCTCGGGTTCAAAGCTGGATTGCTAGCTAGTCGTAGCTAGCTGTAGTGCCCCCCCCCCATGCTAGTTTGCATGTCGTAACGATGCTAAAAAAAGCGTGTAGTCGTAGTGCAGCTGTAGATTTACGTAAAAAAAAACGTAGCATGCTAGCTGTCCAGTTTTCCCAGGAAT","GTCCAGTTTTCCCAGGAAT")
     all = d.duplex_subopt()
     
