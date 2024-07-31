@@ -177,9 +177,9 @@ init_default_options(struct options *opt)
 {
   opt->filename_full  = 0;
   opt->filename_delim = NULL;
-  opt->pf             = 0;
+  opt->pf             = 1;
   opt->doT            = 0; /* compute dimer free energies etc. */
-  opt->noPS           = 0;
+  opt->noPS           = 1;
   opt->noconv         = 0;
   opt->centroid       = 0;  /* off by default due to historical reasons */
   opt->MEA            = 0;
@@ -1417,7 +1417,7 @@ do_partfunc(char            *string,
       vrna_fold_compound_free(vc);
       free(tempstruc);
       break;
-    /* part func for dimer ----------------------- */
+    /* part func for dimer -------------------------------------- */
     case 2:   /* dimer */
       printf("into case 2");
       tempstruc = (char *)vrna_alloc((unsigned)length * 2 + 2);
