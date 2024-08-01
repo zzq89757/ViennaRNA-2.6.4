@@ -1399,7 +1399,9 @@ do_partfunc(char            *string,
   md = &(opt->md);
   printf("do part into %d", Switch);
   switch (Switch) {
+    printf("into do_partfunc\n");
     case 1:   /* monomer */
+    printf("into case 1\n");
       tempstruc = (char *)vrna_alloc((unsigned)length + 1);
       vc        = vrna_fold_compound(string,
                                      md,
