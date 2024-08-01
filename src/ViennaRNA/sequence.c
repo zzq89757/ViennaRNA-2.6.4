@@ -226,7 +226,7 @@ vrna_sequence_add(vrna_fold_compound_t  *vc,
 
     /* finally, increase length property of the fold compound */
     vc->length = vc->length + add_length;
-
+    
     ret = 1;
   }
 

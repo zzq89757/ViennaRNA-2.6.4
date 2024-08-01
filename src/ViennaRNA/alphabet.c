@@ -292,14 +292,16 @@ vrna_seq_encode(const char  *sequence,
   if (sequence && md) {
     S = vrna_seq_encode_simple(sequence, md);
     l = (unsigned int)strlen(sequence);
-    printf("len is %d\n",l);
+    // printf("len is %d\n",l);
     for (i = 1; i <= l; i++)
       S[i] = md->alias[S[i]];
 
     S[l + 1]  = S[1];
     S[0]      = S[l];
-    for (i = 1; i <= l; i++)
-      printf("%d-", S[i]);
+    // for (i = 0; i <= l + 1; i++)
+    //   printf("%d-", S[i]);
+    // for (i = 0; i <= l + 1; i++)
+    //   printf("%d-", S[i]);
   }
 
   return S;

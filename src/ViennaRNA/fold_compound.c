@@ -224,6 +224,7 @@ vrna_fold_compound(const char       *sequence,
 
   /* get a copy of the model details */
   if (md_p)
+    /* into  here*/
     md = *md_p;
   else
     printf("into vrna_md_set_default\n");
@@ -267,7 +268,7 @@ vrna_fold_compound(const char       *sequence,
   return fc;
 }
 
-
+/* work for msa result , ignore*/
 PUBLIC vrna_fold_compound_t *
 vrna_fold_compound_comparative(const char   **sequences,
                                vrna_md_t    *md_p,

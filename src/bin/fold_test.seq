@@ -1,14 +1,2 @@
->primer_f6,temp_r6
-AAAAcccgcctggctgaccgcc&GGCGGTCAGCCAGGCGGGCCAT
->primer_f5,temp_r5
-tcaataatgacgtatgtAAAA&GGGAACATACGTCATTATTGA
->primer_f4,temp_r4
-aactgcccactcagtacatcaa&TTGATGTACTGCCAAGTGGGCAGTT
->primer_f3,temp_r3
-cccctattAAAgacgtcaatgac&GTCATTGACGTCAATAGGGG
->primer_f2,temp_r2
-tgacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
->primer_f1,temp_r1
-tgaacttatgggactttcctacttggcag&CTGCCAAGTAGGAAAGTCCCATAAGGTCA
->primer_f,temp_r
-ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA
+>primer_f7,temp_r7
+CTTCCTCGGGTTCAAAGCTGGATT&GTCCAGTTTTCCCAGGAAT
