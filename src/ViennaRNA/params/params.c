@@ -609,7 +609,7 @@ get_scaled_exp_params(vrna_md_t *md,
   pf = (vrna_exp_param_t *)vrna_alloc(sizeof(vrna_exp_param_t));
 
   memset(pf->param_file, '\0', 256);
-  if (last_parameter_file() != NULL)
+  if (last_parameter_file() != NULL) /* not into here */
     strncpy(pf->param_file, last_parameter_file(), 255);
 
   pf->model_details = *md;
@@ -648,7 +648,7 @@ get_scaled_exp_params(vrna_md_t *md,
     pf->expinternal[i]  = RESCALE_BF(internal_loop37[i], internal_loopdH[i], TT, kT);
   }
 
-  if (salt==saltStandard) {
+  if (salt==saltStandard) { /* into here */
     for (i = 0; i <= MIN2(30, MAXLOOP); i++) {
       pf->SaltLoopDbl[i]   = 0.;
       pf->expSaltLoop[i]   = 1.;
@@ -673,7 +673,7 @@ get_scaled_exp_params(vrna_md_t *md,
   }
 
   /* special case of size 2 interior loops (single mismatch) */
-  if (james_rule)
+  if (james_rule) /* into */
     pf->expinternal[2] = exp(-80 * 10. / kT);
 
   GT = RESCALE_dG(bulge37[30],
@@ -804,7 +804,7 @@ get_scaled_exp_params(vrna_md_t *md,
   /* Salt correction for stack and multiloop */
   pf->SaltMLbase = pf->SaltMLclosing = pf->SaltDPXInit = 0.;
 
-  if (salt==saltStandard) {
+  if (salt==saltStandard) { /* into */
     pf->expSaltStack = 1.;
   } else {
     pf->expSaltStack = exp(- vrna_salt_stack(salt, saltT, md->helical_rise) * 10. / kT);
@@ -812,7 +812,7 @@ get_scaled_exp_params(vrna_md_t *md,
 
     if (md->saltDPXInit != VRNA_MODEL_DEFAULT_SALT_DPXINIT)
       pf->SaltDPXInit = md->saltDPXInit;
-    else if (md->saltDPXInit)
+    else if (md->saltDPXInit) /* into */
       pf->SaltDPXInit = vrna_salt_duplex_init(md);
 
     pf->expMLclosing *= exp(- pf->SaltMLbase * 10. / kT);
