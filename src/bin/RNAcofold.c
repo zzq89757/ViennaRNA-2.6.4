@@ -817,8 +817,8 @@ process_record(struct record_data *record)
    */
 
   /* compute mfe of AB dimer */
-  min_en  = vrna_mfe_dimer(vc, mfe_structure);
-  mfAB    = vrna_plist(mfe_structure, 0.95);
+  min_en  = vrna_mfe_dimer(vc, mfe_structure); /* vc.matrices changed*/
+  mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
 
   /* check whether the constraint allows for any solution */
   if ((fold_constrained) || (opt->commands)) {
@@ -881,7 +881,7 @@ process_record(struct record_data *record)
     Alength = Blength = 0;
 
     pairing_propensity = (char *)vrna_alloc(sizeof(char) * (n + 1));
-    if (opt->md.dangles == 1) {
+    if (opt->md.dangles == 1) { /* not into here, dangles is 0 */
       vc->params->model_details.dangles = 2;   /* recompute with dangles as in pf_fold() */
       min_en                            = vrna_eval_structure(vc, mfe_structure);
       vc->params->model_details.dangles = 1;
@@ -898,9 +898,9 @@ process_record(struct record_data *record)
 
     // printf("%s-", pairing_propensity);
     /* compute partition function pairing_propensity is target  !!!!!!!!!!*/
-    AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity);
+    AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
     // printf("%s\n",pairing_propensity);
-    if (opt->md.compute_bpp) {
+    if (opt->md.compute_bpp) { /* into here */
       char *costruc;
       prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
 
@@ -974,7 +974,8 @@ process_record(struct record_data *record)
         goto cleanup_record;
       }
 
-#if 1
+#if 1 
+      printf("AABB\n");
       Alength       = vc->nucleotides[0].length;                        /* length of first molecule */
       Blength       = vc->nucleotides[1].length;                        /* length of 2nd molecule   */
       orig_Astring  = (char *)vrna_alloc(sizeof(char) * (Alength + 1)); /*Sequence of first molecule*/
