@@ -5544,7 +5544,7 @@ def vrna_md_set_default(md:vrna_md_t):
                 vrna_md_copy(md, defaults)
     
     
-from .remove import Duplex, Tmeasure, expn
+from .remove import Duplex, Tmeasure, expn, 
 
 
 
@@ -5561,8 +5561,6 @@ def vrna_params(md=None):
 def get_scaled_exp_params(md, pfs):
     pf = vrna_exp_param_t()
 
-    if last_parameter_file() is not None:
-        pf.param_file = last_parameter_file()
 
     pf.model_details = md
     pf.temperature = md.temperature
@@ -6338,7 +6336,7 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
 
     if options & VRNA_OPTION_WINDOW:
         set_fold_compound(fc, options, aux_options)
-
+        
         if not (options & VRNA_OPTION_EVAL_ONLY):
             # Add minimal hard constraint data structure
             vrna_hc_init_window(fc)

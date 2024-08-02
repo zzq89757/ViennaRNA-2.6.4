@@ -56,13 +56,13 @@ class vrna_fc_type_e(Enum):
     VRNA_FC_TYPE_SINGLE = 0
     VRNA_FC_TYPE_COMPARATIVE = 1
 
-from dataclasses import dataclass
+
 from enum import Enum
 from typing import List, Optional, Callable
 
 class vrna_seq_t:
     def __init__(self,
-                 seq_type: int,               # Assuming vrna_seq_type_e is an integer or enum
+                 seq_type: int = 1,               # Assuming vrna_seq_type_e is an integer or enum
                  name: Optional[str] = None,
                  string: Optional[str] = None,
                  encoding: Optional[List[int]] = None,
@@ -5462,7 +5462,7 @@ def nullify(fc: vrna_fold_compound_t):
         fc.strand_start      = None
         fc.strand_end        = None
         fc.nucleotides       = None
-        # fc.alignment         = None
+        fc.alignment         = None
 
         fc.hc            = None
         fc.matrices      = None
@@ -5527,7 +5527,7 @@ def init_fc_single():
     fc = vrna_fold_compound_t()
     if fc:
         fc.type = init.type
-        # nullify(fc)
+        nullify(fc)
     return fc
 
 def vrna_md_copy(md_to: vrna_md_t, md_from: vrna_md_t) -> vrna_md_t:
@@ -5652,8 +5652,6 @@ def vrna_seq_encode_simple(sequence: str, md: vrna_md_t):
             S[i] = Duplex.vrna_nucleotide_encode(sequence[i - 1], md)
         S[l + 1] = S[1]
         S[0] = l
-        print("simple\n")
-        print(S)
         return S
 
 
@@ -5666,6 +5664,7 @@ def vrna_seq_encode(sequence: str, md: vrna_md_t):
 
         S[l + 1] = S[1]
         S[0] = S[l]
+        # print(S)
         return S
 
 
@@ -5713,7 +5712,8 @@ def vrna_sequence_add(vc:vrna_fold_compound_t, string:str, options:int) -> int:
         add_length = len(string)
         # print(vc.nucleotides)
         # Reallocate nucleotides
-        vc.nucleotides = [vrna_seq_t(1,1,string,1,1,1,add_length)] * (vc.strands + 1)
+        # vc.nucleotides = [vrna_seq_t(1,1,string,1,1,1,add_length)] * (vc.strands + 1)
+        # vc.nucleotides = [0] * (vc.strands + 1)
         # Dummy placeholder for actual sequence setting
         set_sequence(vc.nucleotides[vc.strands], string, None, vc.params.model_details, options)
 
@@ -5983,7 +5983,9 @@ def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
 
         # 将输入序列分割为默认分隔符 '&'
         sequences = vrna_strsplit(sequence, None)
-
+        seq1 = vrna_seq_t(1,1,'aaa',1,1,1,1)
+        seq2 = vrna_seq_t(1,1,'aaa',1,1,1,1)
+        fc.nucleotides = [seq1, seq2]
         # 将单个序列添加到折叠复合物
         for seq in sequences:
             vrna_sequence_add(fc, seq, VRNA_SEQUENCE_RNA)
@@ -6005,33 +6007,7 @@ def set_fold_compound(fc:vrna_fold_compound_t, options:int, aux:int):
                 fc.ptype = vrna_ptypes(fc.sequence_encoding2, md_p) if aux & WITH_PTYPE else None
 
             fc.ptype_pf_compat = get_ptypes(fc.sequence_encoding2, md_p, 1) if aux & WITH_PTYPE_COMPAT else None
-    elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
-        return
-        sequences = fc.sequences
-        fc.length = length = fc.length
-
-        fc.cons_seq = vrna_aln_consensus_sequence(sequences, md_p)
-        fc.S_cons = vrna_seq_encode_simple(fc.cons_seq, md_p)
-
-        fc.pscore = vrna_alloc(int, (length * (length + 1)) // 2 + 2)
-        fc.pscore_pf_compat = vrna_alloc(int, (length * (length + 1)) // 2 + 2) if aux & WITH_PTYPE_COMPAT else None
-
-        oldAliEn = fc.oldAliEn = md_p.oldAliEn
-
-        fc.S = vrna_alloc(short, fc.n_seq + 1)
-        fc.S5 = vrna_alloc(short, fc.n_seq + 1)
-        fc.S3 = vrna_alloc(short, fc.n_seq + 1)
-        fc.a2s = vrna_alloc(int, fc.n_seq + 1)
-        fc.Ss = vrna_alloc(char, fc.n_seq + 1)
-
-        for s in range(fc.n_seq):
-            vrna_aln_encode(fc.sequences[s], fc.S[s], fc.S5[s], fc.S3[s], fc.Ss[s], fc.a2s[s], md_p)
-
-        fc.S5[fc.n_seq] = None
-        fc.S3[fc.n_seq] = None
-        fc.a2s[fc.n_seq] = None
-        fc.Ss[fc.n_seq] = None
-        fc.S[fc.n_seq] = None
+        
 
     vrna_sequence_prepare(fc)
 
@@ -6280,7 +6256,6 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
     if length == 0:
         print("vrna_fold_compound@data_structures.c: sequence length must be greater 0")
         return None
-
     # Check sequence length against addressable range
     # if length > vrna_sequence_length_max(options):
     if length > 1000000:
@@ -6299,7 +6274,7 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
     # Get a copy of the model details
     # md = md_p if md_p else vrna_md_set_default(md)
     md = md_p
-    md = vrna_md_set_default(md)
+    # md = vrna_md_set_default(md)
 
     # Add energy parameters
     add_params(fc, md, options)
@@ -6338,20 +6313,26 @@ def vrna_fold_compound(sequence: str, md_p: Optional[vrna_md_t], options: int) -
 VRNA_OPTION_DEFAULT = 0
 VRNA_OPTION_HYBRID = 1 << 2
 from remove import vrna_md_t
-def generate_struc():
+from opt import options, init_default_options
+def main():
     struc = "(((((((((((((((((((((()))))))))))...)))))))))))"
-    seq = "AAAAcccgcctggctgaccgcc&GGCGGTCAGCCAGGCGGGCCAT"
+    seq = "CTTCCTCGGGTTCAAAGCTGGATT&GTCCAGTTTTCCCAGGAAT"
     # The length of the sequence (or sequence alignment) vrna_fold_compound_t
     # n = vc.length
-    n = len(struc)
+    # n = len(struc)
     # vrna_mx_pf_t *matrices
-    
+    opts = options()
+    num_input = 0
+    init_default_options(opts)
     # probs = matrices.probs
     # probs = [0] * n**2
-    vc = vrna_fold_compound(seq,vrna_md_t(),VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
+    vc = vrna_fold_compound(seq,opts.md,VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID)
+    vc.exp_params = vrna_exp_param_t()
     print(vc)
-    return pf_create_bppm(vc, None)
+    st = None
+    pf_create_bppm(vc, st)
+    print(st)
 
 if __name__ == "__main__":
-    print(generate_struc())
+    main()
 

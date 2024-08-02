@@ -26302,7 +26302,7 @@ class Duplex():
         if md.noGU:
             md.pair[3][4] = md.pair[4][3] = 0
         
-        if md.nonstandards[0] != 0:
+        if md.nonstandards[0]:
             for i in range(0, len(md.nonstandards), 2):
                 md.pair[Duplex.vrna_nucleotide_encode(md.nonstandards[i], md)][Duplex.vrna_nucleotide_encode(md.nonstandards[i + 1], md)] = 7
       
