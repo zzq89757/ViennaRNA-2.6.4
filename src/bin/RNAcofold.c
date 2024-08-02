@@ -898,6 +898,11 @@ process_record(struct record_data *record)
 
     // printf("%s-", pairing_propensity);
     /* compute partition function pairing_propensity is target  !!!!!!!!!!*/
+    /* test if remove vc.matrices */
+    vc->matrices = NULL;
+    vc->exp_matrices = NULL;
+    vc->exp_params = NULL;
+    
     AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
     // printf("%s\n",pairing_propensity);
     if (opt->md.compute_bpp) { /* into here */
