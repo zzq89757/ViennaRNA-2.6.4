@@ -222,6 +222,172 @@ def vrna_exp_params_rescale(vc:vrna_fold_compound_t, mfe:float) -> None:
         
         rescale_params(vc)
 
+def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
+    dG = float(10000000/100.)
+    if fc:
+        n         = fc.length
+        params    = fc.exp_params
+        matrices  = fc.exp_matrices
+        md        = params.model_details
+
+        # Explicitly turn off dynamic threads
+        # if 'OMP' in globals():
+        omp_set_dynamic(0)
+
+        # Set appropriate arithmetic mode
+        # if 'SUN4' in globals():
+        #     nonstandard_arithmetic()
+        # elif 'HP9' in globals():
+        #     fpsetfastmode(1)
+
+        # Call user-defined recursion status callback function
+        if fc.stat_cb: # not into
+            fc.stat_cb(VRNA_STATUS_PF_PRE, fc.auxdata)
+
+        # Prepare multi-strand folding
+        if fc.strands > 1:
+            vrna_pf_multifold_prepare(fc)
+
+        # Call user-defined grammar pre-condition callback function
+        if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into
+            fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_PRE, fc.aux_grammar.data)
+
+        # Fill arrays
+        if not fill_arrays(fc): # not into
+            # if 'SUN4' in globals():
+            #     standard_arithmetic()
+            # elif 'HP9' in globals():
+            #     fpsetfastmode(0)
+            return dG
+
+        if md.circ: # not into
+            # Post-process step for circular RNAs
+            postprocess_circular(fc)
+
+        # Call user-defined grammar post-condition callback function
+        if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into 
+            fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_POST, fc.aux_grammar.data)
+
+        if fc.strands > 1:
+            vrna_gr_reset(fc)
+
+        # Call user-defined recursion status callback function
+        if fc.stat_cb: # not into
+            fc.stat_cb(VRNA_STATUS_PF_POST, fc.auxdata)
+
+        # Calculate Q based on backtrack type
+        if md.backtrack_type == 'C':
+            Q = matrices.qb[fc.iindx[1] - n]
+        elif md.backtrack_type == 'M':
+            Q = matrices.qm[fc.iindx[1] - n]
+        else:
+            Q = matrices.qo if md.circ else matrices.q[fc.iindx[1] - n]
+
+        # Ensemble free energy in Kcal/mol
+        if Q <= 1.17549435082228750796873653722224568e-38:
+            print("pf_scale too large")
+
+        if fc.strands > 1:
+            # Check for rotational symmetry correction
+            sym = vrna_rotational_symmetry(fc.sequence)
+            Q /= sym
+
+            # Add interaction penalty
+            Q *= power(params.expDuplexInit, fc.strands - 1)
+
+        dG = (-log(Q) - n * log(params.pf_scale)) * params.kT / 1000.0
+
+        # Calculate base pairing probability matrix (bppm)
+        if md.compute_bpp: # into
+            vrna_pairing_probs(fc, structure)
+
+            # Backward compatibility block
+            if 'VRNA_DISABLE_BACKWARD_COMPATIBILITY' not in globals(): # into
+                pr = matrices.probs
+    return dG
+
+def vrna_rotational_symmetry_pos(string:str, positions:int) -> int:
+    shift_size:int
+    if not string:
+        if positions:
+            positions = None
+        return 0
+    string_length = len(string)
+    if string_length == 0:
+        if positions:
+            positions = None
+        return 0
+    matches = 1
+    if positions:
+        shift_size = 10
+    
+
+
+def vrna_rotational_symmetry(string:str):
+    return vrna_rotational_symmetry_pos(string, None)
+
+
+
+def extract_dimer_props(fc:vrna_fold_compound_t, F0AB, FAB, FcAB, FA, FB):
+    """
+    Extract dimer properties for a given fold compound.
+
+    :param fc: The fold compound object
+    :param F0AB: Null model without DuplexInit (output)
+    :param FAB: All states with DuplexInit correction (output)
+    :param FcAB: True hybrid states only (output)
+    :param FA: Monomer A (output)
+    :param FB: Monomer B (output)
+    """
+    n = fc.length
+    sym = None
+    kT = fc.exp_params.kT / 1000.0
+    QAB = fc.exp_matrices.q[fc.iindx[1] - n]
+
+    if fc.strands > 1:
+        # Check for rotational symmetry correction
+        sym = vrna_rotational_symmetry(fc.sequence)
+        QAB /= float(sym)
+
+        # Add interaction penalty
+        QAB *= pow(fc.exp_params.expDuplexInit, float(fc.strands - 1))
+
+        Qzero = (fc.exp_matrices.q[fc.iindx[1] - n] +
+                 fc.exp_matrices.q[fc.iindx[1] - fc.strand_end[fc.strand_order[0]]] *
+                 fc.exp_matrices.q[fc.iindx[fc.strand_start[fc.strand_order[1]]] - n])
+
+        QToT = (fc.exp_matrices.q[fc.iindx[1] - fc.strand_end[fc.strand_order[0]]] *
+                fc.exp_matrices.q[fc.iindx[fc.strand_start[fc.strand_order[1]]] - n] +
+                QAB)
+
+        FAB = -kT * (log(QToT) + n * log(fc.exp_params.pf_scale))
+        F0AB = -kT * (log(Qzero) + n * log(fc.exp_params.pf_scale))
+        FcAB = -kT * (log(QAB) + n * log(fc.exp_params.pf_scale)) if QAB > 1e-17 else 999
+        FA = -kT * (log(fc.exp_matrices.q[fc.iindx[1] - fc.strand_end[fc.strand_order[0]]]) +
+                        fc.strand_end[fc.strand_order[0]] * log(fc.exp_params.pf_scale))
+        FB = -kT * (log(fc.exp_matrices.q[fc.iindx[fc.strand_start[fc.strand_order[1]]] - n]) +
+                        (n - fc.strand_start[fc.strand_order[1]] + 1) * log(fc.exp_params.pf_scale))
+    else:
+        FA = FB = FAB = F0AB = (-log(fc.exp_matrices.q[fc.iindx[1] - n]) - n * log(fc.exp_params.pf_scale)) * fc.exp_params.kT / 1000.0
+        FcAB = 0
+
+
+
+def vrna_pf_dimer(fc:vrna_fold_compound_t|None, structure:str) -> vrna_dimer_pf_t:
+    X:vrna_dimer_pf_t
+    X.F0AB = X.FAB = X.FcAB = X.FA = X.FB = 0.
+    if fc:
+        vrna_pf(fc, structure)
+        extract_dimer_props(fc,
+                            X.F0AB,
+                            X.FAB,
+                            X.FcAB,
+                            X.FA,
+                            X.FB)
+    return X
+        
+    
+    
 
 def main():
     AB:vrna_dimer_pf_t
@@ -230,8 +396,9 @@ def main():
     # vc init by vrna_fold_compound
     
     
-    # vc.matrices changed by vrna_mfe_dimer
-    min_en  = vrna_mfe_dimer(vc, mfe_structure)
+    # vc.matrices changed by vrna_mfe_dimer(no erro after remove vc.matrices)
+    # min_en  = vrna_mfe_dimer(vc, mfe_structure)
+    min_en = 
     # init vc  exp params
     vrna_exp_params_rescale(vc, min_en)
     # obtain pairing_propensity  ----exp_matrices changed
