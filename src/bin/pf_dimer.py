@@ -437,6 +437,109 @@ def vrna_exp_E_ml_fast(fc:vrna_fold_compound_t, i:int, j:int, aux_mx:vrna_mx_pf_
     if fc and aux_mx:
         q = exp_E_ml_fast(fc, i, j, aux_mx)
     return q
+
+
+def vrna_exp_E_ext_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_el_s:
+    from struc_utils import init_sc_ext_exp, prepare_hc_ext_def, sc_ext_exp_dat, hc_ext_def_dat
+    hc_dat_local:hc_ext_def_dat
+    sc_wrapper:sc_ext_exp_dat
+    if fc is None:
+        return None
+
+    n = int(fc.length)
+    iidx = fc.iindx
+    turn = fc.exp_params.model_details.min_loop_size
+    domains_up = fc.domains_up
+    with_ud = domains_up and domains_up.exp_energy_cb
+
+    if fc.hc.type == VRNA_HC_WINDOW:
+        evaluate = prepare_hc_ext_def_window(fc, hc_dat_local)
+    else:
+        evaluate = prepare_hc_ext_def(fc, hc_dat_local)
+
+    init_sc_ext_exp(fc, sc_wrapper)
+
+    # Allocate memory for helper arrays
+    aux_mx = vrna_mx_pf_aux_el_s()
+
+    # Pre-processing ligand binding production rule(s) and auxiliary memory
+    if with_ud:
+        ud_max_size = max(domains_up.uniq_motif_size)
+        aux_mx.qqu_size = ud_max_size
+        aux_mx.qqu = [[0.0] * (n + 2) for _ in range(ud_max_size + 1)]
+
+    if fc.hc.type == VRNA_HC_WINDOW:
+        q_local = fc.exp_matrices.q_local
+        max_j = min(turn + 1, fc.window_size, n)
+        for j in range(1, max_j + 1):
+            for i in range(1, j + 1):
+                q_local[i][j] = reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+    else:
+        q = fc.exp_matrices.q
+        for d in range(turn + 1):
+            for i in range(1, n - d + 1):
+                j = i + d
+                ij = iidx[i] - j
+                q[ij] = reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+
+        if fc.aux_grammar and fc.aux_grammar.cb_aux_exp_f:
+            for d in range(turn + 1):
+                for i in range(1, n - d + 1):
+                    j = i + d
+                    ij = iidx[i] - j
+                    q[ij] += fc.aux_grammar.cb_aux_exp_f(fc, i, j, fc.aux_grammar.data)
+
+    return aux_mx
+
+def vrna_exp_E_ml_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_ml_s:
+    if fc is None:
+        return None
+
+    n = int(fc.length)
+    iidx = fc.iindx
+    turn = fc.exp_params.model_details.min_loop_size
+    qm = fc.exp_matrices.qm
+
+    # Allocate memory for helper arrays
+    aux_mx = vrna_mx_pf_aux_ml_s()
+
+    if fc.type == VRNA_FC_TYPE_SINGLE:
+        domains_up = fc.domains_up
+        with_ud = domains_up and domains_up.exp_energy_cb
+        ud_max_size = 0
+
+        # Pre-processing ligand binding production rule(s) and auxiliary memory
+        if with_ud:
+            for u in domains_up.uniq_motif_size:
+                if ud_max_size < u:
+                    ud_max_size = u
+
+            aux_mx.qqmu_size = ud_max_size
+            aux_mx.qqmu = [[0.0] * (n + 2) for _ in range(ud_max_size + 1)]
+
+    if fc.hc.type != VRNA_HC_WINDOW:
+        for d in range(turn + 1):
+            for i in range(1, n - d + 1):
+                j = i + d
+                ij = iidx[i] - j
+
+                if j > n:
+                    continue
+
+                qm[ij] = 0.0
+
+        if fc.aux_grammar and fc.aux_grammar.cb_aux_exp_m:
+            for d in range(turn + 1):
+                for i in range(1, n - d + 1):
+                    j = i + d
+                    ij = iidx[i] - j
+
+                    if j > n:
+                        continue
+
+                    qm[ij] += fc.aux_grammar.cb_aux_exp_m(fc, i, j, fc.aux_grammar.data)
+
+    return aux_mx
   
 
 def fill_arrays(fc:vrna_fold_compound_t) -> int:
