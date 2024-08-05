@@ -27890,8 +27890,8 @@ void process(char *s1, char *s2){
 
 
 int main(){
-    char *s1 = "CTAGCATGCTACG";
-    char *s2 = "CGTAGCATGCTAG";
+    char *s1 = "CTTCCTCGGGTTCAAAGCTGGATT";
+    char *s2 = "GTCCAGTTTTCCCAGGAAT";
     process(s1,s2);
     return 0;
 }
