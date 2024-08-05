@@ -114,7 +114,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
 #endif
 
     /* call user-defined recursion status callback function */
-    if (fc->stat_cb)
+    if (fc->stat_cb) // not into
       fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
 
     /* for now, multi-strand folding is implemented as additional grammar rule */
@@ -122,7 +122,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
       vrna_pf_multifold_prepare(fc);
 
     /* call user-defined grammar pre-condition callback function */
-    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
       fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
 
     if (!fill_arrays(fc)) {
@@ -332,11 +332,11 @@ fill_arrays(vrna_fold_compound_t *fc)
 
   max_real = (sizeof(FLT_OR_DBL) == sizeof(float)) ? FLT_MAX : DBL_MAX;
 
-  if (with_ud && domains_up->exp_prod_cb)
+  if (with_ud && domains_up->exp_prod_cb) // not into
     domains_up->exp_prod_cb(fc, domains_up->data);
 
   /* no G-Quadruplexes for comparative partition function (yet) */
-  if (with_gquad) {
+  if (with_gquad) { // not into
     free(fc->exp_matrices->G);
     fc->exp_matrices->G = NULL;
 
@@ -379,7 +379,7 @@ fill_arrays(vrna_fold_compound_t *fc)
       /* Multibranch loop */
       qm[ij] = vrna_exp_E_ml_fast(fc, i, j, aux_mx_ml);
 
-      if (qm1) {
+      if (qm1) { // not into
         temp = vrna_exp_E_ml_fast_qqm(aux_mx_ml)[i]; /* for stochastic backtracking and circfold */
 
         /* apply auxiliary grammar rule for multibranch loop (M1) case */
@@ -393,16 +393,16 @@ fill_arrays(vrna_fold_compound_t *fc)
       q[ij] = vrna_exp_E_ext_fast(fc, i, j, aux_mx_el);
 
       /* apply auxiliary grammar rule (storage takes place in user-defined data structure */
-      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp))
+      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp)) // not into
         fc->aux_grammar->cb_aux_exp(fc, i, j, fc->aux_grammar->data);
 
       if (q[ij] > Qmax) {
         Qmax = q[ij];
-        if (Qmax > max_real / 10.)
+        if (Qmax > max_real / 10.) // not into
           vrna_message_warning("Q close to overflow: %d %d %g", i, j, q[ij]);
       }
 
-      if (q[ij] >= max_real) {
+      if (q[ij] >= max_real) { // not into
         vrna_message_warning("overflow while computing partition function for segment q[%d,%d]\n"
                              "use larger pf_scale", i, j);
 

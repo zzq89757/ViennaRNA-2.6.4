@@ -222,6 +222,273 @@ def vrna_exp_params_rescale(vc:vrna_fold_compound_t, mfe:float) -> None:
         
         rescale_params(vc)
 
+
+# def decompose_pair(fc:vrna_fold_compound_t, i:int, j:int, aux_mx_ml:vrna_mx_pf_aux_ml_t) -> float:
+def decompose_pair() -> float:
+    return 0.
+
+
+def exp_E_ml_fast(fc:vrna_fold_compound_t, i:int, j:int, aux_mx:vrna_mx_pf_aux_ml_s) -> float:
+    from struc_utils import init_sc_mb_exp, prepare_hc_mb_def, vrna_get_ptype_md, exp_E_MLstem
+    sliding_window = (fc.hc.type == VRNA_HC_WINDOW)
+    n = fc.length
+    sn = fc.strand_number
+    ss = fc.strand_start
+    se = fc.strand_end
+    n_seq = 1 if (fc.type == VRNA_FC_TYPE_SINGLE) else fc.n_seq
+    SS = None if (fc.type == VRNA_FC_TYPE_SINGLE) else fc.S
+    S5 = None if (fc.type == VRNA_FC_TYPE_SINGLE) else fc.S5
+    S3 = None if (fc.type == VRNA_FC_TYPE_SINGLE) else fc.S3
+    iidx = None if sliding_window else fc.iindx
+    ij = 0 if sliding_window else iidx[i] - j
+    qqm = aux_mx.qqm
+    qqm1 = aux_mx.qqm1
+    qqmu = aux_mx.qqmu
+    qm = None if sliding_window else fc.exp_matrices.qm
+    qb = None if sliding_window else fc.exp_matrices.qb
+    G = None if sliding_window else fc.exp_matrices.G
+    qm_local = fc.exp_matrices.qm_local if sliding_window else None
+    qb_local = fc.exp_matrices.qb_local if sliding_window else None
+    G_local = fc.exp_matrices.G_local if sliding_window else None
+    expMLbase = fc.exp_matrices.expMLbase
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    hc = fc.hc
+    domains_up = fc.domains_up
+    circular = md.circ
+    with_gquad = md.gquad
+    with_ud = (domains_up and domains_up.exp_energy_cb)
+    hc_up_ml = hc.up_ml
+    evaluate = prepare_hc_mb_def(fc)
+
+    sc_wrapper = init_sc_mb_exp(fc)
+
+    qbt1 = 0
+    q_temp = 0.0
+
+    qqm[i] = 0.0
+
+    if evaluate(i, j, i, j - 1, VRNA_DECOMP_ML_ML):
+        q_temp = qqm1[i] * expMLbase[1]
+
+        if sc_wrapper.red_ml:
+            q_temp *= sc_wrapper.red_ml(i, j, i, j - 1)
+
+        qqm[i] += q_temp
+
+    if with_ud:
+        q_temp = 0.0
+
+        for cnt in range(domains_up.uniq_motif_count):
+            u = domains_up.uniq_motif_size[cnt]
+            if j - u >= i:
+                if evaluate(i, j, i, j - u, VRNA_DECOMP_ML_ML):
+                    q_temp2 = (
+                        qqmu[u][i]
+                        * domains_up.exp_energy_cb(fc, j - u + 1, j, VRNA_UNSTRUCTURED_DOMAIN_MB_LOOP | VRNA_UNSTRUCTURED_DOMAIN_MOTIF, domains_up.data)
+                        * expMLbase[u]
+                    )
+
+                    if sc_wrapper.red_ml:
+                        q_temp2 *= sc_wrapper.red_ml(i, j, i, j - u)
+
+                    q_temp += q_temp2
+
+        qqm[i] += q_temp
+
+    if evaluate(i, j, i, j, VRNA_DECOMP_ML_STEM):
+        qbt1 = qb_local[i][j] if sliding_window else qb[ij]
+
+        if fc.type == VRNA_FC_TYPE_SINGLE:
+            S1 = fc.sequence_encoding
+            S2 = fc.sequence_encoding2
+            type = vrna_get_ptype_md(S2[i], S2[j], md)
+
+            qbt1 *= exp_E_MLstem(type, (S1[i - 1] if (i > 1 or circular) else -1), (S1[j + 1] if (j < n or circular) else -1), pf_params)
+
+        elif fc.type == VRNA_FC_TYPE_COMPARATIVE:
+            q_temp = 1.0
+            for s in range(n_seq):
+                type = vrna_get_ptype_md(SS[s][i], SS[s][j], md)
+                q_temp *= exp_E_MLstem(type, (S5[s][i] if (i > 1 or circular) else -1), (S3[s][j] if (j < n) or circular else -1), pf_params)
+
+            qbt1 *= q_temp
+
+        if sc_wrapper.red_stem:
+            qbt1 *= sc_wrapper.red_stem(i, j, i, j)
+
+        qqm[i] += qbt1
+
+    if with_gquad:
+        q_temp = G_local[i][j] if sliding_window else G[ij]
+        qqm[i] += q_temp * pow(exp_E_MLstem(0, -1, -1, pf_params), n_seq)
+
+    if with_ud:
+        qqmu[0][i] = qqm[i]
+
+    # Construction of qm matrix
+    qqm_tmp = qqm
+
+    if hc.f:
+        qqm_tmp = [0.0] * (j - i + 2)
+        qqm_tmp = [None] * i + qqm_tmp  # Adjust the index offset
+
+        for k in range(j, i, -1):
+            qqm_tmp[k] = qqm[k]
+            if not evaluate(i, j, k - 1, k, VRNA_DECOMP_ML_ML_ML):
+                qqm_tmp[k] = 0.0
+
+    if sc_wrapper.decomp_ml:
+        if qqm_tmp == qqm:
+            qqm_tmp = [0.0] * (j - i + 2)
+            qqm_tmp = [None] * i + qqm_tmp  # Adjust the index offset
+
+            for k in range(j, i, -1):
+                qqm_tmp[k] = qqm[k]
+
+        for k in range(j, i, -1):
+            qqm_tmp[k] *= sc_wrapper.decomp_ml(i, j, k - 1, k)
+
+    temp = 0.0
+    k = j
+
+    if sliding_window:
+        while k > i:
+            temp += qm_local[i][k - 1] * qqm_tmp[k]
+            k -= 1
+    else:
+        kl = iidx[i] - j + 1
+
+        while True:
+            stop = max(i, ss[sn[k]])
+            while k > stop:
+                temp += qm[kl] * qqm_tmp[k]
+                k -= 1
+                kl += 1
+
+            if stop == i:
+                break
+
+            k -= 1
+            kl += 1
+
+    maxk = j
+
+    if maxk > i + hc_up_ml[i]:
+        maxk = i + hc_up_ml[i]
+
+    if maxk > se[sn[i]]:
+        maxk = se[sn[i]]
+
+    if qqm_tmp != qqm:
+        for k in range(maxk, i, -1):
+            qqm_tmp[k] = qqm[k]
+
+    if hc.f:
+        if qqm_tmp == qqm:
+            qqm_tmp = [0.0] * (j - i + 2)
+            qqm_tmp = [None] * i + qqm_tmp  # Adjust the index offset
+
+            for k in range(maxk, i, -1):
+                qqm_tmp[k] = qqm[k]
+
+        for k in range(maxk, i, -1):
+            if not evaluate(i, j, k, j, VRNA_DECOMP_ML_ML):
+                qqm_tmp[k] = 0.0
+
+    if sc_wrapper.red_ml:
+        if qqm_tmp == qqm:
+            qqm_tmp = [0.0] * (j - i + 2)
+            qqm_tmp = [None] * i + qqm_tmp  # Adjust the index offset
+
+            for k in range(maxk, i, -1):
+                qqm_tmp[k] = qqm[k]
+
+        for k in range(maxk, i, -1):
+            qqm_tmp[k] *= sc_wrapper.red_ml(i, j, k, j)
+
+    ii = maxk - i
+
+    for k in range(maxk, i, -1):
+        temp += expMLbase[ii] * qqm_tmp[k]
+        ii -= 1
+
+    if with_ud:
+        ii = maxk - i
+
+        for k in range(maxk, i, -1):
+            temp += expMLbase[ii] * qqm_tmp[k] * domains_up.exp_energy_cb(fc, i, k - 1, VRNA_UNSTRUCTURED_DOMAIN_MB_LOOP, domains_up.data)
+            ii -= 1
+
+    if qqm_tmp != qqm:
+        del qqm_tmp[i:]
+
+    if fc.aux_grammar and fc.aux_grammar.cb_aux_exp_m:
+        temp += fc.aux_grammar.cb_aux_exp_m(fc, i, j, fc.aux_grammar.data)
+
+    # free_sc_mb_exp(sc_wrapper)
+
+    return temp + qqm[i]
+    
+
+
+def vrna_exp_E_ml_fast(fc:vrna_fold_compound_t, i:int, j:int, aux_mx:vrna_mx_pf_aux_ml_s) -> float:
+    q = 0.
+    if fc and aux_mx:
+        q = exp_E_ml_fast(fc, i, j, aux_mx)
+    return q
+  
+
+def fill_arrays(fc:vrna_fold_compound_t) -> int:
+    n           = fc.length
+    my_iindx    = fc.iindx
+    jindx       = fc.jindx
+    matrices    = fc.exp_matrices
+    pf_params   = fc.exp_params
+    domains_up  = fc.domains_up
+    q           = matrices.q
+    qb          = matrices.qb
+    qm          = matrices.qm
+    qm1         = matrices.qm1
+    q1k         = matrices.q1k
+    qln         = matrices.qln
+    md          = pf_params.model_details
+    with_gquad  = md.gquad
+    
+    with_ud = (domains_up and domains_up.exp_energy_cb)
+    Qmax    = 0
+    
+    aux_mx_el = vrna_exp_E_ext_fast_init(fc)
+    aux_mx_ml = vrna_exp_E_ml_fast_init(fc)
+    
+    for i in range(1, n + 1):
+        ij      = my_iindx[i] - i
+        qb[ij]  = 0.0
+    
+    for j in range(2, n + 1):
+        for i in range(j - 1, 0, -1):
+            ij = my_iindx[i] - j
+            qb[ij] = decompose_pair(fc, i, j, aux_mx_ml)
+            qm[ij] = vrna_exp_E_ml_fast(fc, i, j, aux_mx_ml)
+            q[ij] = vrna_exp_E_ext_fast(fc, i, j, aux_mx_el) 
+            if q[ij] > Qmax:Qmax = q[ij]
+        vrna_exp_E_ext_fast_rotate(aux_mx_el)
+        vrna_exp_E_ml_fast_rotate(aux_mx_ml)
+    
+    if q1k and qln:
+        for k in range(1,n + 1):
+            q1k[k]  = q[my_iindx[1] - k]
+            qln[k]  = q[my_iindx[k] - n]
+        q1k[0]      = 1.0
+        qln[n + 1]  = 1.0
+        
+    # vrna_exp_E_ml_fast_free(aux_mx_ml)
+    # vrna_exp_E_ext_fast_free(aux_mx_el)
+    
+    return 1
+    
+    
+
 def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
     dG = float(10000000/100.)
     if fc:
@@ -245,7 +512,7 @@ def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
             fc.stat_cb(VRNA_STATUS_PF_PRE, fc.auxdata)
 
         # Prepare multi-strand folding
-        if fc.strands > 1:
+        if fc.strands > 1: # aux_grammar changed
             vrna_pf_multifold_prepare(fc)
 
         # Call user-defined grammar pre-condition callback function
