@@ -1,4 +1,4 @@
-// macro definition start--------------------------------
+// header include start--------------------------------
 #include "cof.h"
 #include "matrices/all_mat.h"
 
