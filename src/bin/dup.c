@@ -27862,7 +27862,7 @@ print_struc(duplexT const *dup)
   printf( " %3d,",dup->j);
   printf( "%-3d",dup->j + (int)strlen(dup->structure) - l1 - 2);
   printf( " (%5.2f)\n", dup->energy);
-  printf("%s",dup->structure);
+  printf("%s\n",dup->structure);
 
   // free(msg);
 }
