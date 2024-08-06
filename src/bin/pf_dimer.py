@@ -1,6 +1,6 @@
 from math import exp, log, sin
-from dimer_cofold import vrna_fold_compound_t, vrna_md_set_default, vrna_exp_param_t, vrna_salt_loop, prepare_hc_ext_def,VRNA_DECOMP_ML_ML_ML, VRNA_DECOMP_ML_ML
-from remove import MAX_NINIO, NBPAIRS, VRNA_GQUAD_MAX_LINKER_LENGTH, VRNA_GQUAD_MAX_STACK_SIZE, VRNA_GQUAD_MIN_LINKER_LENGTH, VRNA_GQUAD_MIN_STACK_SIZE, Duplex, vrna_md_t, MAXLOOP, DuplexInit37, DuplexInitdH, GQuadAlpha37, GQuadAlphadH, GQuadBeta37, GQuadBetadH, GQuadLayerMismatch37, GQuadLayerMismatchH, GQuadLayerMismatchMax, Hexaloop37, HexaloopdH, Hexaloops, ML_BASEdH, ML_closing37, ML_closingdH, ML_intern37, ML_interndH, RESCALE_dG, TerminalAU37, ML_BASE37, TerminalAUdH, Tetraloop37, TetraloopdH, Tetraloops, Triloop37, TriloopdH, Triloops, GASCONST, K0, VRNA_MODEL_DEFAULT_SALT, hairpin37, hairpindH, bulge37, bulgedH, internal_loop37, internal_loopdH, ninio37, niniodH, dangle5_37, dangle5_dH, dangle3_37, dangle3_dH, stack37, stackdH, mismatchI37, mismatchIdH, mismatch1nI37, mismatch1nIdH, mismatchH37, mismatchHdH, mismatch23I37, mismatch23IdH, mismatchM37, mismatchMdH, mismatchExt37, mismatchExtdH, int11_37, int11_dH, int21_37, int21_dH, int22_37, int22_dH
+from dimer_cofold import vrna_fold_compound_t, vrna_exp_param_t, vrna_salt_loop, prepare_hc_ext_def,VRNA_DECOMP_ML_ML_ML, VRNA_DECOMP_ML_ML
+from remove import *
 
 ## constant define 
 VRNA_FC_TYPE_SINGLE = 0
