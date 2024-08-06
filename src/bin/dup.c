@@ -27663,7 +27663,6 @@ duplex_subopt(const char  *s1,
       E   = Ed = c[i][j];
       // from /data/ntc/Repository/ViennaRNA-2.6.4/src/loops/external.c
       Ed  += vrna_E_ext_stem(type, (j > 1) ? SS2[j - 1] : -1, (i < n1) ? SS1[i + 1] : -1, P);
-      printf("%d,",Ed);
       // 超过阈值则跳过
       if (Ed > thresh)
         continue;
@@ -27794,53 +27793,74 @@ backtrack(int i,
 }
 
 
-PRIVATE void
-print_struc(duplexT const *dup)
-{
-  int   l1;
+#define BUFFER_SIZE 1024
 
-  l1 = strchr(dup->structure, '&') - dup->structure;
-  // char  *msg = fprintf(" %3d,%-3d : %3d,%-3d (%5.2f)",
-  //                                 dup->i + 1 - l1,
-  //                                 dup->i,
-  //                                 dup->j,
-  //                                 dup->j + (int)strlen(dup->structure) - l1 - 2,
-  //                                 dup->energy);
-  printf( " %3d,",dup->i + 1 - l1);
-  printf( "%-3d :",dup->i);
-  printf( " %3d,",dup->j);
-  printf( "%-3d",dup->j + (int)strlen(dup->structure) - l1 - 2);
-  printf( " (%5.2f)\n", dup->energy);
-  printf("%s\n",dup->structure);
+char* formatDuplexOutput(const duplexT* dup) {
+    int   l1;
+    l1 = strchr(dup->structure, '&') - dup->structure;
+    char buffer[BUFFER_SIZE];
+    buffer[0] = '\0'; // 清空缓冲区
 
-  // free(msg);
-}
+    char temp[50];
 
-void process(char *s1, char *s2){
-  int                               i, sym, istty, delta, noconv;
-    delta     = 10;
-    duplexT mfe, *subopt;
-    // char *s1 = "CTAGCATGCTACG";
-    // char *s2 = "CGTAGCATGCTAG";
-    if (delta >= 0) {
-      duplexT *sub;
-      subopt = duplex_subopt(s1, s2, delta, 5);
-      for (sub = subopt; sub->i > 0; sub++) {
-        print_struc(sub);
-        free(sub->structure);
-      }
-      free(subopt);
-    } else {
-      mfe = duplexfold(s1, s2);
-      print_struc(&mfe);
-      free(mfe.structure);
+    // 拼接各个部分
+    sprintf(temp, "%d,", dup->i + 1 - l1);
+    strcat(buffer, temp);
+
+    sprintf(temp, "%d|", dup->i);
+    strcat(buffer, temp);
+
+    sprintf(temp, "%d,", dup->j);
+    strcat(buffer, temp);
+
+    sprintf(temp, "%d|", dup->j + (int)strlen(dup->structure) - l1 - 2);
+    strcat(buffer, temp);
+
+    sprintf(temp, "%5.2f\n", dup->energy);
+    strcat(buffer, temp);
+
+    strcat(buffer, dup->structure);
+    strcat(buffer, "\n");
+
+    // 为结果字符串分配内存并复制缓冲区内容
+    char* result = (char*)malloc(strlen(buffer) + 1);
+    if (result != NULL) {
+        strcpy(result, buffer);
     }
+
+    return strdup(result);
 }
+
+
+char *process(char *s1, char *s2){
+  int                               i, sym, istty, delta, noconv;
+  char *result = (char*)malloc(1000 * sizeof(char)); // 动态分配内存
+  result[0]='\0';
+  delta     = 10;
+  duplexT mfe, *subopt;
+  if (delta >= 0) {
+    duplexT *sub;
+    subopt = duplex_subopt(s1, s2, delta, 5);
+    for (sub = subopt; sub->i > 0; sub++) {
+      char *tmp_str =  formatDuplexOutput(sub);
+      strcat(result, tmp_str);
+      free(tmp_str);
+      free(sub->structure);
+    }
+    free(subopt);
+  } 
+  // printf("%s",result);
+  return result;
+}
+
+
 
 
 int main(){
     char *s1 = "CTTCCTCGGGTTCAAAGCTGGATT";
     char *s2 = "GTCCAGTTTTCCCAGGAAT";
-    process(s1,s2);
+    char *res;
+    res = process(s1,s2);
+    free(res);
     return 0;
 }
