@@ -27832,7 +27832,7 @@ char* formatDuplexOutput(const duplexT* dup) {
 }
 
 
-char *process(char *s1, char *s2){
+char* process(char *s1, char *s2){
   int                               i, sym, istty, delta, noconv;
   char *result = (char*)malloc(1000 * sizeof(char)); // 动态分配内存
   result[0]='\0';
