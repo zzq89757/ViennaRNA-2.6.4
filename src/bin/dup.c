@@ -331,7 +331,7 @@ double          pf_scale        = VRNA_MODEL_DEFAULT_PF_SCALE;
 int             dangles         = VRNA_MODEL_DEFAULT_DANGLES;
 int             tetra_loop      = VRNA_MODEL_DEFAULT_SPECIAL_HP;
 int             noLonelyPairs   = VRNA_MODEL_DEFAULT_NO_LP;
-int             noGU            = VRNA_MODEL_DEFAULT_NO_GU;
+int             noGU            = 1;
 int             no_closingGU    = VRNA_MODEL_DEFAULT_NO_GU_CLOSURE;
 int             circ            = VRNA_MODEL_DEFAULT_CIRC;
 int             gquad           = VRNA_MODEL_DEFAULT_GQUAD;
@@ -26966,8 +26966,8 @@ get_scaled_params(vrna_md_t *md)
 
   params->model_details = *md;  /* copy over the model details */
   params->temperature   = md->temperature;
-  tempf                 = ((params->temperature + K0) / Tmeasure);
-
+  // tempf                 = ((md->temperature + K0) / Tmeasure);
+  tempf = 1.;
   params->ninio[2]              = RESCALE_dG(ninio37, niniodH, tempf);
   params->lxc                   = lxc37 * tempf;
   params->TripleC               = RESCALE_dG(TripleC37, TripleCdH, tempf);
@@ -27264,86 +27264,30 @@ make_pair_matrix(void)
 
   int i, j;
   // 默认能量集 (energy_set == 0)
-  if (energy_set == 0) {
     // 将前5个碱基设置为其本身。
     // 将非标准碱基（例如X和K）设置为标准碱基的别名。
-    for (i = 0; i < 5; i++)
-      alias[i] = (short)i;
-    alias[5]  = 3;  /* X <-> G */
-    alias[6]  = 2;  /* K <-> C */
-    alias[7]  = 0;  /* I <-> default base '@' */
-    for (i = 0; i < NBASES; i++)
-      for (j = 0; j < NBASES; j++)
-        pair[i][j] = BP_pair[i][j];
-    // 如果noGU为真，禁止G-U配对。
-    if (noGU)
-      pair[3][4] = pair[4][3] = 0;
-    // 如果nonstandards不为空，允许非标准碱基对
-    if (nonstandards != NULL) {
-      /* allow nonstandard bp's */
-      for (i = 0; i < (int)strlen(nonstandards); i += 2)
-        pair[encode_char(nonstandards[i])]
-        [encode_char(nonstandards[i + 1])] = 7;
-    }
-    // 设置反向配对矩阵
-    for (i = 0; i < NBASES; i++)
-      for (j = 0; j < NBASES; j++)
-        rtype[pair[i][j]] = pair[j][i];
-  } else {
-    for (i = 0; i <= MAXALPHA; i++)
-      for (j = 0; j <= MAXALPHA; j++)
-        pair[i][j] = 0;
-    // 非默认能量集
-    if (energy_set == 1) {
-      // 设置碱基别名：A <-> G，B <-> C。
-      // 初始化配对矩阵：AB <-> GC，BA <-> CG
-      for (i = 1; i < MAXALPHA; ) {
-        alias[i++]  = 3;      /* A <-> G */
-        alias[i++]  = 2;      /* B <-> C */
-      }
-      for (i = 1; i < MAXALPHA; i++) {
-        pair[i][i + 1] = 2;       /* AB <-> GC */
-        i++;
-        pair[i][i - 1] = 1;       /* BA <-> CG */
-      }
-    } else if (energy_set == 2) {
-      // 设置碱基别名：A <-> A，B <-> U。
-      // 初始化配对矩阵：AB <-> AU，BA <-> UA。
-      for (i = 1; i < MAXALPHA; ) {
-        alias[i++]  = 1;      /* A <-> A*/
-        alias[i++]  = 4;      /* B <-> U */
-      }
-      for (i = 1; i < MAXALPHA; i++) {
-        pair[i][i + 1] = 5;       /* AB <-> AU */
-        i++;
-        pair[i][i - 1] = 6;       /* BA <-> UA */
-      }
-    } else if (energy_set == 3) {
-      // 设置碱基别名：A <-> G，B <-> C，C <-> A，D <-> U。
-      // 初始化配对矩阵：AB <-> GC，BA <-> CG，CD <-> AU，DC <-> UA
-      for (i = 1; i < MAXALPHA - 2; ) {
-        alias[i++]  = 3;    /* A <-> G */
-        alias[i++]  = 2;    /* B <-> C */
-        alias[i++]  = 1;    /* C <-> A */
-        alias[i++]  = 4;    /* D <-> U */
-      }
-      for (i = 1; i < MAXALPHA - 2; i++) {
-        pair[i][i + 1] = 2;     /* AB <-> GC */
-        i++;
-        pair[i][i - 1] = 1;     /* BA <-> CG */
-        i++;
-        pair[i][i + 1] = 5;     /* CD <-> AU */
-        i++;
-        pair[i][i - 1] = 6;     /* DC <-> UA */
-      }
-    } else {
-      printf("What energy_set are YOU using??");
-    }
-    //  设置反向配对矩阵 无论是哪种能量集，最后都会设置rtype[pair[i][j]] = pair[j][i]。
-    for (i = 0; i <= MAXALPHA; i++)
-      for (j = 0; j <= MAXALPHA; j++)
-        rtype[pair[i][j]] = pair[j][i];
+  for (i = 0; i < 5; i++)
+    alias[i] = (short)i;
+  alias[5]  = 3;  /* X <-> G */
+  alias[6]  = 2;  /* K <-> C */
+  alias[7]  = 0;  /* I <-> default base '@' */
+  for (i = 0; i < NBASES; i++)
+    for (j = 0; j < NBASES; j++)
+      pair[i][j] = BP_pair[i][j];
+  // 如果noGU为真，禁止G-U配对。
+  if (noGU)
+    pair[3][4] = pair[4][3] = 0;
+  // 如果nonstandards不为空，允许非标准碱基对
+  if (nonstandards != NULL) {
+    /* allow nonstandard bp's */
+    for (i = 0; i < (int)strlen(nonstandards); i += 2)
+      pair[encode_char(nonstandards[i])]
+      [encode_char(nonstandards[i + 1])] = 7;
   }
+  // 设置反向配对矩阵
+  for (i = 0; i < NBASES; i++)
+    for (j = 0; j < NBASES; j++)
+      rtype[pair[i][j]] = pair[j][i];
 }
 
 
@@ -27571,7 +27515,7 @@ duplexfold_cu(const char  *s1,
   // SS* = encode(seq[-1]) + encode(seq)
   SS1 = encode_sequence(s1, 1);
   SS2 = encode_sequence(s2, 1);
-  // for(i = 0; i <= n1; i++){
+  // for(i = 0; i <= n1 + 11; i++){
   //   printf("%d ",SS1[i]);
   // }
   // printf("%d\n", SS1[0]);
@@ -27588,10 +27532,15 @@ duplexfold_cu(const char  *s1,
       /* c: energy array, given that i-j pair */
       int type, type2, E, k, l;
       // type: 序列 s1[i] 和 s2[j] 的配对类型 例如，A-U，G-C。
+      // pair no erro !!!!!!!!!!!!!!!!!!!!
       type    = pair[S1[i]][S2[j]];
+      // printf("%d,",S1[i]);
+      // printf("%d,",S2[j]);
+      // printf("%d,",type);
       // print_pair();
       // 初始化能量。如果 type 有效，则设置初始值，否则设置为无穷大。
       c[i][j] = type ? P->DuplexInit : INF;
+      // printf("%d,", E);
       // printf("%d,", type);
       // printf("%d,", c[i][j]);
       // 若配对的type 自由能为0 则跳过能量累加计算
@@ -27621,6 +27570,7 @@ duplexfold_cu(const char  *s1,
           no_type_num += l;
         }
       }
+      // different c !!!!!!!!!!
       E = c[i][j];
       E += vrna_E_ext_stem(rtype[type], (j > 1) ? SS2[j - 1] : -1, (i < n1) ? SS1[i + 1] : -1, P);
       if (E < Emin) {
@@ -27632,7 +27582,7 @@ duplexfold_cu(const char  *s1,
   }
   // printf("%d",i_min);
   // printf("%d",j_min);
-  printf("%d",no_type_num);
+  // printf("%d",no_type_num);
 
   // 回溯生成结构
   struc = backtrack(i_min, j_min);
@@ -27869,7 +27819,7 @@ print_struc(duplexT const *dup)
 
 void process(char *s1, char *s2){
   int                               i, sym, istty, delta, noconv;
-    delta     = -1;
+    delta     = 10;
     duplexT mfe, *subopt;
     // char *s1 = "CTAGCATGCTACG";
     // char *s2 = "CGTAGCATGCTAG";
