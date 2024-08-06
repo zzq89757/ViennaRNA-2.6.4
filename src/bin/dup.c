@@ -27648,10 +27648,9 @@ duplex_subopt(const char  *s1,
   free(mfe.structure);
 
   // 根据 mfe.energy 和 delta 计算能量阈值 threshold。
-  thresh  = (int)mfe.energy * 100 + 0.1 + delta;
+  thresh  = (int)mfe.energy * 100 + 0.1 + delta * 100;
   n1      = strlen(s1);
   n2      = strlen(s2);
-  // printf("%d,", delta);
   // print_pair();
   // 二层遍历查找次优结构
   for (i = n1; i > 0; i--) {
@@ -27664,7 +27663,7 @@ duplex_subopt(const char  *s1,
       E   = Ed = c[i][j];
       // from /data/ntc/Repository/ViennaRNA-2.6.4/src/loops/external.c
       Ed  += vrna_E_ext_stem(type, (j > 1) ? SS2[j - 1] : -1, (i < n1) ? SS1[i + 1] : -1, P);
-      
+      printf("%d,",Ed);
       // 超过阈值则跳过
       if (Ed > thresh)
         continue;
