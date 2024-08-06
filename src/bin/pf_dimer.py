@@ -1,8 +1,16 @@
 from math import exp, log, sin
-from dimer_cofold import vrna_fold_compound_t, vrna_md_set_default, vrna_md_t, vrna_exp_param_t, GASCONST, K0, VRNA_MODEL_DEFAULT_SALT, vrna_salt_loop
-from remove import MAX_NINIO, NBPAIRS, VRNA_GQUAD_MAX_LINKER_LENGTH, VRNA_GQUAD_MAX_STACK_SIZE, VRNA_GQUAD_MIN_LINKER_LENGTH, VRNA_GQUAD_MIN_STACK_SIZE, Duplex, MAXLOOP, DuplexInit37, DuplexInitdH, GQuadAlpha37, GQuadAlphadH, GQuadBeta37, GQuadBetadH, GQuadLayerMismatch37, GQuadLayerMismatchH, GQuadLayerMismatchMax, Hexaloop37, HexaloopdH, Hexaloops, ML_BASEdH, ML_closing37, ML_closingdH, ML_intern37, ML_interndH, RESCALE_dG, TerminalAU37, ML_BASE37, TerminalAUdH, Tetraloop37, TetraloopdH, Tetraloops, Triloop37, TriloopdH, Triloops
+from dimer_cofold import vrna_fold_compound_t, vrna_md_set_default, vrna_exp_param_t, vrna_salt_loop, prepare_hc_ext_def,VRNA_DECOMP_ML_ML_ML, VRNA_DECOMP_ML_ML
+from remove import MAX_NINIO, NBPAIRS, VRNA_GQUAD_MAX_LINKER_LENGTH, VRNA_GQUAD_MAX_STACK_SIZE, VRNA_GQUAD_MIN_LINKER_LENGTH, VRNA_GQUAD_MIN_STACK_SIZE, Duplex, vrna_md_t, MAXLOOP, DuplexInit37, DuplexInitdH, GQuadAlpha37, GQuadAlphadH, GQuadBeta37, GQuadBetadH, GQuadLayerMismatch37, GQuadLayerMismatchH, GQuadLayerMismatchMax, Hexaloop37, HexaloopdH, Hexaloops, ML_BASEdH, ML_closing37, ML_closingdH, ML_intern37, ML_interndH, RESCALE_dG, TerminalAU37, ML_BASE37, TerminalAUdH, Tetraloop37, TetraloopdH, Tetraloops, Triloop37, TriloopdH, Triloops, GASCONST, K0, VRNA_MODEL_DEFAULT_SALT, hairpin37, hairpindH, bulge37, bulgedH, internal_loop37, internal_loopdH, ninio37, niniodH, dangle5_37, dangle5_dH, dangle3_37, dangle3_dH, stack37, stackdH, mismatchI37, mismatchIdH, mismatch1nI37, mismatch1nIdH, mismatchH37, mismatchHdH, mismatch23I37, mismatch23IdH, mismatchM37, mismatchMdH, mismatchExt37, mismatchExtdH, int11_37, int11_dH, int21_37, int21_dH, int22_37, int22_dH
 
 ## constant define 
+VRNA_FC_TYPE_SINGLE = 0
+VRNA_FC_TYPE_COMPARATIVE = 1
+VRNA_HC_WINDOW = 1
+VRNA_DECOMP_ML_STEM = 6
+VRNA_UNSTRUCTURED_DOMAIN_MB_LOOP = 8
+VRNA_UNSTRUCTURED_DOMAIN_MOTIF = 16
+VRNA_DECOMP_EXT_EXT_EXT = 15
+james_rule        = 1
 Tmeasure = 310.15
 lxc37 = 107.9
 SCALE = 10
@@ -20,16 +28,22 @@ def SMOOTH(X):
 TRUNC_MAYBE = lambda X:X if pf_smooth else float(int(X))
 RESCALE_BF = lambda dG,dH,dT,kT: exp(-TRUNC_MAYBE(float(RESCALE_dG((dG), (dH), (dT))) * 10. / kT ))
 RESCALE_BF_SMOOTH = lambda dG, dH, dT, kT:exp(SMOOTH(-TRUNC_MAYBE(float(RESCALE_dG(dG,dH,dT)))) * 10. / kT)
+VRNA_DECOMP_EXT_UP = 13
+VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP = 1
+
+
 
 
 def get_scaled_exp_params(md:vrna_md_t, pfs:float) -> vrna_exp_param_t:
+    saltT = md.temperature + K0
     pf = vrna_exp_param_t()
     pf.model_details = md
     pf.temperature   = md.temperature
     pf.alpha         = md.betaScale
     pf.kT            = kT = md.betaScale * (md.temperature + K0) * GASCONST # kT in cal/mol
     pf.pf_scale      = pfs
-    pf_smooth         = md.pf_smooth
+    global pf_smooth
+    pf_smooth = md.pf_smooth
     TT                = (md.temperature + K0) / (Tmeasure)
     salt = md.salt
     saltStandard = VRNA_MODEL_DEFAULT_SALT
@@ -154,13 +168,13 @@ def get_scaled_exp_params(md:vrna_md_t, pfs:float) -> vrna_exp_param_t:
     pf.Hexaloops = Hexaloops[:361]
     pf.SaltMLbase = pf.SaltMLclosing = pf.SaltDPXInit = 0.
     if salt != saltStandard:
-        pf.expSaltStack = exp(-vrna_salt_stack(salt, saltT, md.helical_rise) * 10. / kT)
-        vrna_salt_ml(pf.SaltLoopDbl, md.saltMLLower, md.saltMLUpper, pf.SaltMLbase, pf.SaltMLclosing)
-
+        pf.expSaltStack = exp(-Duplex.vrna_salt_stack(salt, saltT, md.helical_rise) * 10. / kT)
+        Duplex.vrna_salt_ml(pf.SaltLoopDbl, md.saltMLLower, md.saltMLUpper, pf.SaltMLbase, pf.SaltMLclosing)
+        VRNA_MODEL_DEFAULT_SALT_DPXINIT = 99999
         if md.saltDPXInit != VRNA_MODEL_DEFAULT_SALT_DPXINIT:
             pf.SaltDPXInit = md.saltDPXInit
         elif md.saltDPXInit:
-            pf.SaltDPXInit = vrna_salt_duplex_init(md)
+            pf.SaltDPXInit = Duplex.vrna_salt_duplex_init(md)
 
         pf.expMLclosing *= exp(-pf.SaltMLbase * 10. / kT)
         pf.expMLclosing *= exp(-pf.SaltMLclosing * 10. / kT)
@@ -181,7 +195,7 @@ def vrna_exp_params(md:vrna_md_t):
         return get_scaled_exp_params(md, -1.)
     else:
         md = vrna_md_t
-        vrna_md_set_default(md)
+        Duplex.vrna_md_set_default(md)
         return get_scaled_exp_params(md, -1.)
 
 
@@ -226,6 +240,25 @@ def vrna_exp_params_rescale(vc:vrna_fold_compound_t, mfe:float) -> None:
 # def decompose_pair(fc:vrna_fold_compound_t, i:int, j:int, aux_mx_ml:vrna_mx_pf_aux_ml_t) -> float:
 def decompose_pair() -> float:
     return 0.
+
+
+# struct vrna_mx_pf_aux_ml_s definition
+class vrna_mx_pf_aux_ml_s:
+    def __init__(self):
+        self.qqm = self.qqm1 = self.qqmu = 0.
+        self.qqmu_size = 0
+
+
+
+class vrna_mx_pf_aux_el_s:
+    def __init__(self):
+        self.qq = self.qq1 = self.qqu = 0.
+        self.qqu_size = 0
+        
+
+class vrna_dimer_pf_t:
+    def __init__(self):
+        self.F0AB = self.FAB = self.FcAB = self.FA = self.FB = 0.
 
 
 def exp_E_ml_fast(fc:vrna_fold_compound_t, i:int, j:int, aux_mx:vrna_mx_pf_aux_ml_s) -> float:
@@ -439,6 +472,50 @@ def vrna_exp_E_ml_fast(fc:vrna_fold_compound_t, i:int, j:int, aux_mx:vrna_mx_pf_
     return q
 
 
+from typing import Callable, Optional
+from dimer_cofold import hc_ext_def_dat, sc_ext_exp_dat, vrna_ud_t
+def reduce_ext_up_fast(
+    fc: vrna_fold_compound_t,
+    i: int,
+    j: int,
+    aux_mx: vrna_mx_pf_aux_el_s,
+    evaluate: Callable[[int, int, int, int, int, hc_ext_def_dat], bool],
+    hc_dat_local: hc_ext_def_dat,
+    sc_wrapper: sc_ext_exp_dat
+) -> float:
+    u: int
+    qbt: float
+    q_temp: float
+    scale: list[float]
+    domains_up: Optional[vrna_ud_t]
+    sc_red_up: Optional[Callable[[int, int, sc_ext_exp_dat], float]]
+
+    sc_red_up = sc_wrapper.red_up
+
+    scale = fc.exp_matrices.scale
+    domains_up = fc.domains_up
+    qbt = 0.0
+
+    if evaluate(i, j, i, j, VRNA_DECOMP_EXT_UP, hc_dat_local):
+        u = j - i + 1
+        q_temp = scale[u]
+
+        if sc_red_up:
+            q_temp *= sc_red_up(i, j, sc_wrapper)
+
+        qbt += q_temp
+
+        if domains_up and domains_up.exp_energy_cb:
+            qbt += q_temp * domains_up.exp_energy_cb(
+                fc,
+                i, j,
+                VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP,
+                domains_up.data
+            )
+
+    return qbt
+
+
 def vrna_exp_E_ext_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_el_s:
     from struc_utils import init_sc_ext_exp, prepare_hc_ext_def, sc_ext_exp_dat, hc_ext_def_dat
     hc_dat_local:hc_ext_def_dat
@@ -451,9 +528,9 @@ def vrna_exp_E_ext_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_el_s:
     turn = fc.exp_params.model_details.min_loop_size
     domains_up = fc.domains_up
     with_ud = domains_up and domains_up.exp_energy_cb
-
-    if fc.hc.type == VRNA_HC_WINDOW:
-        evaluate = prepare_hc_ext_def_window(fc, hc_dat_local)
+    if fc.hc.type == VRNA_HC_WINDOW: # not into 
+        pass
+        # evaluate = prepare_hc_ext_def_window(fc, hc_dat_local)
     else:
         evaluate = prepare_hc_ext_def(fc, hc_dat_local)
 
@@ -468,7 +545,7 @@ def vrna_exp_E_ext_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_el_s:
         aux_mx.qqu_size = ud_max_size
         aux_mx.qqu = [[0.0] * (n + 2) for _ in range(ud_max_size + 1)]
 
-    if fc.hc.type == VRNA_HC_WINDOW:
+    if fc.hc.type == VRNA_HC_WINDOW:# not into
         q_local = fc.exp_matrices.q_local
         max_j = min(turn + 1, fc.window_size, n)
         for j in range(1, max_j + 1):
@@ -540,7 +617,241 @@ def vrna_exp_E_ml_fast_init(fc:vrna_fold_compound_t) -> vrna_mx_pf_aux_ml_s:
                     qm[ij] += fc.aux_grammar.cb_aux_exp_m(fc, i, j, fc.aux_grammar.data)
 
     return aux_mx
-  
+
+
+VRNA_DECOMP_EXT_EXT = 12
+vrna_hc_eval_f = Callable[[int, int, int, int, int, object], int]
+def reduce_ext_ext_fast(fc: vrna_fold_compound_t, i: int, j: int, aux_mx: vrna_mx_pf_aux_el_s,
+                        evaluate: vrna_hc_eval_f, hc_dat_local: hc_ext_def_dat, sc_wrapper: sc_ext_exp_dat) -> float:
+    u = 0
+    q_temp = 0.0
+    q_temp2 = 0.0
+    q = 0.0
+    qq1 = aux_mx.qq1
+    qqu = aux_mx.qqu
+    scale = fc.exp_matrices.scale
+    sc_red_ext = sc_wrapper.red_ext
+    domains_up = fc.domains_up
+
+    if evaluate(i, j, i, j - 1, VRNA_DECOMP_EXT_EXT, hc_dat_local):
+        q_temp = qq1[i] * scale[1]
+
+        if sc_red_ext:
+            q_temp *= sc_red_ext(i, j, i, j - 1, sc_wrapper)
+
+        if domains_up and domains_up.exp_energy_cb:
+            for cnt in range(domains_up.uniq_motif_count):
+                u = domains_up.uniq_motif_size[cnt]
+                if j - u >= i:
+                    if evaluate(i, j, i, j - u, VRNA_DECOMP_EXT_EXT, hc_dat_local):
+                        q_temp2 = (qqu[u][i] *
+                                   domains_up.exp_energy_cb(fc,
+                                                             j - u + 1,
+                                                             j,
+                                                             VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP | VRNA_UNSTRUCTURED_DOMAIN_MOTIF,
+                                                             domains_up.data) *
+                                   scale[u])
+
+                        if sc_red_ext:
+                            q_temp2 *= sc_red_ext(i, j, i, j - u, sc_wrapper)
+
+                        q_temp += q_temp2
+
+        q = q_temp
+
+    return q
+
+
+
+VRNA_DECOMP_EXT_STEM = 14
+from dimer_cofold import vrna_get_ptype_md, vrna_exp_E_ext_stem
+def reduce_ext_stem_fast(fc: vrna_fold_compound_t, i: int, j: int, aux_mx: vrna_mx_pf_aux_el_s,
+                         evaluate: vrna_hc_eval_f, hc_dat_local: hc_ext_def_dat, sc_wrapper: sc_ext_exp_dat) -> float:
+    sc_red_stem = sc_wrapper.red_stem
+    n = fc.length
+    sn = fc.strand_number
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    circular = md.circ
+    idx = fc.iindx
+
+    qb = (fc.hc.type == VRNA_HC_WINDOW) \
+         and fc.exp_matrices.qb_local[i][j] \
+         or fc.exp_matrices.qb[idx[i] - j]
+    
+    qbt = 0.0
+
+    # Exterior loop part with stem (i, j)
+    if evaluate(i, j, i, j, VRNA_DECOMP_EXT_STEM, hc_dat_local):
+        q_temp = qb
+
+        if fc.type == VRNA_FC_TYPE_SINGLE:
+            S1 = fc.sequence_encoding
+            S2 = fc.sequence_encoding2
+            type = vrna_get_ptype_md(S2[i], S2[j], md)
+            s5 = S1[i - 1] if (i > 1 or circular) and (sn[i] == sn[i - 1]) else -1
+            s3 = S1[j + 1] if (j < n or circular) and (sn[j + 1] == sn[j]) else -1
+            q_temp *= vrna_exp_E_ext_stem(type, s5, s3, pf_params)
+
+        if sc_red_stem:
+            q_temp *= sc_red_stem(i, j, i, j, sc_wrapper)
+
+        qbt += q_temp
+
+    return qbt
+
+
+
+def split_ext_fast(fc: vrna_fold_compound_t, i: int, j: int, aux_mx: vrna_mx_pf_aux_el_s,
+                   evaluate: vrna_hc_eval_f, hc_dat_local: hc_ext_def_dat, sc_wrapper: sc_ext_exp_dat) -> float:
+    idx = fc.iindx
+    q = fc.exp_matrices.q_local[i] if fc.hc.type == VRNA_HC_WINDOW else fc.exp_matrices.q[idx[i]]
+    qq = aux_mx.qq
+    sc_split = sc_wrapper.split
+    qbt = 0.0
+
+    # Pre-process qq array
+    if sc_split:
+        qqq = [0.0] * (j - i + 1)
+        for k in range(j, i, -1):
+            qqq[k - i] = qq[k] * sc_split(i, j, k, sc_wrapper)
+    else:
+        qqq = qq
+
+    factor = 1 if fc.hc.type == VRNA_HC_WINDOW else -1
+    ij1 = factor * (j - 1)
+
+    # Actual decomposition
+    for k in range(j, i, -1):
+        if evaluate(i, j, k - 1, k, VRNA_DECOMP_EXT_EXT_EXT, hc_dat_local):
+            qbt += q[ij1] * qqq[k - i]
+        ij1 -= factor
+
+    # Free allocated memory if necessary
+    if qqq is not qq:
+        # In Python, the memory management is handled automatically, so no need to free memory manually
+        pass
+
+    return qbt
+
+
+
+
+
+def exp_E_ext_fast(fc: vrna_fold_compound_t, i: int, j: int, aux_mx: vrna_mx_pf_aux_el_s) -> float:
+    iidx = None
+    ij = 0
+    with_ud = False
+    with_gquad = False
+    qbt1 = 0.0
+    qq = aux_mx.qq
+    qqu = aux_mx.qqu
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    domains_up = fc.domains_up
+    with_gquad = md.gquad
+    with_ud = domains_up and domains_up.exp_energy_cb
+    hc_dat_local = hc_ext_def_dat()
+    sc_wrapper = sc_ext_exp_dat()
+
+    if fc.hc.type == VRNA_HC_WINDOW:
+        pass
+        # evaluate = prepare_hc_ext_def_window(fc, hc_dat_local)
+    else:
+        evaluate = prepare_hc_ext_def(fc, hc_dat_local)
+    from dimer_cofold import init_sc_ext_exp
+    
+    init_sc_ext_exp(fc, sc_wrapper)
+
+    # All exterior loop parts [i, j] with exactly one stem (i, u) i < u < j
+    qbt1 += reduce_ext_ext_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+    # Exterior loop part with stem (i, j)
+    qbt1 += reduce_ext_stem_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+
+    if with_gquad:
+        if fc.hc.type == VRNA_HC_WINDOW:
+            G_local = fc.exp_matrices.G_local
+            qbt1 += G_local[i][j]
+        else:
+            G = fc.exp_matrices.G
+            iidx = fc.iindx
+            ij = iidx[i] - j
+            qbt1 += G[ij]
+
+    qq[i] = qbt1
+
+    if with_ud:
+        qqu[0][i] = qbt1
+
+    # The entire stretch [i, j] is unpaired
+    qbt1 += reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+
+    qbt1 += split_ext_fast(fc, i, j, aux_mx, evaluate, hc_dat_local, sc_wrapper)
+
+    # Apply auxiliary grammar rule for exterior loop case
+    if fc.aux_grammar and fc.aux_grammar.cb_aux_exp_f:
+        qbt1 += fc.aux_grammar.cb_aux_exp_f(fc, i, j, fc.aux_grammar.data)
+
+    # free_sc_ext_exp(sc_wrapper)
+
+    return qbt1
+
+
+
+
+
+def vrna_exp_E_ext_fast(fc: vrna_fold_compound_t, i: int, j: int, aux_mx: vrna_mx_pf_aux_el_s) -> float:
+    if fc:
+        if j < i:
+            i, j = j, i
+            print(
+                f"vrna_exp_E_ext_fast: i ({i}) larger than j ({j})! Swapping coordinates..."
+            )
+        elif j < 1 or i < 1:
+            print(
+                f"vrna_exp_E_ext_fast: Indices too small [i = {i}, j = {j}]! Refusing to compute anything..."
+            )
+            return 0.0
+        elif j > fc.length:
+            print(
+                f"vrna_exp_E_ext_fast: Indices exceed sequence length ({fc.length}) [i = {i}, j = {j}]! Refusing to compute anything..."
+            )
+            return 0.0
+
+        return exp_E_ext_fast(fc, i, j, aux_mx)
+
+    return 0.0
+
+
+
+
+def vrna_exp_E_ext_fast_rotate(aux_mx: vrna_mx_pf_aux_el_s) -> None:
+    if aux_mx:
+        # Swap qq and qq1 arrays
+        aux_mx.qq, aux_mx.qq1 = aux_mx.qq1, aux_mx.qq
+
+        # Rotate auxiliary arrays for unstructured domains
+        if aux_mx.qqu:
+            tmp = aux_mx.qqu[aux_mx.qqu_size]
+            for u in range(aux_mx.qqu_size, 0, -1):
+                aux_mx.qqu[u] = aux_mx.qqu[u - 1]
+            aux_mx.qqu[0] = tmp
+
+
+def vrna_exp_E_ml_fast_rotate(aux_mx: vrna_mx_pf_aux_ml_s) -> None:
+    if aux_mx:
+        # Swap qqm and qqm1 arrays
+        aux_mx.qqm, aux_mx.qqm1 = aux_mx.qqm1, aux_mx.qqm
+
+        # Rotate auxiliary arrays for unstructured domains
+        if aux_mx.qqmu:
+            tmp = aux_mx.qqmu[aux_mx.qqmu_size]
+            for u in range(aux_mx.qqmu_size, 0, -1):
+                aux_mx.qqmu[u] = aux_mx.qqmu[u - 1]
+            aux_mx.qqmu[0] = tmp
+
+
+
 
 def fill_arrays(fc:vrna_fold_compound_t) -> int:
     n           = fc.length
@@ -589,8 +900,123 @@ def fill_arrays(fc:vrna_fold_compound_t) -> int:
     # vrna_exp_E_ext_fast_free(aux_mx_el)
     
     return 1
-    
-    
+
+
+from typing import Callable, Any
+vrna_grammar_rule_f_exp = Callable[[vrna_fold_compound_t, int, int, Any], float]
+class vrna_gr_aux_s:
+    def __init__(self):
+        self.cb_proc = None
+
+        self.cb_aux = None
+        self.cb_aux_f = None
+        self.cb_aux_c = None
+        self.cb_aux_m = None
+        self.cb_aux_m1 = None
+
+        self.cb_aux_exp = None
+        self.cb_aux_exp_f = None
+        self.cb_aux_exp_c = None
+        self.cb_aux_exp_m = None
+        self.cb_aux_exp_m1 = None
+
+        self.data = None
+        self.free_data = None
+
+def add_aux_grammar(fc: vrna_fold_compound_t):
+    fc.aux_grammar = vrna_gr_aux_s()
+
+def vrna_gr_set_aux_exp_c(fc:vrna_fold_compound_t, cb:vrna_grammar_rule_f_exp):
+    ret = 0
+
+    if fc:
+        if not fc.aux_grammar:
+            add_aux_grammar(fc)
+
+        fc.aux_grammar.cb_aux_exp_c = cb
+
+        ret = 1
+
+    return ret
+
+
+def mf_rule_pair(fc: vrna_fold_compound_t, i: int, j: int, data: any) -> float:
+    contribution = 0
+    S1 = fc.sequence_encoding
+    S2 = fc.sequence_encoding2
+    pf_params = fc.exp_params
+    md = pf_params.model_details
+    sn = fc.strand_number
+    ends = fc.strand_end
+    q = fc.exp_matrices.q
+    scale = fc.exp_matrices.scale
+    my_iindx = fc.iindx
+    sc = fc.sc
+    evaluate = prepare_hc_ext_def(fc)
+    VRNA_DECOMP_EXT_STEM = 14
+    from dimer_cofold import vrna_get_ptype_md, vrna_exp_E_ext_stem
+    if (sn[i] != sn[j]) and evaluate(i, j, i, j, VRNA_DECOMP_EXT_STEM, fc):
+        type_ = vrna_get_ptype_md(S2[j], S2[i], md)
+        s5 = S1[j - 1] if sn[j] == sn[j - 1] else -1
+        s3 = S1[i + 1] if sn[i] == sn[i + 1] else -1
+        qbase = vrna_exp_E_ext_stem(type_, s5, s3, pf_params) * scale[2]
+
+        if sc and sc.exp_f:
+            qbase *= sc.exp_f(j, i, j, i, VRNA_DECOMP_EXT_STEM, sc.data)
+
+        tmp = 0.0
+
+        if sn[i] != sn[i + 1]:
+            if (sn[j - 1] != sn[j]) and (i + 1 == j):
+                tmp = 1.0
+            elif sn[j - 1] == sn[j]:
+                tmp = q[my_iindx[i + 1] - j + 1]
+        elif sn[j - 1] != sn[j]:
+            tmp = q[my_iindx[i + 1] - j + 1]
+        else:
+            tmp = q[my_iindx[i + 1] - ends[sn[i]]] * q[my_iindx[ends[sn[i]] + 1] - j + 1]
+
+            nick = ends[sn[i]] + 1
+            while sn[nick] != sn[j]:
+                tmp2 = 1.0
+                if i + 1 <= ends[sn[nick]]:
+                    tmp2 *= q[my_iindx[i + 1] - ends[sn[nick]]]
+
+                if ends[sn[nick]] + 1 <= j - 1:
+                    tmp2 *= q[my_iindx[ends[sn[nick]] + 1] - j + 1]
+
+                tmp += tmp2
+                nick = ends[sn[nick]] + 1
+
+        contribution = qbase * tmp
+
+    return contribution
+
+
+def vrna_pf_multifold_prepare(fc:vrna_fold_compound_t):
+    if fc:
+        return vrna_gr_set_aux_exp_c(fc, mf_rule_pair)
+    return 0
+
+
+def vrna_gr_reset(fc: vrna_fold_compound_t) -> int:
+    ret = 0
+
+    if fc and fc.aux_grammar:
+        if fc.aux_grammar.free_data:
+            fc.aux_grammar.free_data(fc.aux_grammar.data)
+
+        fc.aux_grammar = None
+
+    return ret
+
+
+from dimer_cofold import pf_create_bppm
+def vrna_pairing_probs(vc:vrna_fold_compound_t, structure:str) -> int:
+    if vc:return pf_create_bppm(vc, structure)
+    return 0
+
+
 
 def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
     dG = float(10000000/100.)
@@ -602,7 +1028,7 @@ def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
 
         # Explicitly turn off dynamic threads
         # if 'OMP' in globals():
-        omp_set_dynamic(0)
+        # omp_set_dynamic(0)
 
         # Set appropriate arithmetic mode
         # if 'SUN4' in globals():
@@ -611,16 +1037,16 @@ def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
         #     fpsetfastmode(1)
 
         # Call user-defined recursion status callback function
-        if fc.stat_cb: # not into
-            fc.stat_cb(VRNA_STATUS_PF_PRE, fc.auxdata)
+        # if fc.stat_cb: # not into
+        #    fc.stat_cb(VRNA_STATUS_PF_PRE, fc.auxdata)
 
         # Prepare multi-strand folding
         if fc.strands > 1: # aux_grammar changed
             vrna_pf_multifold_prepare(fc)
 
         # Call user-defined grammar pre-condition callback function
-        if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into
-            fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_PRE, fc.aux_grammar.data)
+        # if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into
+        #     fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_PRE, fc.aux_grammar.data)
 
         # Fill arrays
         if not fill_arrays(fc): # not into
@@ -630,20 +1056,20 @@ def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
             #     fpsetfastmode(0)
             return dG
 
-        if md.circ: # not into
-            # Post-process step for circular RNAs
-            postprocess_circular(fc)
+        # if md.circ: # not into
+        #     # Post-process step for circular RNAs
+        #     postprocess_circular(fc)
 
         # Call user-defined grammar post-condition callback function
-        if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into 
-            fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_POST, fc.aux_grammar.data)
+        # if fc.aux_grammar and fc.aux_grammar.cb_proc: # not into 
+        #     fc.aux_grammar.cb_proc(fc, VRNA_STATUS_PF_POST, fc.aux_grammar.data)
 
         if fc.strands > 1:
             vrna_gr_reset(fc)
 
         # Call user-defined recursion status callback function
-        if fc.stat_cb: # not into
-            fc.stat_cb(VRNA_STATUS_PF_POST, fc.auxdata)
+        # if fc.stat_cb: # not into
+        #     fc.stat_cb(VRNA_STATUS_PF_POST, fc.auxdata)
 
         # Calculate Q based on backtrack type
         if md.backtrack_type == 'C':
@@ -661,9 +1087,8 @@ def vrna_pf(fc:vrna_fold_compound_t, structure:str) -> float:
             # Check for rotational symmetry correction
             sym = vrna_rotational_symmetry(fc.sequence)
             Q /= sym
-
             # Add interaction penalty
-            Q *= power(params.expDuplexInit, fc.strands - 1)
+            Q *= pow(params.expDuplexInit, fc.strands - 1)
 
         dG = (-log(Q) - n * log(params.pf_scale)) * params.kT / 1000.0
 
@@ -755,7 +1180,10 @@ def vrna_pf_dimer(fc:vrna_fold_compound_t|None, structure:str) -> vrna_dimer_pf_
                             X.FA,
                             X.FB)
     return X
-        
+
+
+def vrna_cut_point_insert(struc:str, cutpoint:int) -> str:
+    return struc[:cutpoint] + struc[cutpoint:]
     
     
 
@@ -764,11 +1192,11 @@ def main():
     pairing_propensity:str
     mfe_structure:str
     # vc init by vrna_fold_compound
-    
+    vc = vrna_fold_compound_t()
     
     # vc.matrices changed by vrna_mfe_dimer(no erro after remove vc.matrices)
     # min_en  = vrna_mfe_dimer(vc, mfe_structure)
-    min_en = 
+    min_en = 0.
     # init vc  exp params
     vrna_exp_params_rescale(vc, min_en)
     # obtain pairing_propensity  ----exp_matrices changed
