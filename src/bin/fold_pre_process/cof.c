@@ -6349,9 +6349,6 @@ vrna_pf(vrna_fold_compound_t  *fc,
                       params->kT /
                       1000.0);
 
-    if (fc->type == VRNA_FC_TYPE_COMPARATIVE)
-      dG /= fc->n_seq;
-
     /* calculate base pairing probability matrix (bppm)  compute in here !!!!!!!*/
     if (md->compute_bpp) {
       vrna_pairing_probs(fc, structure);
