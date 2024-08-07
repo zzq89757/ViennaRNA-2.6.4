@@ -6271,16 +6271,16 @@ vrna_pf(vrna_fold_compound_t  *fc,
     matrices  = fc->exp_matrices;
     md        = &(params->model_details);
 
-#ifdef _OPENMP
-    /* Explicitly turn off dynamic threads */
-    omp_set_dynamic(0);
-#endif
+// #ifdef _OPENMP
+//     /* Explicitly turn off dynamic threads */
+//     omp_set_dynamic(0);
+// #endif
 
-#ifdef SUN4
-    nonstandard_arithmetic();
-#elif defined(HP9)
-    fpsetfastmode(1);
-#endif
+// #ifdef SUN4
+//     nonstandard_arithmetic();
+// #elif defined(HP9)
+//     fpsetfastmode(1);
+// #endif
 
     /* call user-defined recursion status callback function */
     if (fc->stat_cb) // not into
@@ -6295,11 +6295,11 @@ vrna_pf(vrna_fold_compound_t  *fc,
       fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
 
     if (!fill_arrays(fc)) {
-#ifdef SUN4
-      standard_arithmetic();
-#elif defined(HP9)
-      fpsetfastmode(0);
-#endif
+// #ifdef SUN4
+//       standard_arithmetic();
+// #elif defined(HP9)
+//       fpsetfastmode(0);
+// #endif
       return dG;
     }
 
