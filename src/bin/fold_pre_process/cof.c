@@ -98,23 +98,6 @@ nullify(vrna_fold_compound_t *fc)
 
         break;
 
-      case VRNA_FC_TYPE_COMPARATIVE:
-        fc->sequences         = NULL;
-        fc->n_seq             = 0;
-        fc->cons_seq          = NULL;
-        fc->S_cons            = NULL;
-        fc->S                 = NULL;
-        fc->S5                = NULL;
-        fc->S3                = NULL;
-        fc->Ss                = NULL;
-        fc->a2s               = NULL;
-        fc->pscore            = NULL;
-        fc->pscore_local      = NULL;
-        fc->pscore_pf_compat  = NULL;
-        fc->scs               = NULL;
-        fc->oldAliEn          = 0;
-
-        break;
     }
 
     fc->maxD1         = 0;

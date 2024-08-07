@@ -24,3 +24,10 @@ vrna_nucleotide_encode(char       c,
 
 PUBLIC int
 vrna_salt_loop_int(int L, double rho, double T, double backbonelen);
+
+#define MIN2(A,B) ((A) < (B) ? (A) : (B))
+#define MAX2(A,B) ((A) > (B) ? (A) : (B))
+#define RESCALE_dG(dG, dH, dT)   ((dH) - ((dH) - (dG)) * dT)
+
+PUBLIC double
+vrna_salt_loop(int L, double rho, double T, double backbonelen);
