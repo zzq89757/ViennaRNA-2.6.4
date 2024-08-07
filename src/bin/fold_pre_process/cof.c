@@ -1018,6 +1018,361 @@ set_fold_compound(vrna_fold_compound_t  *fc,
   }
 }
 
+PRIVATE void
+hc_depot_free(vrna_hc_t *hc)
+{
+  unsigned int    s, i;
+  vrna_hc_depot_t *depot = hc->depot;
+
+  if (depot) {
+    if (depot->up) {
+      for (s = 0; s < depot->strands; s++)
+        free(depot->up[s]);
+
+      free(depot->up);
+    }
+
+    if (depot->bp) {
+      for (s = 0; s < depot->strands; s++) {
+        for (i = 1; i <= depot->bp_size[s]; i++) {
+          free(depot->bp[s][i].j);
+          free(depot->bp[s][i].strand_j);
+          free(depot->bp[s][i].context);
+        }
+        free(depot->bp[s]);
+      }
+
+      free(depot->bp);
+    }
+
+    free(depot->bp_size);
+    free(depot->up_size);
+    free(depot);
+  }
+  
+  hc->depot = NULL;
+}
+
+
+PUBLIC void
+vrna_hc_free(vrna_hc_t *hc)
+{
+  if (hc) {
+    if (hc->type == VRNA_HC_DEFAULT)
+      free(hc->mx);
+    else if (hc->type == VRNA_HC_WINDOW)
+      free(hc->matrix_local);
+
+    hc_depot_free(hc);
+
+    free(hc->up_ext);
+    free(hc->up_hp);
+    free(hc->up_int);
+    free(hc->up_ml);
+
+    if (hc->free_data)
+      hc->free_data(hc->data);
+
+    free(hc);
+  }
+}
+#define STATE_UNINITIALIZED (unsigned char)4
+#define VRNA_CONSTRAINT_CONTEXT_EXT_LOOP      (unsigned char)0x01
+
+/**
+ *  @brief  Hard constraints flag, base pair encloses hairpin loop
+ *
+ *  @ingroup  hard_constraints
+ *
+ */
+#define VRNA_CONSTRAINT_CONTEXT_HP_LOOP       (unsigned char)0x02
+
+/**
+ *  @brief  Hard constraints flag, base pair encloses an interior loop
+ *
+ *  @ingroup  hard_constraints
+ *
+ */
+#define VRNA_CONSTRAINT_CONTEXT_INT_LOOP      (unsigned char)0x04
+
+/**
+ *  @brief  Hard constraints flag, base pair encloses a multi branch loop
+ *
+ *  @ingroup  hard_constraints
+ *
+ */
+#define VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC  (unsigned char)0x08
+
+/**
+ *  @brief  Hard constraints flag, base pair is enclosed in an interior loop
+ *
+ *  @ingroup  hard_constraints
+ *
+ */
+#define VRNA_CONSTRAINT_CONTEXT_MB_LOOP       (unsigned char)0x10
+
+/**
+ *  @brief  Hard constraints flag, base pair is enclosed in a multi branch loop
+ *
+ *  @ingroup  hard_constraints
+ *
+ */
+#define VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC   (unsigned char)0x20
+
+/**
+ *  @brief  Hard constraint flag to indicate enforcement of constraints
+ */
+#define VRNA_CONSTRAINT_CONTEXT_ENFORCE       (unsigned char)0x40
+
+/**
+ *  @brief  Hard constraint flag to indicate not to remove base pairs that conflict with a given constraint
+ */
+#define VRNA_CONSTRAINT_CONTEXT_NO_REMOVE     (unsigned char)0x80
+
+
+/**
+ *  @brief  Constraint context flag that forbids a nucleotide or base pair to appear in any loop
+ */
+#define VRNA_CONSTRAINT_CONTEXT_NONE          (unsigned char)0
+#define VRNA_CONSTRAINT_CONTEXT_CLOSING_LOOPS (unsigned char)(VRNA_CONSTRAINT_CONTEXT_EXT_LOOP | VRNA_CONSTRAINT_CONTEXT_HP_LOOP | VRNA_CONSTRAINT_CONTEXT_INT_LOOP | VRNA_CONSTRAINT_CONTEXT_MB_LOOP)
+#define VRNA_CONSTRAINT_CONTEXT_ENCLOSED_LOOPS  (unsigned char)(VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC | \
+                                                                VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC)
+#define VRNA_CONSTRAINT_CONTEXT_ALL_LOOPS (unsigned char)(VRNA_CONSTRAINT_CONTEXT_CLOSING_LOOPS | VRNA_CONSTRAINT_CONTEXT_ENCLOSED_LOOPS)
+
+
+PRIVATE unsigned char
+default_pair_constraint(vrna_fold_compound_t  *fc,
+                        int                   i,
+                        int                   j)
+{
+  unsigned char constraint, can_stack;
+  short         *S;
+  unsigned int  *sn;
+  int           type;
+  vrna_md_t     *md;
+
+  sn          = fc->strand_number;
+  md          = &(fc->params->model_details);
+  constraint  = VRNA_CONSTRAINT_CONTEXT_NONE;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      S = fc->sequence_encoding2;
+      if (((j - i) < md->max_bp_span) &&
+          ((sn[i] != sn[j]) || ((j - i) > md->min_loop_size))) {
+        type = md->pair[S[i]][S[j]];
+        switch (type) {
+          case 0:
+            break;
+          case 3:
+          /* fallthrough */
+          case 4:
+            if (md->noGU) {
+              break;
+            } else if (md->noGUclosure) {
+              constraint  = VRNA_CONSTRAINT_CONTEXT_ALL_LOOPS;
+              constraint  &= ~(VRNA_CONSTRAINT_CONTEXT_HP_LOOP | VRNA_CONSTRAINT_CONTEXT_MB_LOOP);
+              break;
+            }
+
+          /* else fallthrough */
+          default:
+            constraint = VRNA_CONSTRAINT_CONTEXT_ALL_LOOPS;
+            break;
+        }
+
+        if (md->noLP) {
+          // printf("into noLP\n");
+          /* check, whether this nucleotide can actually stack with anything or only forms isolated pairs */
+          can_stack = VRNA_CONSTRAINT_CONTEXT_NONE;
+
+          /* can it be enclosed by another base pair? */
+          if ((i > 1) &&
+              (j < fc->length) &&
+              (((j - i + 2) < md->max_bp_span) || (sn[i - 1] != sn[j + 1])) &&
+              (md->pair[S[i - 1]][S[j + 1]]))
+            can_stack = VRNA_CONSTRAINT_CONTEXT_ALL_LOOPS;
+
+          /* can it enclose another base pair? */
+          if ((i + 2 < j) &&
+              (((j - i - 2) > md->min_loop_size) || (sn[i + 1] != sn[j - 1])) &&
+              (md->pair[S[i + 1]][S[j - 1]]))
+            can_stack = VRNA_CONSTRAINT_CONTEXT_ALL_LOOPS;
+
+          constraint &= can_stack;
+        }
+      }
+      break;
+  }
+
+  return constraint;
+}
+
+PRIVATE void
+default_hc_bp(vrna_fold_compound_t  *fc,
+              unsigned int          options)
+{
+  unsigned int  i, j, n;
+  vrna_hc_t     *hc;
+
+  hc = fc->hc;
+
+  if (options & VRNA_OPTION_WINDOW) {
+  } else {
+    n = fc->length;
+    for (j = n; j > 1; j--) {
+      for (i = 1; i < j; i++) {
+        hc->mx[n * i + j] = default_pair_constraint(fc, i, j);
+        hc->mx[n * j + i] = hc->mx[n * i + j];
+      }
+    }
+  }
+}
+
+
+PRIVATE void
+hc_reset_to_default(vrna_fold_compound_t *vc)
+{
+  vrna_hc_t *hc = vc->hc;
+
+  /*
+   * #########################
+   * fill with default values
+   * #########################
+   */
+
+  default_hc_up(vc, 0);
+
+  default_hc_bp(vc, 0);
+
+  /* should we reset the generalized hard constraint feature here? */
+  if (hc->f || hc->data) {
+    if (hc->free_data)
+      hc->free_data(hc->data);
+
+    hc->f         = NULL;
+    hc->data      = NULL;
+    hc->free_data = NULL;
+  }
+}
+
+
+PRIVATE void
+hc_update_up(vrna_fold_compound_t *vc)
+{
+  unsigned int  i, n;
+  vrna_hc_t     *hc;
+
+  n   = vc->length;
+  hc  = vc->hc;
+
+  if (hc->type == VRNA_HC_WINDOW) {
+    /* do nothing for now! */
+  } else {
+    for (hc->up_ext[n + 1] = 0, i = n; i > 0; i--) /* unpaired stretch in exterior loop */
+      hc->up_ext[i] = (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) ? 1 +
+                      hc->up_ext[i + 1] : 0;
+
+    for (hc->up_hp[n + 1] = 0, i = n; i > 0; i--)  /* unpaired stretch in hairpin loop */
+      hc->up_hp[i] = (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP) ? 1 +
+                     hc->up_hp[i + 1] : 0;
+
+    for (hc->up_int[n + 1] = 0, i = n; i > 0; i--) /* unpaired stretch in interior loop */
+      hc->up_int[i] = (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) ? 1 +
+                      hc->up_int[i + 1] : 0;
+
+    for (hc->up_ml[n + 1] = 0, i = n; i > 0; i--)  /* unpaired stretch in multibranch loop */
+      hc->up_ml[i] = (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP) ? 1 +
+                     hc->up_ml[i + 1] : 0;
+
+    /*
+     *  loop arround once more until we find a nucleotide that mustn't
+     *  be unpaired (needed for circular folding)
+     *  Note, circular fold is only possible for single strand predictions
+     */
+    if (vc->strands < 2) {
+      if (hc->mx[n + 1] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        hc->up_ext[n + 1] = hc->up_ext[1];
+        for (i = n; i > 0; i--) {
+          if (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP)
+            hc->up_ext[i] = MIN2(n, 1 + hc->up_ext[i + 1]);
+          else
+            break;
+        }
+      }
+
+      if (hc->mx[n + 1] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP) {
+        hc->up_hp[n + 1] = hc->up_hp[1];
+        for (i = n; i > 0; i--) {
+          if (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP)
+            hc->up_hp[i] = MIN2(n, 1 + hc->up_hp[i + 1]);
+          else
+            break;
+        }
+      }
+
+      if (hc->mx[n + 1] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) {
+        hc->up_int[n + 1] = hc->up_int[1];
+        for (i = n; i > 0; i--) {
+          if (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP)
+            hc->up_int[i] = MIN2(n, 1 + hc->up_int[i + 1]);
+          else
+            break;
+        }
+      }
+
+      if (hc->mx[n + 1] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP) {
+        hc->up_ml[n + 1] = hc->up_ml[1];
+        for (i = n; i > 0; i--) {
+          if (hc->mx[n * i + i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP)
+            hc->up_ml[i] = MIN2(n, 1 + hc->up_ml[i + 1]);
+          else
+            break;
+        }
+      }
+    }
+  }
+}
+
+PUBLIC void
+vrna_hc_init(vrna_fold_compound_t *vc)
+{
+  unsigned int  n;
+  vrna_hc_t     *hc;
+
+  n = vc->length;
+
+  /* free previous hard constraints */
+  vrna_hc_free(vc->hc);
+
+  /* allocate memory new hard constraints data structure */
+  hc          = (vrna_hc_t *)vrna_alloc(sizeof(vrna_hc_t));
+  hc->type    = VRNA_HC_DEFAULT;
+  hc->n       = n;
+  hc->mx      = (unsigned char *)vrna_alloc(sizeof(unsigned char) * ((n + 1) * (n + 1) + 1));
+  hc->up_ext  = (int *)vrna_alloc(sizeof(int) * (n + 2));
+  hc->up_hp   = (int *)vrna_alloc(sizeof(int) * (n + 2));
+  hc->up_int  = (int *)vrna_alloc(sizeof(int) * (n + 2));
+  hc->up_ml   = (int *)vrna_alloc(sizeof(int) * (n + 2));
+  hc->depot   = NULL;
+  hc->state   = STATE_UNINITIALIZED;
+
+  /* set new hard constraints */
+  vc->hc = hc;
+
+  /* prefill default values  */
+  hc_reset_to_default(vc);
+
+  /* add null pointers for the generalized hard constraint feature */
+  hc->f         = NULL;
+  hc->data      = NULL;
+  hc->free_data = NULL;
+
+  /* update */
+  hc_update_up(vc);
+}
+
+
 
 
 #define ALLOC_NOTHING     0
@@ -1074,26 +1429,26 @@ get_mx_alloc_vector(vrna_fold_compound_t  *fc,
   return v;
 }
 
-her
-PUBLIC int
-vrna_mx_mfe_add(vrna_fold_compound_t  *vc,
-                vrna_mx_type_e        mx_type,
-                unsigned int          options)
-{
-  unsigned int mx_alloc_vector;
+// her
+// PUBLIC int
+// vrna_mx_mfe_add(vrna_fold_compound_t  *vc,
+//                 vrna_mx_type_e        mx_type,
+//                 unsigned int          options)
+// {
+//   unsigned int mx_alloc_vector;
 
-  if (vc->params) {
-    options |= VRNA_OPTION_MFE;
+//   if (vc->params) {
+//     options |= VRNA_OPTION_MFE;
 
-    mx_alloc_vector = get_mx_alloc_vector(vc,
-                                          mx_type,
-                                          options);
-    vrna_mx_mfe_free(vc);
-    return add_mfe_matrices(vc, mx_type, mx_alloc_vector);
-  }
+//     mx_alloc_vector = get_mx_alloc_vector(vc,
+//                                           mx_type,
+//                                           options);
+//     vrna_mx_mfe_free(vc);
+//     return add_mfe_matrices(vc, mx_type, mx_alloc_vector);
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
 PUBLIC int
 vrna_mx_add(vrna_fold_compound_t  *vc,
@@ -1189,6 +1544,26 @@ vrna_fold_compound(const char       *sequence,
 }
 
 
+PRIVATE void
+rescale_params(vrna_fold_compound_t *vc)
+{
+  int               i;
+  vrna_exp_param_t  *pf = vc->exp_params;
+  vrna_mx_pf_t      *m  = vc->exp_matrices;
+
+  if (m && pf) {
+    m->scale[0]     = 1.;
+    m->scale[1]     = (FLT_OR_DBL)(1. / pf->pf_scale);
+    m->expMLbase[0] = 1;
+    m->expMLbase[1] = (FLT_OR_DBL)(pf->expMLbase / pf->pf_scale);
+    for (i = 2; i <= vc->length; i++) {
+      m->scale[i]     = m->scale[i / 2] * m->scale[i - (i / 2)];
+      m->expMLbase[i] = (FLT_OR_DBL)pow(pf->expMLbase, (double)i) * m->scale[i];
+    }
+  }
+}
+
+
 PUBLIC void
 vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
                         double                *mfe)
@@ -1199,14 +1574,7 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
 
   if (vc) {
     if (!vc->exp_params) {
-      switch (vc->type) {
-        case VRNA_FC_TYPE_SINGLE:
-          vc->exp_params = vrna_exp_params(&(vc->params->model_details));
-          break;
-        // case VRNA_FC_TYPE_COMPARATIVE:
-        //   vc->exp_params = vrna_exp_params_comparative(vc->n_seq, &(vc->params->model_details));
-        //   break;
-      }
+      vc->exp_params = vrna_exp_params(&(vc->params->model_details));
     } else if (memcmp(&(vc->params->model_details),
                       &(vc->exp_params->model_details),
                       sizeof(vrna_md_t)) != 0) {
@@ -1240,6 +1608,1419 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
       rescale_params(vc);
     }
   }
+}
+
+
+#define VRNA_STATUS_PF_PRE (unsigned char)3
+
+PRIVATE void
+add_aux_grammar(vrna_fold_compound_t *fc)
+{
+  fc->aux_grammar = (struct vrna_gr_aux_s *)vrna_alloc(sizeof(struct vrna_gr_aux_s));
+
+  fc->aux_grammar->cb_proc = NULL;
+
+  fc->aux_grammar->cb_aux     = NULL;
+  fc->aux_grammar->cb_aux_f   = NULL;
+  fc->aux_grammar->cb_aux_c   = NULL;
+  fc->aux_grammar->cb_aux_m   = NULL;
+  fc->aux_grammar->cb_aux_m1  = NULL;
+
+  fc->aux_grammar->cb_aux_exp     = NULL;
+  fc->aux_grammar->cb_aux_exp_f   = NULL;
+  fc->aux_grammar->cb_aux_exp_c   = NULL;
+  fc->aux_grammar->cb_aux_exp_m   = NULL;
+  fc->aux_grammar->cb_aux_exp_m1  = NULL;
+
+  fc->aux_grammar->data       = NULL;
+  fc->aux_grammar->free_data  = NULL;
+}
+
+
+
+PUBLIC int
+vrna_gr_set_aux_exp_c(vrna_fold_compound_t      *fc,
+                      vrna_grammar_rule_f_exp cb)
+{
+  int ret = 0;
+
+  if (fc) {
+    if (!fc->aux_grammar)
+      add_aux_grammar(fc);
+
+    fc->aux_grammar->cb_aux_exp_c = cb;
+
+    ret = 1;
+  }
+
+  return ret;
+}
+
+
+struct hc_ext_def_dat {
+  unsigned int              n;
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+#define VRNA_DECOMP_EXT_STEM (unsigned char)14
+
+#define VRNA_CONSTRAINT_FILE      0
+
+/**
+ *  @brief  Indicate generation of constraints for MFE folding
+ *
+ *  @deprecated   This flag has no meaning anymore, since constraints are now always stored! (since v2.2.6)
+ *
+ *  @ingroup  constraints
+ *
+ */
+#define VRNA_CONSTRAINT_SOFT_MFE  0
+
+/**
+ *  @brief  Indicate generation of constraints for partition function computation
+ *  @deprecated   Use #VRNA_OPTION_PF instead!
+ *  @ingroup  constraints
+ *
+ */
+#define VRNA_CONSTRAINT_SOFT_PF   VRNA_OPTION_PF
+
+/**
+ *  @brief  Flag passed to generic softt constraints callback to indicate hairpin loop decomposition step
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a hairpin loop enclosed by the base pair @f$(i,j)@f$.
+ *
+ *  @image xml   decomp_hp.svg
+ */
+#define VRNA_DECOMP_PAIR_HP     (unsigned char)1
+
+/**
+ *  @brief  Indicator for interior loop decomposition step
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an interior loop enclosed by the base pair @f$(i,j)@f$,
+ *  and enclosing the base pair @f$(k,l)@f$.
+ *
+ *  @image xml   decomp_il.svg
+ */
+#define VRNA_DECOMP_PAIR_IL     (unsigned char)2
+
+/**
+ *  @brief  Indicator for multibranch loop decomposition step
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop enclosed by the base pair @f$(i,j)@f$,
+ *  and consisting of some enclosed multi loop content from k to l.
+ *
+ *  @image xml   decomp_ml.svg
+ *
+ */
+#define VRNA_DECOMP_PAIR_ML     (unsigned char)3
+#define VRNA_DECOMP_PAIR_ML_EXT     (unsigned char)23
+
+#define VRNA_DECOMP_PAIR_ML_OUTSIDE     (unsigned char)4
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into two multibranch loop parts @f$[i:k]@f$, and @f$[l:j]@f$.
+ *
+ *  @image xml   decomp_ml_ml_ml.svg
+ */
+#define VRNA_DECOMP_ML_ML_ML    (unsigned char)5
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  which will be considered a single stem branching off with base pair @f$(k,l)@f$.
+ *
+ *  @image xml   decomp_ml_stem.svg
+ */
+#define VRNA_DECOMP_ML_STEM     (unsigned char)6
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into a (usually) smaller multibranch loop part @f$[k:l]@f$.
+ *
+ *  @image xml   decomp_ml_ml.svg
+ */
+#define VRNA_DECOMP_ML_ML       (unsigned char)7
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  which will be considered a multibranch loop part that only consists of unpaired
+ *  nucleotides.
+ *
+ *  @image xml   decomp_ml_up.svg
+ */
+#define VRNA_DECOMP_ML_UP       (unsigned char)8
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  which will decomposed into a multibranch loop part @f$[i:k]@f$, and a stem with
+ *  enclosing base pair @f$(l,j)@f$.
+ *
+ *  @image xml   decomp_ml_ml_stem.svg
+ */
+#define VRNA_DECOMP_ML_ML_STEM (unsigned char)9
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  where two stems with enclosing pairs @f$(i,k)@f$ and @f$(l,j)@f$ are coaxially stacking
+ *  onto each other.
+ *
+ *  @image xml   decomp_ml_coaxial.svg
+ */
+#define VRNA_DECOMP_ML_COAXIAL  (unsigned char)10
+
+/**
+ *  @brief  Indicator for decomposition of multibranch loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates a multibranch loop part in the interval @f$[i:j]@f$,
+ *  where two stems with enclosing pairs @f$(i,k)@f$ and @f$(l,j)@f$ are coaxially stacking
+ *  onto each other.
+ *
+ *  @image xml   decomp_ml_coaxial.svg
+ */
+#define VRNA_DECOMP_ML_COAXIAL_ENC  (unsigned char)11
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @def VRNA_DECOMP_EXT_EXT
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into a (usually) smaller exterior loop part @f$[k:l]@f$.
+ *
+ *  @image xml   decomp_ext_ext.svg
+ */
+#define VRNA_DECOMP_EXT_EXT     (unsigned char)12
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be considered as an exterior loop component consisting of only unpaired
+ *  nucleotides.
+ *
+ *  @image xml   decomp_ext_up.svg
+ */
+#define VRNA_DECOMP_EXT_UP      (unsigned char)13
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be considered a stem with enclosing pair @f$(k,l)@f$.
+ *
+ *  @image xml   decomp_ext_stem.svg
+ */
+#define VRNA_DECOMP_EXT_STEM (unsigned char)14
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into two exterior loop parts @f$[i:k]@f$ and @f$[l:j]@f$.
+ *
+ *  @image xml   decomp_ext_ext_ext.svg
+ */
+#define VRNA_DECOMP_EXT_EXT_EXT (unsigned char)15
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into a stem branching off with base pair @f$(i,k)@f$, and
+ *  an exterior loop part @f$[l:j]@f$.
+ *
+ *  @image xml   decomp_ext_stem_ext.svg
+ */
+#define VRNA_DECOMP_EXT_STEM_EXT (unsigned char)16
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ */
+#define VRNA_DECOMP_EXT_STEM_OUTSIDE (unsigned char)17
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into an exterior loop part @f$[i:k]@f$, and a stem
+ *  branching off with base pair @f$(l,j)@f$.
+ *
+ *  @image xml   decomp_ext_ext_stem.svg
+ */
+#define VRNA_DECOMP_EXT_EXT_STEM (unsigned char)18
+
+/**
+ *  @brief  Indicator for decomposition of exterior loop part
+ *
+ *  @ingroup  constraints
+ *
+ *  @def VRNA_DECOMP_EXT_EXT_STEM1
+ *  @details This flag notifies the soft or hard constraint callback function that the current
+ *  decomposition step evaluates an exterior loop part in the interval @f$[i:j]@f$,
+ *  which will be decomposed into an exterior loop part @f$[i:k]@f$, and a stem
+ *  branching off with base pair @f$(l,j-1)@f$.
+ *
+ *  @image xml   decomp_ext_ext_stem1.svg
+ */
+#define VRNA_DECOMP_EXT_EXT_STEM1 (unsigned char)19
+
+#define VRNA_DECOMP_EXT_STEM_EXT1 (unsigned char)20
+
+#define VRNA_DECOMP_EXT_L         (unsigned char)21
+#define VRNA_DECOMP_EXT_EXT_L     (unsigned char)22
+
+/*
+ * currently we do not allow for more than 31 different decomposition types
+ * This must be changed as soon as the above macros turn to values above 32
+ */
+#define VRNA_DECOMP_TYPES_MAX     32
+
+PRIVATE unsigned char
+hc_ext_cb_def(int           i,
+              int           j,
+              int           k,
+              int           l,
+              unsigned char d,
+              void          *data)
+{
+  int                   di, dj;
+  unsigned char         eval;
+  unsigned int          n;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  eval  = (unsigned char)0;
+  di    = k - i;
+  dj    = j - l;
+  n     = dat->n;
+
+  switch (d) {
+    case VRNA_DECOMP_EXT_EXT_STEM:
+      if (dat->mx[n * j + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if (i != l) {
+          /* otherwise, stem spans from i to j */
+          di = l - k - 1;
+          if ((di != 0) && (dat->hc_up[k + 1] < di))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_EXT:
+      if (dat->mx[n * k + i] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if (i != l) {
+          /* otherwise, stem spans from i to j */
+          di = l - k - 1;
+          if ((di != 0) && (dat->hc_up[k + 1] < di))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT_STEM1:
+      if (dat->mx[n * (j - 1) + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if (dat->hc_up[j] == 0)
+          eval = (unsigned char)0;
+
+        if (i != l) {
+          /* otherwise, stem spans from i to j - 1 */
+          di = l - k - 1;
+
+          if ((di != 0) && (dat->hc_up[k + 1] < di))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_EXT1:
+      if (dat->mx[n * k + i + 1] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+
+        if (dat->hc_up[i] == 0)
+          eval = (unsigned char)0;
+
+        if (j != k) {
+          /* otherwise, stem spans from i + 1 to j */
+          dj = l - k - 1;
+
+          if ((dj != 0) && (dat->hc_up[k + 1] < dj))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT_EXT:
+      eval  = (unsigned char)1;
+      di    = l - k - 1;
+      if ((di != 0) && (dat->hc_up[k + 1] < di))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM:
+      if (dat->mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if ((di != 0) && (dat->hc_up[i] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT:
+      eval = (unsigned char)1;
+      if ((di != 0) && (dat->hc_up[i] < di))
+        eval = (unsigned char)0;
+
+      if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_EXT_UP:
+      di    = j - i + 1;
+      eval  = (dat->hc_up[i] >= di) ? (unsigned char)1 : (unsigned char)0;
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_OUTSIDE:
+      if (dat->mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP)
+        eval = (unsigned char)1;
+
+      break;
+
+    default:
+      printf("hc_cb@exterior_loops.c: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_ext_cb_sn(int            i,
+             int            j,
+             int            k,
+             int            l,
+             unsigned char  d,
+             void           *data)
+{
+  unsigned int          *sn;
+  unsigned char         eval;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  sn    = dat->sn;
+  eval  = (unsigned char)0;
+
+  /* for now with the 'old' cofold implementation, we allow for any decomposition */
+  //return (unsigned char)1;
+
+  switch (d) {
+    case VRNA_DECOMP_EXT_EXT_STEM1:
+      if (sn[j - 1] != sn[j])
+        break;
+
+      if (sn[k] == sn[l])
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_EXT1:
+      if (sn[i] != sn[i + 1])
+        break;
+
+      if (sn[k] == sn[l])
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT_STEM:
+    /* fall through */
+    case VRNA_DECOMP_EXT_STEM_EXT:
+    /* fall through */
+    case VRNA_DECOMP_EXT_EXT_EXT:
+      if (sn[k] == sn[l])
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM:
+    /* fall through */
+    case VRNA_DECOMP_EXT_EXT:
+      if ((sn[i] == sn[k]) && (sn[l] == sn[j]))
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_EXT_UP:
+      if (sn[i] == sn[j])
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_OUTSIDE:
+      if (((k <= i) || sn[k - 1] == sn[k]) &&
+          ((l >= j) || sn[l + 1] == sn[l]))
+        eval = (unsigned char)1;
+
+      break;
+
+    default:
+      printf("hc_cb@exterior_loops.c: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_ext_cb_def_sn(int            i,
+                 int            j,
+                 int            k,
+                 int            l,
+                 unsigned char  d,
+                 void           *data)
+{
+  unsigned char eval;
+
+  eval  = hc_ext_cb_def(i, j, k, l, d, data);
+  eval  = hc_ext_cb_sn(i, j, k, l, d, data) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_ext_cb_def_user(int            i,
+                   int            j,
+                   int            k,
+                   int            l,
+                   unsigned char  d,
+                   void           *data)
+{
+  unsigned char         eval;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  eval  = hc_ext_cb_def(i, j, k, l, d, data);
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_ext_cb_def_sn_user(int           i,
+                      int           j,
+                      int           k,
+                      int           l,
+                      unsigned char d,
+                      void          *data)
+{
+  unsigned char         eval;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  eval  = hc_ext_cb_def(i, j, k, l, d, data);
+  eval  = hc_ext_cb_sn(i, j, k, l, d, data) ? eval : (unsigned char)0;
+  eval  = dat->hc_f(i, j, k, l, d, dat->hc_dat) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+
+PRIVATE INLINE vrna_hc_eval_f
+prepare_hc_ext_def(vrna_fold_compound_t   *fc,
+                   struct hc_ext_def_dat  *dat)
+{
+  dat->mx     = fc->hc->mx;
+  dat->n      = fc->length;
+  dat->hc_up  = fc->hc->up_ext;
+  dat->sn     = fc->strand_number;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return (fc->strands == 1) ? &hc_ext_cb_def_user : &hc_ext_cb_def_sn_user;
+  }
+
+  return (fc->strands == 1) ? &hc_ext_cb_def : &hc_ext_cb_def_sn;
+}
+
+
+PUBLIC unsigned int
+vrna_get_ptype_md(int       i,
+                  int       j,
+                  vrna_md_t *md)
+{
+  unsigned int tt = (unsigned int)md->pair[i][j];
+
+  return (tt == 0) ? 7 : tt;
+}
+
+
+PUBLIC FLT_OR_DBL
+vrna_exp_E_ext_stem(unsigned int      type,
+                    int               n5d,
+                    int               n3d,
+                    vrna_exp_param_t  *p)
+{
+  double energy = 1.0;
+
+  if (n5d >= 0 && n3d >= 0)
+    energy = p->expmismatchExt[type][n5d][n3d];
+  else if (n5d >= 0)
+    energy = p->expdangle5[type][n5d];
+  else if (n3d >= 0)
+    energy = p->expdangle3[type][n3d];
+
+  if (type > 2)
+    energy *= p->expTermAU;
+
+  return (FLT_OR_DBL)energy;
+}
+
+
+typedef FLT_OR_DBL (*sc_ext_exp_cb)(int                    i,
+                                   int                    j,
+                                   int                    k,
+                                   int                    l,
+                                   struct sc_ext_exp_dat  *data);
+
+typedef FLT_OR_DBL (*sc_ext_exp_red_up)(int                    i,
+                                       int                    j,
+                                       struct sc_ext_exp_dat  *data);
+
+typedef FLT_OR_DBL (*sc_ext_exp_split)(int                   i,
+                                      int                   j,
+                                      int                   k,
+                                      struct sc_ext_exp_dat *data);
+
+struct sc_ext_exp_dat {
+  FLT_OR_DBL                  **up;
+
+  sc_ext_exp_cb               red_ext;
+  sc_ext_exp_cb               red_stem;
+  sc_ext_exp_red_up           red_up;
+  sc_ext_exp_split            split;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  /* below attributes are for comparative structure prediction */
+  int                         n_seq;
+  unsigned int                **a2s;
+  FLT_OR_DBL                  ***up_comparative;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+};
+
+
+PRIVATE unsigned char
+hc_ext_cb_def_window(int            i,
+                     int            j,
+                     int            k,
+                     int            l,
+                     unsigned char  d,
+                     void           *data)
+{
+  int                   di, dj;
+  unsigned char         eval;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  eval  = (unsigned char)0;
+  di    = k - i;
+  dj    = j - l;
+
+  switch (d) {
+    case VRNA_DECOMP_EXT_EXT_STEM:
+      if (dat->mx_window[l][j - l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if (i != l) {
+          /* otherwise, stem spans from i to j */
+          di = l - k - 1;
+          if ((di != 0) && (dat->hc_up[k + 1] < di))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_EXT:
+      if (dat->mx_window[i][k - i] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if (j != k) {
+          /* otherwise, stem spans from i to j */
+          dj = l - k - 1;
+          if ((dj != 0) && (dat->hc_up[k + 1] < dj))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT_STEM1:
+      if (dat->mx_window[l][j - 1 - l] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+
+        if (dat->hc_up[j] == 0)
+          eval = (unsigned char)0;
+
+        if (i != l) {
+          /* otherwise, stem spans from i to j - 1 */
+          di = l - k - 1;
+
+          if ((di != 0) && (dat->hc_up[k + 1] < di))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM_EXT1:
+      if (dat->mx_window[i + 1][k - (i + 1)] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+
+        if (dat->hc_up[i] == 0)
+          eval = (unsigned char)0;
+
+        if (j != k) {
+          /* otherwise, stem spans from i + 1 to j */
+          dj = l - k - 1;
+
+          if ((dj != 0) && (dat->hc_up[k + 1] < dj))
+            eval = (unsigned char)0;
+        }
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_STEM:
+      if (dat->mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_EXT_LOOP) {
+        eval = (unsigned char)1;
+        if ((di != 0) && (dat->hc_up[i] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT_EXT:
+      eval  = (unsigned char)1;
+      di    = l - k - 1;
+      if ((di != 0) && (dat->hc_up[k + 1] < di))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_EXT_EXT:
+      eval = (unsigned char)1;
+      if ((di != 0) && (dat->hc_up[i] < di))
+        eval = (unsigned char)0;
+
+      if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_EXT_UP:
+      di    = j - i + 1;
+      eval  = (dat->hc_up[i] >= di) ? (unsigned char)1 : (unsigned char)0;
+      break;
+
+    default:
+      printf("hc_cb@exterior_loops.c: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_ext_cb_def_user_window(int           i,
+                          int           j,
+                          int           k,
+                          int           l,
+                          unsigned char d,
+                          void          *data)
+{
+  unsigned char         eval;
+  struct hc_ext_def_dat *dat = (struct hc_ext_def_dat *)data;
+
+  eval  = hc_ext_cb_def_window(i, j, k, l, d, data);
+  eval  = dat->hc_f(i, j, k, l, d, dat->hc_dat) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+PRIVATE INLINE vrna_hc_eval_f
+prepare_hc_ext_def_window(vrna_fold_compound_t  *fc,
+                          struct hc_ext_def_dat *dat)
+{
+  dat->mx_window  = fc->hc->matrix_local;
+  dat->hc_up      = fc->hc->up_ext;
+  dat->sn         = fc->strand_number;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return &hc_ext_cb_def_user_window;
+  }
+
+  return &hc_ext_cb_def_window;
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_red(int                   i,
+                  int                   j,
+                  int                   k,
+                  int                   l,
+                  struct sc_ext_exp_dat *data)
+{
+  unsigned int  start_2, length_1, length_2;
+  FLT_OR_DBL    q_sc, **sc_up;
+
+  sc_up = data->up;
+
+  q_sc = 1.;
+
+  length_1  = k - i;
+  start_2   = l + 1;
+  length_2  = j - l;
+
+  if (length_1 != 0)
+    q_sc *= sc_up[i][length_1];
+
+  if (length_2 != 0)
+    q_sc *= sc_up[start_2][length_2];
+
+  return q_sc;
+}
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_red_user_to_ext(int                   i,
+                              int                   j,
+                              int                   k,
+                              int                   l,
+                              struct sc_ext_exp_dat *data)
+{
+  return data->user_cb(i, j, k, l, VRNA_DECOMP_EXT_EXT, data->user_data);
+}
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_red_user_def_to_ext(int                   i,
+                                  int                   j,
+                                  int                   k,
+                                  int                   l,
+                                  struct sc_ext_exp_dat *data)
+{
+  return sc_ext_exp_cb_red(i, j, k, l, data) *
+         sc_ext_exp_cb_red_user_to_ext(i, j, k, l, data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_red_user_to_stem(int                    i,
+                               int                    j,
+                               int                    k,
+                               int                    l,
+                               struct sc_ext_exp_dat  *data)
+{
+  return data->user_cb(i, j, k, l, VRNA_DECOMP_EXT_STEM, data->user_data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_red_user_def_to_stem(int                    i,
+                                   int                    j,
+                                   int                    k,
+                                   int                    l,
+                                   struct sc_ext_exp_dat  *data)
+{
+  return sc_ext_exp_cb_red(i, j, k, l, data) *
+         sc_ext_exp_cb_red_user_to_stem(i, j, k, l, data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_up(int                    i,
+                 int                    j,
+                 struct sc_ext_exp_dat  *data)
+{
+  unsigned int  length;
+  FLT_OR_DBL    q_sc, **sc_up;
+
+  sc_up   = data->up;
+  length  = j - i + 1;
+  q_sc    = 1.;
+
+  if (length != 0)
+    q_sc *= sc_up[i][length];
+
+  return q_sc;
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_up_user(int                   i,
+                      int                   j,
+                      struct sc_ext_exp_dat *data)
+{
+  return data->user_cb(i, j, i, j, VRNA_DECOMP_EXT_UP, data->user_data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_up_user_def(int                   i,
+                          int                   j,
+                          struct sc_ext_exp_dat *data)
+{
+  return sc_ext_exp_cb_up(i, j, data) *
+         sc_ext_exp_cb_up_user(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_ext_exp_cb_split_user(int                    i,
+                         int                    j,
+                         int                    k,
+                         struct sc_ext_exp_dat  *data)
+{
+  return data->user_cb(i, j, k - 1, k, VRNA_DECOMP_EXT_EXT_EXT, data->user_data);
+}
+
+
+PRIVATE INLINE void
+init_sc_ext_exp(vrna_fold_compound_t  *fc,
+                struct sc_ext_exp_dat *sc_wrapper)
+{
+  vrna_sc_t *sc, **scs;
+
+  sc_wrapper->up                    = NULL;
+  sc_wrapper->user_cb               = NULL;
+  sc_wrapper->user_data             = NULL;
+  sc_wrapper->n_seq                 = 1;
+  sc_wrapper->a2s                   = NULL;
+  sc_wrapper->up_comparative        = NULL;
+  sc_wrapper->user_cb_comparative   = NULL;
+  sc_wrapper->user_data_comparative = NULL;
+
+  /* no soft constraints by default */
+  sc_wrapper->red_ext   = NULL;
+  sc_wrapper->red_stem  = NULL;
+  sc_wrapper->red_up    = NULL;
+  sc_wrapper->split     = NULL;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      sc = fc->sc;
+
+      if (sc) {
+        sc_wrapper->up        = sc->exp_energy_up;
+        sc_wrapper->user_cb   = sc->exp_f;
+        sc_wrapper->user_data = sc->data;
+
+        /* bind correct wrapper functions */
+        if (sc->exp_energy_up) {
+          if (sc->exp_f) {
+            sc_wrapper->red_ext   = &sc_ext_exp_cb_red_user_def_to_ext;
+            sc_wrapper->red_stem  = &sc_ext_exp_cb_red_user_def_to_stem;
+            sc_wrapper->red_up    = &sc_ext_exp_cb_up_user_def;
+            sc_wrapper->split     = &sc_ext_exp_cb_split_user;
+          } else {
+            sc_wrapper->red_ext   = &sc_ext_exp_cb_red;
+            sc_wrapper->red_stem  = &sc_ext_exp_cb_red;
+            sc_wrapper->red_up    = &sc_ext_exp_cb_up;
+          }
+        } else if (sc->exp_f) {
+          sc_wrapper->red_ext   = &sc_ext_exp_cb_red_user_to_ext;
+          sc_wrapper->red_stem  = &sc_ext_exp_cb_red_user_to_stem;
+          sc_wrapper->red_up    = &sc_ext_exp_cb_up_user;
+          sc_wrapper->split     = &sc_ext_exp_cb_split_user;
+        }
+      }
+
+      break;
+  }
+}
+
+
+struct vrna_mx_pf_aux_el_s {
+  FLT_OR_DBL  *qq;
+  FLT_OR_DBL  *qq1;
+
+  int         qqu_size;
+  FLT_OR_DBL  **qqu;
+};
+
+#define VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP 1U
+
+PRIVATE INLINE FLT_OR_DBL
+reduce_ext_up_fast(vrna_fold_compound_t       *fc,
+                   int                        i,
+                   int                        j,
+                   struct vrna_mx_pf_aux_el_s *aux_mx,
+                   vrna_hc_eval_f  evaluate,
+                   struct hc_ext_def_dat      *hc_dat_local,
+                   struct sc_ext_exp_dat      *sc_wrapper)
+{
+  int               u;
+  FLT_OR_DBL        qbt, q_temp, *scale;
+  vrna_ud_t         *domains_up;
+  sc_ext_exp_red_up sc_red_up;
+
+  sc_red_up = sc_wrapper->red_up;
+
+  scale       = fc->exp_matrices->scale;
+  domains_up  = fc->domains_up;
+  qbt         = 0.;
+
+  if (evaluate(i, j, i, j, VRNA_DECOMP_EXT_UP, hc_dat_local)) {
+    u       = j - i + 1;
+    q_temp  = scale[u];
+
+    if (sc_red_up)
+      q_temp *= sc_red_up(i, j, sc_wrapper);
+
+    qbt += q_temp;
+
+    if ((domains_up) && (domains_up->exp_energy_cb)) {
+      qbt += q_temp *
+             domains_up->exp_energy_cb(fc,
+                                       i, j,
+                                       VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP,
+                                       domains_up->data);
+    }
+  }
+
+  return qbt;
+}
+
+PUBLIC struct vrna_mx_pf_aux_el_s *
+vrna_exp_E_ext_fast_init(vrna_fold_compound_t *fc)
+{
+  struct vrna_mx_pf_aux_el_s *aux_mx = NULL;
+
+  if (fc) {
+    unsigned int              u;
+    int                       i, j, max_j, d, n, turn, ij, *iidx, with_ud;
+    FLT_OR_DBL                *q, **q_local;
+    vrna_hc_eval_f evaluate;
+    struct hc_ext_def_dat     hc_dat_local;
+    struct sc_ext_exp_dat     sc_wrapper;
+    vrna_ud_t                 *domains_up;
+
+    n           = (int)fc->length;
+    iidx        = fc->iindx;
+    turn        = fc->exp_params->model_details.min_loop_size;
+    domains_up  = fc->domains_up;
+    with_ud     = (domains_up && domains_up->exp_energy_cb);
+
+    if (fc->hc->type == VRNA_HC_WINDOW)
+      evaluate = prepare_hc_ext_def_window(fc, &hc_dat_local);
+    else
+      evaluate = prepare_hc_ext_def(fc, &hc_dat_local);
+
+    init_sc_ext_exp(fc, &sc_wrapper);
+
+    /* allocate memory for helper arrays */
+    aux_mx =
+      (struct vrna_mx_pf_aux_el_s *)vrna_alloc(sizeof(struct vrna_mx_pf_aux_el_s));
+    aux_mx->qq        = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+    aux_mx->qq1       = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+    aux_mx->qqu_size  = 0;
+    aux_mx->qqu       = NULL;
+
+    /* pre-processing ligand binding production rule(s) and auxiliary memory */
+    if (with_ud) {
+      int ud_max_size = 0;
+      for (u = 0; u < domains_up->uniq_motif_count; u++)
+        if (ud_max_size < domains_up->uniq_motif_size[u])
+          ud_max_size = domains_up->uniq_motif_size[u];
+
+      aux_mx->qqu_size  = ud_max_size;
+      aux_mx->qqu       = (FLT_OR_DBL **)vrna_alloc(sizeof(FLT_OR_DBL *) * (ud_max_size + 1));
+
+      for (u = 0; u <= ud_max_size; u++)
+        aux_mx->qqu[u] = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+    }
+
+    if (fc->hc->type == VRNA_HC_WINDOW) {
+      q_local = fc->exp_matrices->q_local;
+      max_j   = MIN2(turn + 1, fc->window_size);
+      max_j   = MIN2(max_j, n);
+      for (j = 1; j <= max_j; j++)
+        for (i = 1; i <= j; i++)
+          q_local[i][j] =
+            reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, &hc_dat_local, &sc_wrapper);
+    } else {
+      q = fc->exp_matrices->q;
+      for (d = 0; d <= turn; d++)
+        for (i = 1; i <= n - d; i++) {
+          j   = i + d;
+          ij  = iidx[i] - j;
+
+          q[ij] = reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, &hc_dat_local, &sc_wrapper);
+        }
+
+      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_f)) {
+        for (d = 0; d <= turn; d++)
+          for (i = 1; i <= n - d; i++) {
+            j   = i + d;
+            ij  = iidx[i] - j;
+
+            q[ij] += fc->aux_grammar->cb_aux_exp_f(fc, i, j, fc->aux_grammar->data);
+          }
+      }
+    }
+  }
+
+  return aux_mx;
+}
+
+
+PRIVATE FLT_OR_DBL
+mf_rule_pair(vrna_fold_compound_t *fc,
+             int                  i,
+             int                  j,
+             void                 *data)
+{
+  short                     *S1, *S2, s5, s3;
+  unsigned int              *sn, *ends, type, nick;
+  int                       *my_iindx;
+  FLT_OR_DBL                contribution, *q, *scale, qbase, tmp, tmp2;
+  vrna_exp_param_t          *pf_params;
+  vrna_md_t                 *md;
+  vrna_hc_eval_f evaluate;
+  struct hc_ext_def_dat     hc_dat_local;
+  vrna_sc_t                 *sc;
+
+  contribution  = 0;
+  S1            = fc->sequence_encoding;
+  S2            = fc->sequence_encoding2;
+  pf_params     = fc->exp_params;
+  md            = &(pf_params->model_details);
+  sn            = fc->strand_number;
+  ends          = fc->strand_end;
+  q             = fc->exp_matrices->q;
+  scale         = fc->exp_matrices->scale;
+  my_iindx      = fc->iindx;
+  sc            = fc->sc;
+  evaluate      = prepare_hc_ext_def(fc, &hc_dat_local);
+
+  if ((sn[i] != sn[j]) &&
+      (evaluate(i, j, i, j, VRNA_DECOMP_EXT_STEM, &hc_dat_local))) {
+    /* most obious strand nick is at end of sn[i] and start of sn[j] */
+    type  = vrna_get_ptype_md(S2[j], S2[i], md);
+    s5    = (sn[j] == sn[j - 1]) ? S1[j - 1] : -1;
+    s3    = (sn[i] == sn[i + 1]) ? S1[i + 1] : -1;
+    qbase = vrna_exp_E_ext_stem(type, s5, s3, pf_params) *
+            scale[2];
+
+    if (sc) {
+      if (sc->exp_f)
+        qbase *= sc->exp_f(j, i, j, i, VRNA_DECOMP_EXT_STEM, sc->data);
+    }
+
+    tmp = 0.;
+
+    /*
+     *  if (evaluate(i + 1,
+     *               j - 1,
+     *               ends[sn[i]],
+     *               ends[sn[i]] + 1,
+     *               VRNA_DECOMP_EXT_EXT_EXT,
+     *               &hc_dat_local))
+     */
+    if (sn[i] != sn[i + 1]) {
+      if ((sn[j - 1] != sn[j]) &&
+          (i + 1 == j))
+        tmp = 1.;
+      else if (sn[j - 1] == sn[j])
+        tmp = q[my_iindx[i + 1] - j + 1];
+    } else if (sn[j - 1] != sn[j]) {
+      tmp = q[my_iindx[i + 1] - j + 1];
+    } else {
+      tmp = q[my_iindx[i + 1] - ends[sn[i]]] *
+            q[my_iindx[ends[sn[i]] + 1] - j + 1];
+
+      /* check whether we find more strand nicks between i and j */
+      nick = ends[sn[i]] + 1;
+      while (sn[nick] != sn[j]) {
+        /*
+         *      if (evaluate(i + 1,
+         *                   j - 1,
+         *                   ends[sn[nick]],
+         *                   ends[sn[nick]] + 1,
+         *                   VRNA_DECOMP_EXT_EXT_EXT,
+         *                   &hc_dat_local))
+         */
+        tmp2 = 1.;
+        if (i + 1 <= ends[sn[nick]])
+          tmp2 *= q[my_iindx[i + 1] - ends[sn[nick]]];
+
+        if (ends[sn[nick]] + 1 <= j - 1)
+          tmp2 *= q[my_iindx[ends[sn[nick]] + 1] - j + 1];
+
+        tmp += tmp2;
+
+
+        nick = ends[sn[nick]] + 1;
+      }
+    }
+
+    contribution = qbase *
+                   tmp;
+  }
+
+  return contribution;
+}
+
+
+
+PUBLIC int
+vrna_pf_multifold_prepare(vrna_fold_compound_t *fc)
+{
+  if (fc)
+    return vrna_gr_set_aux_exp_c(fc, &mf_rule_pair);
+
+  return 0;
+}
+
+PUBLIC FLT_OR_DBL
+vrna_pf(vrna_fold_compound_t  *fc,
+        char                  *structure)
+{
+  int               n;
+  FLT_OR_DBL        Q, dG;
+  vrna_md_t         *md;
+  vrna_exp_param_t  *params;
+  vrna_mx_pf_t      *matrices;
+
+  dG = (FLT_OR_DBL)(INF / 100.);
+
+  if (fc) {
+    /* make sure, everything is set up properly to start partition function computations */
+    // if (!vrna_fold_compound_prepare(fc, VRNA_OPTION_PF)) {
+    //   vrna_message_warning("vrna_pf@part_func.c: Failed to prepare vrna_fold_compound");
+    //   return dG;
+    // }
+
+    n         = fc->length;
+    params    = fc->exp_params;
+    matrices  = fc->exp_matrices;
+    md        = &(params->model_details);
+
+#ifdef _OPENMP
+    /* Explicitly turn off dynamic threads */
+    omp_set_dynamic(0);
+#endif
+
+#ifdef SUN4
+    nonstandard_arithmetic();
+#elif defined(HP9)
+    fpsetfastmode(1);
+#endif
+
+    /* call user-defined recursion status callback function */
+    if (fc->stat_cb) // not into
+      fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
+
+    /* for now, multi-strand folding is implemented as additional grammar rule */
+    if (fc->strands > 1)
+      vrna_pf_multifold_prepare(fc);
+
+    /* call user-defined grammar pre-condition callback function */
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
+      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
+
+    if (!fill_arrays(fc)) {
+#ifdef SUN4
+      standard_arithmetic();
+#elif defined(HP9)
+      fpsetfastmode(0);
+#endif
+      return dG;
+    }
+
+    if (md->circ)
+      /* do post processing step for circular RNAs */
+      postprocess_circular(fc);
+
+    /* call user-defined grammar post-condition callback function */
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
+      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
+
+    if (fc->strands > 1)
+      vrna_gr_reset(fc);
+
+    /* call user-defined recursion status callback function */
+    if (fc->stat_cb)
+      fc->stat_cb(VRNA_STATUS_PF_POST, fc->auxdata);
+
+    switch (md->backtrack_type) {
+      case 'C':
+        Q = matrices->qb[fc->iindx[1] - n];
+        break;
+
+      case 'M':
+        Q = matrices->qm[fc->iindx[1] - n];
+        break;
+
+      default:
+        Q = (md->circ) ? matrices->qo : matrices->q[fc->iindx[1] - n];
+        break;
+    }
+
+    /* ensemble free energy in Kcal/mol              */
+    if (Q <= FLT_MIN)
+      printf("pf_scale too large");
+
+    if (fc->strands > 1) {
+      /* check for rotational symmetry correction */
+      unsigned int sym = vrna_rotational_symmetry(fc->sequence);
+      Q /= (FLT_OR_DBL)sym;
+
+      /* add interaction penalty */
+      Q *= pow(params->expDuplexInit, (FLT_OR_DBL)(fc->strands - 1));
+    }
+
+    dG = (FLT_OR_DBL)((-log(Q) - n * log(params->pf_scale)) *
+                      params->kT /
+                      1000.0);
+
+    if (fc->type == VRNA_FC_TYPE_COMPARATIVE)
+      dG /= fc->n_seq;
+
+    /* calculate base pairing probability matrix (bppm)  compute in here !!!!!!!*/
+    if (md->compute_bpp) {
+      vrna_pairing_probs(fc, structure);
+
+#ifndef VRNA_DISABLE_BACKWARD_COMPATIBILITY
+
+      /*
+       *  Backward compatibility:
+       *  This block may be removed if deprecated functions
+       *  relying on the global variable "pr" vanish from within the package!
+       */
+      pr = matrices->probs;
+
+#endif
+    }
+
+#ifdef SUN4
+    standard_arithmetic();
+#elif defined(HP9)
+    fpsetfastmode(0);
+#endif
+  }
+
+  return dG;
+}
+
+
+
+
+PUBLIC vrna_dimer_pf_t
+vrna_pf_dimer(vrna_fold_compound_t  *fc,
+              char                  *structure)
+{
+  vrna_dimer_pf_t X;
+
+  X.F0AB = X.FAB = X.FcAB = X.FA = X.FB = 0.;
+  /* structure changed by vrna_pf */
+  if (fc) {
+    (void)vrna_pf(fc, structure);
+  // printf("%s*",structure);
+
+    /* backward compatibility partition function and ensemble energy computation */
+    extract_dimer_props(fc,
+                        &(X.F0AB),
+                        &(X.FAB),
+                        &(X.FcAB),
+                        &(X.FA),
+                        &(X.FB));
+  }
+
+  return X;
 }
 
 
