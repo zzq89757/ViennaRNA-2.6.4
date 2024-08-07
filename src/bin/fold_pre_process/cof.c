@@ -7752,7 +7752,8 @@ vrna_pairing_probs(vrna_fold_compound_t *vc,
   return 0;
 }
 
-
+#define VRNA_STATUS_PF_POST (unsigned char)4
+#define FLT_MIN __FLT_MIN__
 PUBLIC FLT_OR_DBL
 vrna_pf(vrna_fold_compound_t  *fc,
         char                  *structure)
