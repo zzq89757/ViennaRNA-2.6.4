@@ -602,7 +602,7 @@ exp_E_ext_fast(vrna_fold_compound_t       *fc,
   with_gquad  = md->gquad;
   with_ud     = (domains_up && domains_up->exp_energy_cb);
 
-  if (fc->hc->type == VRNA_HC_WINDOW)
+  if (fc->hc->type == VRNA_HC_WINDOW) // not into
     evaluate = prepare_hc_ext_def_window(fc, &hc_dat_local);
   else
     evaluate = prepare_hc_ext_def(fc, &hc_dat_local);

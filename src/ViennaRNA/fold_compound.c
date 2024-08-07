@@ -261,7 +261,7 @@ vrna_fold_compound(const char       *sequence,
       vrna_hc_init(fc);
 
       /* add DP matrices (if required) */
-      // vrna_mx_add(fc, VRNA_MX_DEFAULT, options);
+      vrna_mx_add(fc, VRNA_MX_DEFAULT, options);
     }
   }
 
