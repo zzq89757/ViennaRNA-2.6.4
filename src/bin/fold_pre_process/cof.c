@@ -1,7 +1,7 @@
 // header include start--------------------------------
 #include "cof.h"
 #include "matrices/all_mat.h"
-
+#include "dup.h"
 
 
 // structure definition start -------------------------------
@@ -54,6 +54,88 @@ init_default_options(struct options *opt)
 }
 
 
+PUBLIC vrna_fold_compound_t *
+vrna_fold_compound(const char       *sequence,
+                   const vrna_md_t  *md_p,
+                   unsigned int     options)
+{
+  unsigned int          length, aux_options;
+  vrna_fold_compound_t  *fc;
+  vrna_md_t             md;
+  // printf("vrna_fold_compound called, seq is %s", sequence);
+  if (sequence == NULL)
+    return NULL;
+
+  /* sanity check */
+  length = strlen(sequence);
+  if (length == 0) {
+    vrna_message_warning("vrna_fold_compound@data_structures.c: "
+                         "sequence length must be greater 0");
+    return NULL;
+  }
+
+  if (length > vrna_sequence_length_max(options)) {
+    vrna_message_warning("vrna_fold_compound@data_structures.c: "
+                         "sequence length of %d exceeds addressable range",
+                         length);
+    return NULL;
+  }
+
+  fc = init_fc_single();
+
+  fc->length    = length;
+  fc->sequence  = strdup(sequence);
+
+  aux_options = 0L;
+
+
+  /* get a copy of the model details */
+  if (md_p)
+    /* into  here*/
+    md = *md_p;
+  else
+    printf("into vrna_md_set_default\n");
+    vrna_md_set_default(&md);
+
+  /* now for the energy parameters */
+  add_params(fc, &md, options);
+
+  sanitize_bp_span(fc, options);
+  /* only into else*/
+  if (options & VRNA_OPTION_WINDOW) {
+    set_fold_compound(fc, options, aux_options);
+    printf("into (options & VRNA_OPTION_EVAL_ONLY)");
+
+    if (!(options & VRNA_OPTION_EVAL_ONLY)) {
+      /* add minimal hard constraint data structure */
+      vrna_hc_init_window(fc);
+
+      /* add DP matrices */
+      vrna_mx_add(fc, VRNA_MX_WINDOW, options);
+    }
+  } else {
+    /* regular global structure prediction */
+    aux_options |= WITH_PTYPE;
+
+    if (options & VRNA_OPTION_PF)
+      aux_options |= WITH_PTYPE_COMPAT;
+
+    set_fold_compound(fc, options, aux_options);
+
+    if (!(options & VRNA_OPTION_EVAL_ONLY)) {
+      // printf("into !(options & VRNA_OPTION_EVAL_ONLY)\n");
+      /* add default hard constraints */
+      vrna_hc_init(fc);
+
+      /* add DP matrices (if required) */
+      // vrna_mx_add(fc, VRNA_MX_DEFAULT, options);
+    }
+  }
+
+  return fc;
+}
+
+
 PUBLIC void
 vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
                         double                *mfe)
@@ -68,9 +150,9 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
         case VRNA_FC_TYPE_SINGLE:
           vc->exp_params = vrna_exp_params(&(vc->params->model_details));
           break;
-        case VRNA_FC_TYPE_COMPARATIVE:
-          vc->exp_params = vrna_exp_params_comparative(vc->n_seq, &(vc->params->model_details));
-          break;
+        // case VRNA_FC_TYPE_COMPARATIVE:
+        //   vc->exp_params = vrna_exp_params_comparative(vc->n_seq, &(vc->params->model_details));
+        //   break;
       }
     } else if (memcmp(&(vc->params->model_details),
                       &(vc->exp_params->model_details),
@@ -106,6 +188,8 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
     }
   }
 }
+
+
 
 static void 
 process_record(struct record_data *record){
