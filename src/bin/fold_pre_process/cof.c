@@ -7195,134 +7195,6 @@ vrna_gr_reset(vrna_fold_compound_t *fc)
 }
 
 
-PUBLIC FLT_OR_DBL
-vrna_pf(vrna_fold_compound_t  *fc,
-        char                  *structure)
-{
-  int               n;
-  FLT_OR_DBL        Q, dG;
-  vrna_md_t         *md;
-  vrna_exp_param_t  *params;
-  vrna_mx_pf_t      *matrices;
-
-  dG = (FLT_OR_DBL)(INF / 100.);
-
-  if (fc) {
-    /* make sure, everything is set up properly to start partition function computations */
-    // if (!vrna_fold_compound_prepare(fc, VRNA_OPTION_PF)) {
-    //   printf("vrna_pf@part_func.c: Failed to prepare vrna_fold_compound");
-    //   return dG;
-    // }
-
-    n         = fc->length;
-    params    = fc->exp_params;
-    matrices  = fc->exp_matrices;
-    md        = &(params->model_details);
-
-// #ifdef _OPENMP
-//     /* Explicitly turn off dynamic threads */
-//     omp_set_dynamic(0);
-// #endif
-
-// #ifdef SUN4
-//     nonstandard_arithmetic();
-// #elif defined(HP9)
-//     fpsetfastmode(1);
-// #endif
-
-    /* call user-defined recursion status callback function */
-    if (fc->stat_cb) // not into
-      fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
-
-    /* for now, multi-strand folding is implemented as additional grammar rule */
-    if (fc->strands > 1)
-      vrna_pf_multifold_prepare(fc);
-
-    /* call user-defined grammar pre-condition callback function */
-    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
-      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
-
-    if (!fill_arrays(fc)) {
-// #ifdef SUN4
-//       standard_arithmetic();
-// #elif defined(HP9)
-//       fpsetfastmode(0);
-// #endif
-      return dG;
-    }
-
-    if (md->circ)
-      /* do post processing step for circular RNAs */
-      postprocess_circular(fc);
-
-    /* call user-defined grammar post-condition callback function */
-    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
-      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
-
-    if (fc->strands > 1)
-      vrna_gr_reset(fc);
-
-    /* call user-defined recursion status callback function */
-    if (fc->stat_cb)
-      fc->stat_cb(VRNA_STATUS_PF_POST, fc->auxdata);
-
-    switch (md->backtrack_type) {
-      case 'C':
-        Q = matrices->qb[fc->iindx[1] - n];
-        break;
-
-      case 'M':
-        Q = matrices->qm[fc->iindx[1] - n];
-        break;
-
-      default:
-        Q = (md->circ) ? matrices->qo : matrices->q[fc->iindx[1] - n];
-        break;
-    }
-
-    /* ensemble free energy in Kcal/mol              */
-    if (Q <= FLT_MIN)
-      printf("pf_scale too large");
-
-    if (fc->strands > 1) {
-      /* check for rotational symmetry correction */
-      unsigned int sym = vrna_rotational_symmetry(fc->sequence);
-      Q /= (FLT_OR_DBL)sym;
-
-      /* add interaction penalty */
-      Q *= pow(params->expDuplexInit, (FLT_OR_DBL)(fc->strands - 1));
-    }
-
-    dG = (FLT_OR_DBL)((-log(Q) - n * log(params->pf_scale)) *
-                      params->kT /
-                      1000.0);
-
-    /* calculate base pairing probability matrix (bppm)  compute in here !!!!!!!*/
-    if (md->compute_bpp) {
-      vrna_pairing_probs(fc, structure);
-
-#ifndef VRNA_DISABLE_BACKWARD_COMPATIBILITY
-
-      /*
-       *  Backward compatibility:
-       *  This block may be removed if deprecated functions
-       *  relying on the global variable "pr" vanish from within the package!
-       */
-      pr = matrices->probs;
-
-#endif
-    }
-
-#ifdef SUN4
-    standard_arithmetic();
-#elif defined(HP9)
-    fpsetfastmode(0);
-#endif
-  }
-
-  return dG;
-}
-
 
 
 PRIVATE size_t *
@@ -7560,6 +7432,457 @@ vrna_rotational_symmetry(const char *string)
   return vrna_rotational_symmetry_pos(string,
                                       NULL);
 }
+
+
+
+/* calculate base pairing probs  changed structure -------start--------------*/
+PRIVATE int
+pf_create_bppm(vrna_fold_compound_t *vc,
+               char                 *structure)
+{
+  unsigned int      s;
+  int               n, i, j, l, ij, *pscore, *jindx, ov = 0;
+  FLT_OR_DBL        Qmax = 0;
+  FLT_OR_DBL        *qb, *G, *probs;
+  FLT_OR_DBL        *q1k, *qln;
+
+  int               with_gquad;
+  vrna_hc_t         *hc;
+  vrna_sc_t         *sc;
+  int               *my_iindx;
+  int               circular, with_ud, with_ud_outside;
+  vrna_exp_param_t  *pf_params;
+  vrna_mx_pf_t      *matrices;
+  vrna_md_t         *md;
+  vrna_ud_t         *domains_up;
+
+  n           = vc->length;
+  pscore      = (vc->type == VRNA_FC_TYPE_COMPARATIVE) ? vc->pscore : NULL;
+  pf_params   = vc->exp_params;
+  md          = &(pf_params->model_details);
+  my_iindx    = vc->iindx;
+  jindx       = vc->jindx;
+  circular    = md->circ;
+  with_gquad  = md->gquad;
+
+  hc  = vc->hc;
+  sc  = vc->sc;
+
+  domains_up  = vc->domains_up;
+  matrices    = vc->exp_matrices;
+
+  qb    = matrices->qb;
+  G     = matrices->G;
+  probs = matrices->probs;
+  /* probs is 0.0000 now */
+  q1k   = matrices->q1k;
+  qln   = matrices->qln;
+
+  with_ud         = (domains_up && domains_up->exp_energy_cb) ? 1 : 0;
+  with_ud_outside = (with_ud && domains_up->probs_add) ? 1 : 0;
+
+  /*
+   * the following is a crude check whether the partition function forward recursion
+   * has already been taken place
+   */
+  if ((qb) &&
+      (probs) &&
+      (circular ? matrices->qm2 != NULL : (q1k != NULL && qln != NULL))) {
+    with_gquad = pf_params->model_details.gquad;
+    /* probs is 0.0000 now */
+    // printf("probs is :%f", probs);
+
+    double      kTn = pf_params->kT / 10.;               /* kT in cal/mol  */
+    int         corr_size = 5;
+    int         corr_cnt = 0;
+    vrna_ep_t   *bp_correction = vrna_alloc(sizeof(vrna_ep_t) * corr_size);
+    FLT_OR_DBL  *Y5, **Y5p, **Y3, **Y3p;
+
+    Y5  = NULL;
+    Y5p = NULL;
+    Y3  = NULL;
+    Y3p = NULL;
+
+    helper_arrays       *ml_helpers;
+    constraints_helper  *constraints;
+
+    ml_helpers  = get_ml_helper_arrays(vc);
+    constraints = get_constraints_helper(vc);
+
+    /* function pointer here igrone it */
+    void                (*compute_bpp_int)(vrna_fold_compound_t *fc,
+                                           int                  l,
+                                           vrna_ep_t            **bp_correction,
+                                           int                  *corr_cnt,
+                                           int                  *corr_size,
+                                           FLT_OR_DBL           *Qmax,
+                                           int                  *ov,
+                                           constraints_helper   *constraints);
+
+    void (*compute_bpp_mul)(vrna_fold_compound_t  *fc,
+                            int                   l,
+                            helper_arrays         *ml_helpers,
+                            FLT_OR_DBL            *Qmax,
+                            int                   *ov,
+                            constraints_helper    *constraints);
+
+    if (vc->type == VRNA_FC_TYPE_SINGLE) {
+      compute_bpp_int = &compute_bpp_internal;
+      compute_bpp_mul = &compute_bpp_multibranch;
+    } else {
+      compute_bpp_int = &compute_bpp_internal_comparative;
+      compute_bpp_mul = &compute_bpp_multibranch_comparative;
+    }
+
+    Qmax = 0;
+
+    if (vc->strands > 1) {
+      Y5  = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * vc->strands);
+      Y5p = (FLT_OR_DBL **)vrna_alloc(sizeof(FLT_OR_DBL *) * vc->strands);
+      for (s = 0; s < vc->strands; s++)
+        Y5p[s] = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 1));
+
+      Y3  = (FLT_OR_DBL **)vrna_alloc(sizeof(FLT_OR_DBL *) * vc->strands);
+      Y3p = (FLT_OR_DBL **)vrna_alloc(sizeof(FLT_OR_DBL *) * vc->strands);
+      for (s = 0; s < vc->strands; s++) {
+        Y3[s]   = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 1));
+        Y3p[s]  = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 1));
+      }
+    }
+
+    /* init diagonal entries unable to pair in pr matrix */
+    for (i = 1; i <= n; i++)
+      probs[my_iindx[i] - i] = 0.;
+    // printf("probs is :%f", probs);
+    /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
+    if (circular)
+      bppm_circ(vc, constraints);
+    else
+      compute_bpp_external(vc, constraints);
+
+    /* 2. all cases where base pair (k,l) is enclosed by another pair (i,j) */
+    l = n;
+    compute_bpp_int(vc,
+                    l,
+                    &bp_correction,
+                    &corr_cnt,
+                    &corr_size,
+                    &Qmax,
+                    &ov,
+                    constraints);
+
+    for (l = n - 1; l > 1; l--) {
+      compute_bpp_int(vc,
+                      l,
+                      &bp_correction,
+                      &corr_cnt,
+                      &corr_size,
+                      &Qmax,
+                      &ov,
+                      constraints);
+
+      compute_bpp_mul(vc,
+                      l,
+                      ml_helpers,
+                      &Qmax,
+                      &ov,
+                      constraints);
+
+      if (vc->strands > 1) {
+        multistrand_update_Y5(vc, l, Y5, Y5p, constraints);
+        multistrand_update_Y3(vc, l, Y3, Y3p, constraints);
+        multistrand_contrib(vc,
+                            l,
+                            Y5,
+                            Y3,
+                            constraints,
+                            &Qmax,
+                            &ov);
+      }
+    }
+    // linked vc 
+    if (vc->type == VRNA_FC_TYPE_SINGLE) {
+      if (with_ud_outside) {
+        /*
+         *  The above recursions only deal with base pairs, and how they might be
+         *  enclosed by other pairs. However, for unstructrued domains, we have
+         *  unpaired stretches, and require information about how these are enclosed
+         *  by base pairs.
+         */
+
+        /* 1. Exterior loops */
+        ud_outside_ext_loops(vc);
+
+        /* 2. Hairpin loops */
+        ud_outside_hp_loops(vc);
+
+        /* 3. Interior loops */
+        ud_outside_int_loops(vc);
+
+        /* 4. Multi branch loops */
+        ud_outside_mb_loops(vc);
+      }
+
+      if ((sc) &&
+          (sc->f) &&
+          (sc->bt)) {
+        for (i = 1; i <= n; i++)
+          for (j = i + 1; j <= n; j++) {
+            ij = my_iindx[i] - j;
+            /*  search for possible auxiliary base pairs in hairpin loop motifs to store
+             *  the corresponding probability corrections
+             */
+            if (hc->mx[i * n + j] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP) {
+              vrna_basepair_t *ptr, *aux_bps;
+              aux_bps = sc->bt(i, j, i, j, VRNA_DECOMP_PAIR_HP, sc->data);
+              if (aux_bps) {
+                FLT_OR_DBL qhp = vrna_exp_E_hp_loop(vc, i, j);
+                /*  kind  different*/
+                for (ptr = aux_bps; (ptr) && (ptr->i != 0); ptr++) {
+                  bp_correction[corr_cnt].i   = ptr->i;
+                  bp_correction[corr_cnt].j   = ptr->j;
+                  bp_correction[corr_cnt++].p = probs[ij] * qhp;
+                  if (corr_cnt == corr_size) {
+                    corr_size     += 5;
+                    bp_correction = vrna_realloc(bp_correction, sizeof(vrna_ep_t) * corr_size);
+                  }
+                }
+              }
+
+              free(aux_bps);
+            }
+          }
+
+        /*  correct pairing probabilities for auxiliary base pairs from hairpin-, or interior loop motifs
+         *  as augmented by the generalized soft constraints feature
+         */
+        // linked bp_correction  corr_cnt corr_size qhp aux_bps ptr sc->bt sc->data  hc->mx sc->f sc->bt
+        for (i = 0; i < corr_cnt; i++) {
+          ij = my_iindx[bp_correction[i].i] - bp_correction[i].j;
+          /* printf("correcting pair %d, %d by %f\n", bp_correction[i].i, bp_correction[i].j, bp_correction[i].p); */
+          probs[ij] += bp_correction[i].p / qb[ij];
+        }
+      }
+    }
+
+    for (i = 1; i <= n; i++)
+      for (j = i + 1; j <= n; j++) {
+        ij = my_iindx[i] - j;
+
+        if (with_gquad) {
+          if (qb[ij] > 0.) {
+            probs[ij] *= qb[ij];
+            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
+              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
+          } else if (G[ij] > 0.) {
+            probs[ij] += q1k[i - 1] *
+                         G[ij] *
+                         qln[j + 1] /
+                         q1k[n];
+          }
+        } else {
+          if (qb[ij] > 0.) {
+            probs[ij] *= qb[ij];
+
+            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
+              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
+          }
+        }
+        // printf("%d-", probs[ij]);
+      }
+    if (structure != NULL) {
+      /* s generate here -------------------*/
+      // printf("---%d\n",n); 
+      char *s = vrna_db_from_probs(probs, (unsigned int)n);
+      /* strcuture here  generate by s  ---------------- */
+      memcpy(structure, s, n);
+      structure[n] = '\0';
+      // printf("%s\n\n",structure);
+      free(s);
+    }
+
+    if (ov > 0)
+      vrna_message_warning("%d overflows occurred while backtracking;\n"
+                           "you might try a smaller pf_scale than %g\n",
+                           ov, pf_params->pf_scale);
+
+    /* clean up */
+    free_ml_helper_arrays(ml_helpers);
+
+    free_constraints_helper(constraints);
+
+    free(bp_correction);
+    free(Y5);
+    if (Y5p)
+      for (unsigned int s = 0; s < vc->strands; s++)
+        free(Y5p[s]);
+
+    free(Y5p);
+
+    if (Y3)
+      for (unsigned int s = 0; s < vc->strands; s++)
+        free(Y3[s]);
+
+    free(Y3);
+
+    if (Y3p)
+      for (unsigned int s = 0; s < vc->strands; s++)
+        free(Y3p[s]);
+
+    free(Y3p);
+  } /* end if 'check for forward recursion' */
+  else {
+    vrna_message_warning("bppm calculations have to be done after calling forward recursion");
+    return 0;
+  }
+
+  return 1;
+}
+
+
+
+
+PUBLIC int
+vrna_pairing_probs(vrna_fold_compound_t *vc,
+                   char                 *structure)
+{
+  if (vc)
+    return pf_create_bppm(vc, structure);
+
+  return 0;
+}
+
+
+PUBLIC FLT_OR_DBL
+vrna_pf(vrna_fold_compound_t  *fc,
+        char                  *structure)
+{
+  int               n;
+  FLT_OR_DBL        Q, dG;
+  vrna_md_t         *md;
+  vrna_exp_param_t  *params;
+  vrna_mx_pf_t      *matrices;
+
+  dG = (FLT_OR_DBL)(INF / 100.);
+
+  if (fc) {
+    /* make sure, everything is set up properly to start partition function computations */
+    // if (!vrna_fold_compound_prepare(fc, VRNA_OPTION_PF)) {
+    //   printf("vrna_pf@part_func.c: Failed to prepare vrna_fold_compound");
+    //   return dG;
+    // }
+
+    n         = fc->length;
+    params    = fc->exp_params;
+    matrices  = fc->exp_matrices;
+    md        = &(params->model_details);
+
+// #ifdef _OPENMP
+//     /* Explicitly turn off dynamic threads */
+//     omp_set_dynamic(0);
+// #endif
+
+// #ifdef SUN4
+//     nonstandard_arithmetic();
+// #elif defined(HP9)
+//     fpsetfastmode(1);
+// #endif
+
+    /* call user-defined recursion status callback function */
+    if (fc->stat_cb) // not into
+      fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
+
+    /* for now, multi-strand folding is implemented as additional grammar rule */
+    if (fc->strands > 1)
+      vrna_pf_multifold_prepare(fc);
+
+    /* call user-defined grammar pre-condition callback function */
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
+      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
+
+    if (!fill_arrays(fc)) {
+// #ifdef SUN4
+//       standard_arithmetic();
+// #elif defined(HP9)
+//       fpsetfastmode(0);
+// #endif
+      return dG;
+    }
+
+    if (md->circ)
+      /* do post processing step for circular RNAs */
+      postprocess_circular(fc);
+
+    /* call user-defined grammar post-condition callback function */
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
+      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
+
+    if (fc->strands > 1)
+      vrna_gr_reset(fc);
+
+    /* call user-defined recursion status callback function */
+    if (fc->stat_cb)
+      fc->stat_cb(VRNA_STATUS_PF_POST, fc->auxdata);
+
+    switch (md->backtrack_type) {
+      case 'C':
+        Q = matrices->qb[fc->iindx[1] - n];
+        break;
+
+      case 'M':
+        Q = matrices->qm[fc->iindx[1] - n];
+        break;
+
+      default:
+        Q = (md->circ) ? matrices->qo : matrices->q[fc->iindx[1] - n];
+        break;
+    }
+
+    /* ensemble free energy in Kcal/mol              */
+    if (Q <= FLT_MIN)
+      printf("pf_scale too large");
+
+    if (fc->strands > 1) {
+      /* check for rotational symmetry correction */
+      unsigned int sym = vrna_rotational_symmetry(fc->sequence);
+      Q /= (FLT_OR_DBL)sym;
+
+      /* add interaction penalty */
+      Q *= pow(params->expDuplexInit, (FLT_OR_DBL)(fc->strands - 1));
+    }
+
+    dG = (FLT_OR_DBL)((-log(Q) - n * log(params->pf_scale)) *
+                      params->kT /
+                      1000.0);
+
+    /* calculate base pairing probability matrix (bppm)  compute in here !!!!!!!*/
+    if (md->compute_bpp) {
+      vrna_pairing_probs(fc, structure);
+
+#ifndef VRNA_DISABLE_BACKWARD_COMPATIBILITY
+
+      /*
+       *  Backward compatibility:
+       *  This block may be removed if deprecated functions
+       *  relying on the global variable "pr" vanish from within the package!
+       */
+      pr = matrices->probs;
+
+#endif
+    }
+
+// #ifdef SUN4
+//     standard_arithmetic();
+// #elif defined(HP9)
+//     fpsetfastmode(0);
+// #endif
+  }
+
+  return dG;
+}
+
+
+
 
 
 PRIVATE void
