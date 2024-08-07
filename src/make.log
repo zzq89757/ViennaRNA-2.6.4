@@ -1,7 +1,10 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
+  CC       fold_compound.lo
   CC       part_func.lo
+  CC       loops/external_pf.lo
+  CCLD     libRNA_loops.la
   CXXLD    libRNA_conv.la
   CXXLD    libRNA.la
   GEN      libRNA.a
