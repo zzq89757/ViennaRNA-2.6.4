@@ -301,7 +301,6 @@ vrna_pf_add(FLT_OR_DBL  dG1,
 PRIVATE int
 fill_arrays(vrna_fold_compound_t *fc)
 { 
-  printf("into fill arrays\n");
   int                 n, i, j, k, ij, *my_iindx, *jindx, with_gquad, with_ud;
   FLT_OR_DBL          temp, Qmax, *q, *qb, *qm, *qm1, *q1k, *qln;
   double              max_real;

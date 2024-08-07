@@ -20,3 +20,7 @@ vrna_params(vrna_md_t *md);
 PUBLIC int
 vrna_nucleotide_encode(char       c,
                        vrna_md_t  *md);
+
+
+PUBLIC int
+vrna_salt_loop_int(int L, double rho, double T, double backbonelen);

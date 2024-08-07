@@ -2865,6 +2865,3388 @@ vrna_pf_multifold_prepare(vrna_fold_compound_t *fc)
   return 0;
 }
 
+struct vrna_mx_pf_aux_el_s {
+  FLT_OR_DBL  *qq;
+  FLT_OR_DBL  *qq1;
+
+  int         qqu_size;
+  FLT_OR_DBL  **qqu;
+};
+
+
+typedef struct vrna_mx_pf_aux_el_s *vrna_mx_pf_aux_el_t;
+
+struct vrna_mx_pf_aux_ml_s {
+  FLT_OR_DBL  *qqm;
+  FLT_OR_DBL  *qqm1;
+
+  int         qqmu_size;
+  FLT_OR_DBL  **qqmu;
+};
+
+typedef struct vrna_mx_pf_aux_ml_s *vrna_mx_pf_aux_ml_t;
+#define FLT_MAX __FLT_MAX__
+#define DBL_MAX __DBL_MAX__
+
+PUBLIC struct vrna_mx_pf_aux_ml_s *
+vrna_exp_E_ml_fast_init(vrna_fold_compound_t *fc)
+{
+  struct vrna_mx_pf_aux_ml_s *aux_mx = NULL;
+
+  if (fc) {
+    int         i, j, d, n, u, turn, ij, *iidx;
+    FLT_OR_DBL  *qm;
+
+    n     = (int)fc->length;
+    iidx  = fc->iindx;
+    turn  = fc->exp_params->model_details.min_loop_size;
+    qm    = fc->exp_matrices->qm;
+
+    /* allocate memory for helper arrays */
+    aux_mx =
+      (struct vrna_mx_pf_aux_ml_s *)vrna_alloc(sizeof(struct vrna_mx_pf_aux_ml_s));
+    aux_mx->qqm       = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+    aux_mx->qqm1      = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+    aux_mx->qqmu_size = 0;
+    aux_mx->qqmu      = NULL;
+
+    if (fc->type == VRNA_FC_TYPE_SINGLE) {
+      vrna_ud_t *domains_up = fc->domains_up;
+      int       with_ud     = (domains_up && domains_up->exp_energy_cb);
+      int       ud_max_size = 0;
+
+      /* pre-processing ligand binding production rule(s) and auxiliary memory */
+      if (with_ud) {
+        for (u = 0; u < domains_up->uniq_motif_count; u++)
+          if (ud_max_size < domains_up->uniq_motif_size[u])
+            ud_max_size = domains_up->uniq_motif_size[u];
+
+        aux_mx->qqmu_size = ud_max_size;
+        aux_mx->qqmu      = (FLT_OR_DBL **)vrna_alloc(sizeof(FLT_OR_DBL *) * (ud_max_size + 1));
+        for (u = 0; u <= ud_max_size; u++)
+          aux_mx->qqmu[u] = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (n + 2));
+      }
+    }
+
+    if (fc->hc->type == VRNA_HC_WINDOW) {
+    } else {
+      for (d = 0; d <= turn; d++)
+        for (i = 1; i <= n - d; i++) {
+          j   = i + d;
+          ij  = iidx[i] - j;
+
+          if (j > n)
+            continue;
+
+          qm[ij] = 0.;
+        }
+
+      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_m)) {
+        for (d = 0; d <= turn; d++)
+          for (i = 1; i <= n - d; i++) {
+            j   = i + d;
+            ij  = iidx[i] - j;
+
+            if (j > n)
+              continue;
+
+            qm[ij] += fc->aux_grammar->cb_aux_exp_m(fc, i, j, fc->aux_grammar->data);
+          }
+      }
+    }
+  }
+
+  return aux_mx;
+}
+
+
+struct hc_hp_def_dat {
+  int                       n;
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+PRIVATE unsigned char
+hc_hp_cb_def_window(int           i,
+                    int           j,
+                    int           k,
+                    int           l,
+                    unsigned char d,
+                    void          *data)
+{
+  int                   u;
+  unsigned char         eval;
+  struct hc_hp_def_dat  *dat = (struct hc_hp_def_dat *)data;
+
+  eval = (unsigned char)0;
+
+  u = j - i - 1;
+
+  if (dat->mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP) {
+    eval = (unsigned char)1;
+    if (dat->hc_up[i + 1] < u)
+      eval = (unsigned char)0;
+  }
+
+  return eval;
+}
+
+
+
+PRIVATE unsigned char
+hc_hp_cb_def_user_window(int            i,
+                         int            j,
+                         int            k,
+                         int            l,
+                         unsigned char  d,
+                         void           *data)
+{
+  unsigned char         eval;
+  struct hc_hp_def_dat  *dat = (struct hc_hp_def_dat *)data;
+
+  eval  = hc_hp_cb_def_window(i, j, k, l, d, data);
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+PRIVATE INLINE vrna_hc_eval_f
+prepare_hc_hp_def_window(vrna_fold_compound_t *fc,
+                         struct hc_hp_def_dat *dat)
+{
+  dat->mx_window  = fc->hc->matrix_local;
+  dat->hc_up      = fc->hc->up_hp;
+  dat->n          = fc->length;
+  dat->sn         = fc->strand_number;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return &hc_hp_cb_def_user_window;
+  }
+
+  return &hc_hp_cb_def_window;
+}
+
+
+PRIVATE unsigned char
+hc_hp_cb_def(int            i,
+             int            j,
+             int            k,
+             int            l,
+             unsigned char  d,
+             void           *data)
+{
+  int                   u, p, q;
+  unsigned char         eval;
+  struct hc_hp_def_dat  *dat = (struct hc_hp_def_dat *)data;
+
+  eval = (char)0;
+
+  /* no strand nicks are allowed in hairpin loops */
+  if (dat->sn[i] != dat->sn[j])
+    return eval;
+
+  if (j > i) {
+    /* linear case */
+    p = i;
+    q = j;
+    u = q - p - 1;
+  } else {
+    /* circular case */
+    p = j;
+    q = i;
+    u = dat->n - q + p - 1;
+  }
+
+  if (dat->mx[dat->n * p + q] & VRNA_CONSTRAINT_CONTEXT_HP_LOOP) {
+    eval = (unsigned char)1;
+    if (dat->hc_up[i + 1] < u)
+      eval = (unsigned char)0;
+  }
+
+  return eval;
+}
+
+
+
+
+PRIVATE unsigned char
+hc_hp_cb_def_user(int           i,
+                  int           j,
+                  int           k,
+                  int           l,
+                  unsigned char d,
+                  void          *data)
+{
+  unsigned char         eval;
+  struct hc_hp_def_dat  *dat = (struct hc_hp_def_dat *)data;
+
+  eval  = hc_hp_cb_def(i, j, k, l, d, data);
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE INLINE vrna_hc_eval_f
+prepare_hc_hp_def(vrna_fold_compound_t  *fc,
+                  struct hc_hp_def_dat  *dat)
+{
+  dat->mx     = fc->hc->mx;
+  dat->hc_up  = fc->hc->up_hp;
+  dat->n      = fc->length;
+  dat->sn     = fc->strand_number;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return &hc_hp_cb_def_user;
+  }
+
+  return &hc_hp_cb_def;
+}
+
+
+typedef FLT_OR_DBL (*sc_hp_exp_cb)(int                   i,
+                                  int                   j,
+                                  struct sc_hp_exp_dat  *data);
+struct sc_hp_exp_dat {
+  int                         n;
+  unsigned int                n_seq;
+  unsigned int                **a2s;
+  int                         *idx;
+
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+
+  sc_hp_exp_cb                pair;
+  sc_hp_exp_cb                pair_ext;
+};
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up(int                   i,
+                int                   j,
+                struct sc_hp_exp_dat  *data)
+{
+  return data->up[i + 1][j - i - 1];
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_bp(int                   i,
+                int                   j,
+                struct sc_hp_exp_dat  *data)
+{
+  return data->bp[data->idx[j] + i];
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_bp_local(int                   i,
+                      int                   j,
+                      struct sc_hp_exp_dat  *data)
+{
+  return data->bp_local[i][j - i];
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_user(int                   i,
+                  int                   j,
+                  struct sc_hp_exp_dat  *data)
+{
+  return data->user_cb(i, j, i, j,
+                       VRNA_DECOMP_PAIR_HP,
+                       data->user_data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up_bp(int                  i,
+                   int                  j,
+                   struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_up(i, j, data) *
+         sc_hp_exp_cb_bp(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up_bp_local(int                  i,
+                         int                  j,
+                         struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_up(i, j, data) *
+         sc_hp_exp_cb_bp_local(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up_user(int                  i,
+                     int                  j,
+                     struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_up(i, j, data) *
+         sc_hp_exp_cb_user(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_bp_user(int                  i,
+                     int                  j,
+                     struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_bp(i, j, data) *
+         sc_hp_exp_cb_user(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_bp_local_user(int                  i,
+                           int                  j,
+                           struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_bp_local(i, j, data) *
+         sc_hp_exp_cb_user(i, j, data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up_bp_user(int                   i,
+                        int                   j,
+                        struct sc_hp_exp_dat  *data)
+{
+  return sc_hp_exp_cb_up(i, j, data) *
+         sc_hp_exp_cb_bp(i, j, data) *
+         sc_hp_exp_cb_user(i, j, data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_up_bp_local_user(int                   i,
+                              int                   j,
+                              struct sc_hp_exp_dat  *data)
+{
+  return sc_hp_exp_cb_up(i, j, data) *
+         sc_hp_exp_cb_bp_local(i, j, data) *
+         sc_hp_exp_cb_user(i, j, data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_ext_up(int                   i,
+                    int                   j,
+                    struct sc_hp_exp_dat  *data)
+{
+  FLT_OR_DBL  sc;
+  int         u1, u2;
+
+  u1  = data->n - j;
+  u2  = i - 1;
+  sc  = 1.;
+
+  if (u1 > 0)
+    sc *= data->up[j + 1][u1];
+
+  if (u2 > 0)
+    sc *= data->up[1][u2];
+
+  return sc;
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_ext_user(int                   i,
+                      int                   j,
+                      struct sc_hp_exp_dat  *data)
+{
+  return data->user_cb(j, i, j, i,
+                       VRNA_DECOMP_PAIR_HP,
+                       data->user_data);
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_hp_exp_cb_ext_up_user(int                  i,
+                         int                  j,
+                         struct sc_hp_exp_dat *data)
+{
+  return sc_hp_exp_cb_ext_up(i, j, data) *
+         sc_hp_exp_cb_ext_user(i, j, data);
+}
+
+
+
+PRIVATE INLINE void
+init_sc_hp_exp(vrna_fold_compound_t *fc,
+               struct sc_hp_exp_dat *sc_wrapper)
+{
+  unsigned char sliding_window;
+  unsigned int  s;
+  vrna_sc_t     *sc, **scs;
+
+  if (fc->exp_matrices)
+    sliding_window = (fc->exp_matrices->type == VRNA_MX_WINDOW) ? 1 : 0;
+  else if ((fc->type == VRNA_FC_TYPE_SINGLE) && (fc->sc))
+    sliding_window = (fc->sc->type == VRNA_SC_WINDOW) ? 1 : 0;
+  else if (fc->hc)
+    sliding_window = (fc->hc->type == VRNA_HC_WINDOW) ? 1 : 0;
+  else
+    sliding_window = 0;
+
+  sc_wrapper->n     = (int)fc->length;
+  sc_wrapper->idx   = fc->jindx;
+  sc_wrapper->n_seq = 1;
+  sc_wrapper->a2s   = NULL;
+
+  sc_wrapper->up                    = NULL;
+  sc_wrapper->up_comparative        = NULL;
+  sc_wrapper->bp                    = NULL;
+  sc_wrapper->bp_comparative        = NULL;
+  sc_wrapper->bp_local              = NULL;
+  sc_wrapper->bp_local_comparative  = NULL;
+
+  sc_wrapper->user_cb               = NULL;
+  sc_wrapper->user_data             = NULL;
+  sc_wrapper->user_cb_comparative   = NULL;
+  sc_wrapper->user_data_comparative = NULL;
+
+  sc_wrapper->pair      = NULL;
+  sc_wrapper->pair_ext  = NULL;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      sc = fc->sc;
+
+      if (sc) {
+        unsigned int provides_sc_up, provides_sc_bp, provides_sc_user;
+
+        provides_sc_up    = 0;
+        provides_sc_bp    = 0;
+        provides_sc_user  = 0;
+
+        sc_wrapper->up        = sc->exp_energy_up;
+        sc_wrapper->bp        = (sliding_window) ? NULL : sc->exp_energy_bp;
+        sc_wrapper->bp_local  = (sliding_window) ? sc->exp_energy_bp_local : NULL;
+        sc_wrapper->user_cb   = sc->exp_f;
+        sc_wrapper->user_data = sc->data;
+
+        if (sc->exp_energy_up)
+          provides_sc_up = 1;
+
+        if (sliding_window) {
+          if (sc->exp_energy_bp_local)
+            provides_sc_bp = 1;
+        } else if (sc->exp_energy_bp) {
+          provides_sc_bp = 1;
+        }
+
+        if (sc->exp_f)
+          provides_sc_user = 1;
+
+        if (provides_sc_user) {
+          sc_wrapper->pair_ext = &sc_hp_exp_cb_ext_user;
+          if (provides_sc_up) {
+            sc_wrapper->pair_ext = &sc_hp_exp_cb_ext_up_user;
+
+            if (provides_sc_bp)
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_hp_exp_cb_up_bp_local_user :
+                                 &sc_hp_exp_cb_up_bp_user;
+            else
+              sc_wrapper->pair = &sc_hp_exp_cb_up_user;
+          } else if (provides_sc_bp) {
+            sc_wrapper->pair = (sliding_window) ?
+                               &sc_hp_exp_cb_bp_local_user :
+                               &sc_hp_exp_cb_bp_user;
+          } else {
+            sc_wrapper->pair = &sc_hp_exp_cb_user;
+          }
+        } else {
+          if (provides_sc_up) {
+            sc_wrapper->pair_ext = &sc_hp_exp_cb_ext_up;
+            if (provides_sc_bp) {
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_hp_exp_cb_up_bp_local :
+                                 &sc_hp_exp_cb_up_bp;
+            } else {
+              sc_wrapper->pair = &sc_hp_exp_cb_up;
+            }
+          } else if (provides_sc_bp) {
+            sc_wrapper->pair = (sliding_window) ?
+                               &sc_hp_exp_cb_bp_local :
+                               &sc_hp_exp_cb_bp;
+          }
+        }
+      }
+
+      break;
+ }
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+exp_E_Hairpin(int               u,
+              int               type,
+              short             si1,
+              short             sj1,
+              const char        *string,
+              vrna_exp_param_t  *P)
+{
+  double q, kT, salt_correction;
+
+  kT = P->kT;   /* kT in cal/mol  */
+  salt_correction = 1.;
+
+  if (P->model_details.salt != VRNA_MODEL_DEFAULT_SALT) {
+    if (u<=MAXLOOP)
+      salt_correction = P->expSaltLoop[u+1];
+    else
+      salt_correction = exp(-vrna_salt_loop_int(u+1, P->model_details.salt, P->temperature+K0, P->model_details.backbone_length) * 10. / kT);
+  }
+
+  if (u <= 30)
+    q = P->exphairpin[u];
+  else
+    q = P->exphairpin[30] * exp(-(P->lxc * log(u / 30.)) * 10. / kT);
+
+  q *= salt_correction;
+
+  if (u < 3)
+    return (FLT_OR_DBL)q;         /* should only be the case when folding alignments */
+
+  if ((string) && (P->model_details.special_hp)) {
+    if (u == 4) {
+      char tl[7] = {
+        0
+      }, *ts;
+      memcpy(tl, string, sizeof(char) * 6);
+      tl[6] = '\0';
+      if ((ts = strstr(P->Tetraloops, tl))) {
+        if (type != 7)
+          return (FLT_OR_DBL)(P->exptetra[(ts - P->Tetraloops) / 7] * salt_correction);
+        else
+          q *= P->exptetra[(ts - P->Tetraloops) / 7];
+      }
+    } else if (u == 6) {
+      char tl[9] = {
+        0
+      }, *ts;
+      memcpy(tl, string, sizeof(char) * 8);
+      tl[8] = '\0';
+      if ((ts = strstr(P->Hexaloops, tl)))
+        return (FLT_OR_DBL)(P->exphex[(ts - P->Hexaloops) / 9] * salt_correction);
+    } else if (u == 3) {
+      char tl[6] = {
+        0
+      }, *ts;
+      memcpy(tl, string, sizeof(char) * 5);
+      tl[5] = '\0';
+      if ((ts = strstr(P->Triloops, tl)))
+        return (FLT_OR_DBL)(P->exptri[(ts - P->Triloops) / 6] * salt_correction);
+
+      if (type > 2)
+        return (FLT_OR_DBL)(q * P->expTermAU);
+      else
+        return (FLT_OR_DBL)q;
+    }
+  }
+
+  q *= P->expmismatchH[type][si1][sj1];
+
+  return (FLT_OR_DBL)q;
+}
+
+
+PRIVATE INLINE void
+free_sc_hp_exp(struct sc_hp_exp_dat *sc_wrapper)
+{
+  free(sc_wrapper->up_comparative);
+  free(sc_wrapper->bp_comparative);
+  free(sc_wrapper->bp_local_comparative);
+  free(sc_wrapper->user_cb_comparative);
+  free(sc_wrapper->user_data_comparative);
+}
+
+
+
+#define VRNA_UNSTRUCTURED_DOMAIN_HP_LOOP 2U
+PRIVATE FLT_OR_DBL
+exp_eval_hp_loop(vrna_fold_compound_t *fc,
+                 int                  i,
+                 int                  j)
+{
+  char                  **Ss;
+  unsigned int          **a2s;
+  short                 *S, *S2, **SS, **S5, **S3;
+  unsigned int          *sn;
+  int                   u, type, n_seq, s;
+  FLT_OR_DBL            q, qbt1, *scale;
+  vrna_exp_param_t      *P;
+  vrna_md_t             *md;
+  vrna_ud_t             *domains_up;
+  struct sc_hp_exp_dat  sc_wrapper;
+
+  P           = fc->exp_params;
+  md          = &(P->model_details);
+  sn          = fc->strand_number;
+  scale       = fc->exp_matrices->scale;
+  domains_up  = fc->domains_up;
+
+  init_sc_hp_exp(fc, &sc_wrapper);
+  q = 0.;
+
+  if (sn[j] != sn[i])
+    return 0; //exp_eval_hp_loop_fake(fc, i, j);
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      S     = fc->sequence_encoding;
+      S2    = fc->sequence_encoding2;
+      u     = j - i - 1;
+      type  = vrna_get_ptype_md(S2[i], S2[j], md);
+
+      if (sn[j] == sn[i]) {
+        /* regular hairpin loop */
+        q = exp_E_Hairpin(u, type, S[i + 1], S[j - 1], fc->sequence + i - 1, P);
+      } else {
+        /*
+         * hairpin-like exterior loop (for cofolding)
+         * this is currently handle somewhere else
+         */
+      }
+
+      break;
+  }
+
+  /* add soft constraints */
+  if (sc_wrapper.pair)
+    q *= sc_wrapper.pair(i, j, &sc_wrapper);
+
+  if (domains_up && domains_up->exp_energy_cb) {
+    /* we always consider both, bound and unbound state */
+    q += q * domains_up->exp_energy_cb(fc,
+                                       i + 1, j - 1,
+                                       VRNA_UNSTRUCTURED_DOMAIN_HP_LOOP,
+                                       domains_up->data);
+  }
+
+  q *= scale[j - i + 1];
+
+  free_sc_hp_exp(&sc_wrapper);
+
+  return q;
+}
+
+
+PRIVATE FLT_OR_DBL
+exp_eval_ext_hp_loop(vrna_fold_compound_t *fc,
+                     int                  i,
+                     int                  j)
+{
+  char                  **Ss, *sequence, loopseq[10] = {
+    0
+  };
+  unsigned int          **a2s;
+  short                 *S, *S2, **SS, **S5, **S3;
+  int                   u1, u2, n, type, n_seq, s, noGUclosure;
+  FLT_OR_DBL            q, qbt1, *scale;
+  vrna_exp_param_t      *P;
+  vrna_md_t             *md;
+  vrna_ud_t             *domains_up;
+  struct sc_hp_exp_dat  sc_wrapper;
+
+  n           = fc->length;
+  P           = fc->exp_params;
+  md          = &(P->model_details);
+  noGUclosure = md->noGUclosure;
+  scale       = fc->exp_matrices->scale;
+  domains_up  = fc->domains_up;
+
+  init_sc_hp_exp(fc, &sc_wrapper);
+
+  q   = 0.;
+  u1  = n - j;
+  u2  = i - 1;
+
+  if ((u1 + u2) < 3)
+    return q;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      sequence  = fc->sequence;
+      S         = fc->sequence_encoding;
+      S2        = fc->sequence_encoding2;
+      type      = vrna_get_ptype_md(S2[j], S2[i], md);
+
+      if (((type == 3) || (type == 4)) && noGUclosure)
+        return q;
+
+      /* get the loop sequence */
+      if ((u1 + u2) < 7) {
+        memcpy(loopseq, sequence + j - 1, sizeof(char) * (u1 + 1));
+        memcpy(loopseq + u1 + 1, sequence, sizeof(char) * (u2 + 1));
+        loopseq[u1 + u2 + 2] = '\0';
+      }
+
+      q = exp_E_Hairpin(u1 + u2, type, S[j + 1], S[i - 1], loopseq, P);
+
+      break;
+
+    default:
+      break;
+  }
+
+  /* add soft constraints */
+  if (sc_wrapper.pair_ext)
+    q *= sc_wrapper.pair_ext(i, j, &sc_wrapper);
+
+  if (domains_up && domains_up->exp_energy_cb) {
+    /* we always consider both, bound and unbound state */
+    q += q * domains_up->exp_energy_cb(fc,
+                                       j + 1, i - 1,
+                                       VRNA_UNSTRUCTURED_DOMAIN_HP_LOOP,
+                                       domains_up->data);
+  }
+
+  q *= scale[u1 + u2];
+
+  free_sc_hp_exp(&sc_wrapper);
+
+  return q;
+}
+
+
+
+PUBLIC FLT_OR_DBL
+vrna_exp_E_hp_loop(vrna_fold_compound_t *fc,
+                   int                  i,
+                   int                  j)
+{
+  vrna_hc_eval_f evaluate;
+  struct hc_hp_def_dat      hc_dat_local;
+
+  if (fc->hc->type == VRNA_HC_WINDOW)
+    evaluate = prepare_hc_hp_def_window(fc, &hc_dat_local);
+  else
+    evaluate = prepare_hc_hp_def(fc, &hc_dat_local);
+
+  if ((i > 0) && (j > 0)) {
+    if (evaluate(i, j, i, j, VRNA_DECOMP_PAIR_HP, &hc_dat_local)) {
+      if (j > i)  /* linear case */
+        return exp_eval_hp_loop(fc, i, j);
+      else        /* circular case */
+        return exp_eval_ext_hp_loop(fc, j, i);
+    }
+  }
+
+  return 0.;
+}
+
+
+typedef unsigned char (*eval_hc)(int   i,
+                                int   j,
+                                int   k,
+                                int   l,
+                                void  *data);
+
+struct hc_int_def_dat {
+  unsigned char             *mx;
+  unsigned char             **mx_local;
+  unsigned int              *sn;
+  unsigned int              n;
+  int                       *up;
+
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+struct sc_int_exp_dat;
+
+typedef FLT_OR_DBL (*sc_int_exp_cb)(int                    i,
+                                   int                    j,
+                                   int                    k,
+                                   int                    l,
+                                   struct sc_int_exp_dat  *data);
+
+struct sc_int_exp_dat {
+  unsigned int                n;
+  int                         n_seq;
+  unsigned int                **a2s;
+
+  int                         *idx;
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+  FLT_OR_DBL                  *stack;
+  FLT_OR_DBL                  **stack_comparative;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+
+  sc_int_exp_cb               pair;
+  sc_int_exp_cb               pair_ext;
+};
+
+
+PRIVATE unsigned char
+hc_int_cb_def(int   i,
+              int   j,
+              int   k,
+              int   l,
+              void  *data)
+{
+  unsigned char pij, pkl;
+
+  struct hc_int_def_dat *dat = (struct hc_int_def_dat *)data;
+
+  if ((dat->sn[i] != dat->sn[k]) ||
+      (dat->sn[l] != dat->sn[j]))
+    return (unsigned char)0;
+
+  if (dat->mx) {
+    pij = dat->mx[dat->n * i + j];
+    pkl = dat->mx[dat->n * k + l];
+  } else {
+    pij = dat->mx_local[i][j - i];
+    pkl = dat->mx_local[k][l - k];
+  }
+
+  if ((pij & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) &&
+      (pkl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC))
+    return (unsigned char)1;
+
+  return (unsigned char)0;
+}
+
+
+PRIVATE unsigned char
+hc_int_cb_def_user(int  i,
+                   int  j,
+                   int  k,
+                   int  l,
+                   void *data)
+{
+  struct hc_int_def_dat *dat = (struct hc_int_def_dat *)data;
+
+  unsigned char eval = hc_int_cb_def(i, j, k, l, data);
+
+  return (dat->hc_f(i, j, k, l, VRNA_DECOMP_PAIR_IL, dat->hc_dat)) ? eval : (unsigned char)0;
+}
+
+
+PRIVATE INLINE eval_hc
+prepare_hc_int_def(vrna_fold_compound_t   *fc,
+                   struct hc_int_def_dat  *dat)
+{
+  dat->mx       = (fc->hc->type == VRNA_HC_WINDOW) ? NULL : fc->hc->mx;
+  dat->mx_local = (fc->hc->type == VRNA_HC_WINDOW) ? fc->hc->matrix_local : NULL;
+  dat->n        = fc->length;
+  dat->up       = fc->hc->up_int;
+  dat->sn       = fc->strand_number;
+  dat->hc_f     = NULL;
+  dat->hc_dat   = NULL;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return &hc_int_cb_def_user;
+  }
+
+  return &hc_int_cb_def;
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up(int                    i,
+                 int                    j,
+                 int                    k,
+                 int                    l,
+                 struct sc_int_exp_dat  *data)
+{
+  int         u1, u2;
+  FLT_OR_DBL  sc;
+
+  u1  = k - i - 1;
+  u2  = j - l - 1;
+
+  sc = 1.;
+
+  if (u1 > 0)
+    sc *= data->up[i + 1][u1];
+
+  if (u2 > 0)
+    sc *= data->up[l + 1][u2];
+
+  return sc;
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp(int                    i,
+                 int                    j,
+                 int                    k,
+                 int                    l,
+                 struct sc_int_exp_dat  *data)
+{
+  return data->bp[data->idx[j] + i];
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_local(int                    i,
+                       int                    j,
+                       int                    k,
+                       int                    l,
+                       struct sc_int_exp_dat  *data)
+{
+  return data->bp_local[i][j - i];
+}
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_stack(int                   i,
+                    int                   j,
+                    int                   k,
+                    int                   l,
+                    struct sc_int_exp_dat *data)
+{
+  FLT_OR_DBL sc;
+
+  sc = 1.;
+
+  if ((i + 1 == k) && (l + 1 == j)) {
+    sc *= data->stack[i] *
+          data->stack[k] *
+          data->stack[l] *
+          data->stack[j];
+  }
+
+  return sc;
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_user(int                    i,
+                   int                    j,
+                   int                    k,
+                   int                    l,
+                   struct sc_int_exp_dat  *data)
+{
+  return data->user_cb(i, j, k, l,
+                       VRNA_DECOMP_PAIR_IL,
+                       data->user_data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp(int                   i,
+                    int                   j,
+                    int                   k,
+                    int                   l,
+                    struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp(i, j, k, l, data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_local(int                   i,
+                          int                   j,
+                          int                   k,
+                          int                   l,
+                          struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp_local(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_stack(int                    i,
+                       int                    j,
+                       int                    k,
+                       int                    l,
+                       struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_user(int                   i,
+                      int                   j,
+                      int                   k,
+                      int                   l,
+                      struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_stack(int                    i,
+                       int                    j,
+                       int                    k,
+                       int                    l,
+                       struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_local_stack(int                    i,
+                             int                    j,
+                             int                    k,
+                             int                    l,
+                             struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_user(int                   i,
+                      int                   j,
+                      int                   k,
+                      int                   l,
+                      struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_local_user(int                   i,
+                            int                   j,
+                            int                   k,
+                            int                   l,
+                            struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_stack_user(int                    i,
+                         int                    j,
+                         int                    k,
+                         int                    l,
+                         struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_stack(int                   i,
+                          int                   j,
+                          int                   k,
+                          int                   l,
+                          struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_local_stack(int                   i,
+                                int                   j,
+                                int                   k,
+                                int                   l,
+                                struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_user(int                    i,
+                         int                    j,
+                         int                    k,
+                         int                    l,
+                         struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_local_user(int                    i,
+                               int                    j,
+                               int                    k,
+                               int                    l,
+                               struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_stack_user(int                   i,
+                            int                   j,
+                            int                   k,
+                            int                   l,
+                            struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_stack_user(int                   i,
+                            int                   j,
+                            int                   k,
+                            int                   l,
+                            struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_bp_local_stack_user(int                   i,
+                                  int                   j,
+                                  int                   k,
+                                  int                   l,
+                                  struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_stack_user(int                    i,
+                               int                    j,
+                               int                    k,
+                               int                    l,
+                               struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_up_bp_local_stack_user(int                    i,
+                                     int                    j,
+                                     int                    k,
+                                     int                    l,
+                                     struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_up(i, j, k, l, data) *
+         sc_int_exp_cb_bp_local(i, j, k, l, data) *
+         sc_int_exp_cb_stack(i, j, k, l, data) *
+         sc_int_exp_cb_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_up(int                    i,
+                     int                    j,
+                     int                    k,
+                     int                    l,
+                     struct sc_int_exp_dat  *data)
+{
+  int         u1, u2, u3;
+  FLT_OR_DBL  sc;
+
+  sc  = 1.;
+  u1  = i - 1;
+  u2  = k - j - 1;
+  u3  = data->n - l;
+
+  if (u1 > 0)
+    sc *= data->up[1][u1];
+
+  if (u2 > 0)
+    sc *= data->up[j + 1][u2];
+
+  if (u3 > 0)
+    sc *= data->up[l + 1][u3];
+
+  return sc;
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_stack(int                   i,
+                        int                   j,
+                        int                   k,
+                        int                   l,
+                        struct sc_int_exp_dat *data)
+{
+  FLT_OR_DBL sc;
+
+  sc = 1.;
+
+  if ((i == 1) && (j + 1 == k) && (l == data->n)) {
+    sc *= data->stack[i] *
+          data->stack[k] *
+          data->stack[l] *
+          data->stack[j];
+  }
+
+  return sc;
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_user(int                    i,
+                       int                    j,
+                       int                    k,
+                       int                    l,
+                       struct sc_int_exp_dat  *data)
+{
+  return data->user_cb(i, j, k, l,
+                       VRNA_DECOMP_PAIR_IL,
+                       data->user_data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_up_stack(int                    i,
+                           int                    j,
+                           int                    k,
+                           int                    l,
+                           struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_ext_up(i, j, k, l, data) *
+         sc_int_exp_cb_ext_stack(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_up_user(int                   i,
+                          int                   j,
+                          int                   k,
+                          int                   l,
+                          struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_ext_up(i, j, k, l, data) *
+         sc_int_exp_cb_ext_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_stack_user(int                    i,
+                             int                    j,
+                             int                    k,
+                             int                    l,
+                             struct sc_int_exp_dat  *data)
+{
+  return sc_int_exp_cb_ext_stack(i, j, k, l, data) *
+         sc_int_exp_cb_ext_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_int_exp_cb_ext_up_stack_user(int                   i,
+                                int                   j,
+                                int                   k,
+                                int                   l,
+                                struct sc_int_exp_dat *data)
+{
+  return sc_int_exp_cb_ext_up(i, j, k, l, data) *
+         sc_int_exp_cb_ext_stack(i, j, k, l, data) *
+         sc_int_exp_cb_ext_user(i, j, k, l, data);
+}
+
+
+
+
+
+PRIVATE INLINE void
+init_sc_int_exp(vrna_fold_compound_t  *fc,
+                struct sc_int_exp_dat *sc_wrapper)
+{
+  unsigned char sliding_window;
+  unsigned int  s, provides_sc_up, provides_sc_bp, provides_sc_stack, provides_sc_user;
+  vrna_sc_t     *sc, **scs;
+
+  if (fc->exp_matrices)
+    sliding_window = (fc->exp_matrices->type == VRNA_MX_WINDOW) ? 1 : 0;
+  else if ((fc->type == VRNA_FC_TYPE_SINGLE) && (fc->sc))
+    sliding_window = (fc->sc->type == VRNA_SC_WINDOW) ? 1 : 0;
+  else if (fc->hc)
+    sliding_window = (fc->hc->type == VRNA_HC_WINDOW) ? 1 : 0;
+  else
+    sliding_window = 0;
+
+  provides_sc_up    = 0;
+  provides_sc_bp    = 0;
+  provides_sc_stack = 0;
+  provides_sc_user  = 0;
+
+  sc_wrapper->n                     = fc->length;
+  sc_wrapper->n_seq                 = 1;
+  sc_wrapper->a2s                   = NULL;
+  sc_wrapper->idx                   = fc->jindx;
+  sc_wrapper->up                    = NULL;
+  sc_wrapper->up_comparative        = NULL;
+  sc_wrapper->bp                    = NULL;
+  sc_wrapper->bp_comparative        = NULL;
+  sc_wrapper->bp_local              = NULL;
+  sc_wrapper->bp_local_comparative  = NULL;
+  sc_wrapper->stack                 = NULL;
+  sc_wrapper->stack_comparative     = NULL;
+  sc_wrapper->user_cb               = NULL;
+  sc_wrapper->user_cb_comparative   = NULL;
+  sc_wrapper->user_data             = NULL;
+  sc_wrapper->user_data_comparative = NULL;
+
+  sc_wrapper->pair      = NULL;
+  sc_wrapper->pair_ext  = NULL;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      sc = fc->sc;
+
+      if (sc) {
+        sc_wrapper->up        = sc->exp_energy_up;
+        sc_wrapper->bp        = (sliding_window) ? NULL : sc->exp_energy_bp;
+        sc_wrapper->bp_local  = (sliding_window) ? sc->exp_energy_bp_local : NULL;
+        sc_wrapper->stack     = sc->exp_energy_stack;
+        sc_wrapper->user_cb   = sc->exp_f;
+        sc_wrapper->user_data = sc->data;
+
+        if (sc->exp_energy_up)
+          provides_sc_up = 1;
+
+        if (sliding_window) {
+          if (sc->exp_energy_bp_local)
+            provides_sc_bp = 1;
+        } else if (sc->exp_energy_bp) {
+          provides_sc_bp = 1;
+        }
+
+        if (sc->exp_energy_stack)
+          provides_sc_stack = 1;
+
+        if (sc->exp_f)
+          provides_sc_user = 1;
+
+        if (provides_sc_user) {
+          if (provides_sc_up) {
+            if (provides_sc_bp) {
+              if (provides_sc_stack) {
+                sc_wrapper->pair = (sliding_window) ?
+                                   &sc_int_exp_cb_up_bp_local_stack_user :
+                                   &sc_int_exp_cb_up_bp_stack_user;
+                sc_wrapper->pair_ext = &sc_int_exp_cb_ext_up_stack_user;
+              } else {
+                sc_wrapper->pair = (sliding_window) ?
+                                   &sc_int_exp_cb_up_bp_local_user :
+                                   &sc_int_exp_cb_up_bp_user;
+                sc_wrapper->pair_ext = &sc_int_exp_cb_ext_up_user;
+              }
+            } else if (provides_sc_stack) {
+              sc_wrapper->pair      = &sc_int_exp_cb_up_stack_user;
+              sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_up_stack_user;
+            } else {
+              sc_wrapper->pair      = &sc_int_exp_cb_up_user;
+              sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_up_user;
+            }
+          } else if (provides_sc_bp) {
+            if (provides_sc_stack) {
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_int_exp_cb_bp_local_stack_user :
+                                 &sc_int_exp_cb_bp_stack_user;
+              sc_wrapper->pair_ext = &sc_int_exp_cb_ext_stack_user;
+            } else {
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_int_exp_cb_bp_local_user :
+                                 &sc_int_exp_cb_bp_user;
+              sc_wrapper->pair_ext = &sc_int_exp_cb_ext_user;
+            }
+          } else if (provides_sc_stack) {
+            sc_wrapper->pair      = &sc_int_exp_cb_stack_user;
+            sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_stack_user;
+          } else {
+            sc_wrapper->pair      = &sc_int_exp_cb_user;
+            sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_user;
+          }
+        } else if (provides_sc_bp) {
+          if (provides_sc_up) {
+            if (provides_sc_stack) {
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_int_exp_cb_up_bp_local_stack :
+                                 &sc_int_exp_cb_up_bp_stack;
+              sc_wrapper->pair_ext = &sc_int_exp_cb_ext_up_stack;
+            } else {
+              sc_wrapper->pair = (sliding_window) ?
+                                 &sc_int_exp_cb_up_bp_local :
+                                 &sc_int_exp_cb_up_bp;
+              sc_wrapper->pair_ext = &sc_int_exp_cb_ext_up;
+            }
+          } else if (provides_sc_stack) {
+            sc_wrapper->pair = (sliding_window) ?
+                               &sc_int_exp_cb_bp_local_stack :
+                               &sc_int_exp_cb_bp_stack;
+            sc_wrapper->pair_ext = &sc_int_exp_cb_ext_stack;
+          } else {
+            sc_wrapper->pair = (sliding_window) ?
+                               &sc_int_exp_cb_bp_local :
+                               &sc_int_exp_cb_bp;
+          }
+        } else if (provides_sc_up) {
+          if (provides_sc_stack) {
+            sc_wrapper->pair      = &sc_int_exp_cb_up_stack;
+            sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_up_stack;
+          } else {
+            sc_wrapper->pair      = &sc_int_exp_cb_up;
+            sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_up;
+          }
+        } else if (provides_sc_stack) {
+          sc_wrapper->pair      = &sc_int_exp_cb_stack;
+          sc_wrapper->pair_ext  = &sc_int_exp_cb_ext_stack;
+        }
+      }
+
+      break;
+  }
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+exp_E_IntLoop(int               u1,
+              int               u2,
+              int               type,
+              int               type2,
+              short             si1,
+              short             sj1,
+              short             sp1,
+              short             sq1,
+              vrna_exp_param_t  *P)
+{
+  int     ul, us, no_close = 0;
+  double  z           = 0.;
+  int     noGUclosure = P->model_details.noGUclosure;
+  int     backbones;
+  double  salt_stack_correction = P->expSaltStack;
+  double  salt_loop_correction = 1.;
+
+  if ((noGUclosure) && ((type2 == 3) || (type2 == 4) || (type == 3) || (type == 4)))
+    no_close = 1;
+
+  if (u1 > u2) {
+    ul  = u1;
+    us  = u2;
+  } else {
+    ul  = u2;
+    us  = u1;
+  }
+
+  /* salt correction for loop */
+  backbones = ul+us+2;
+
+  if (P->model_details.salt != VRNA_MODEL_DEFAULT_SALT) {
+    if (backbones <= MAXLOOP+1)
+      salt_loop_correction = P->expSaltLoop[backbones];
+    else
+      salt_loop_correction = exp(-vrna_salt_loop_int(backbones, P->model_details.salt, P->temperature+K0, P->model_details.backbone_length) * 10. / P->kT);
+  }
+
+  if (ul == 0) {
+    /* stack */
+    z = P->expstack[type][type2] * salt_stack_correction;
+  } else if (!no_close) {
+    if (us == 0) {
+      /* bulge */
+      z = P->expbulge[ul];
+      if (ul == 1) {
+        z *= P->expstack[type][type2];
+      } else {
+        if (type > 2)
+          z *= P->expTermAU;
+
+        if (type2 > 2)
+          z *= P->expTermAU;
+      }
+
+      return (FLT_OR_DBL)(z * salt_loop_correction);
+    } else if (us == 1) {
+      if (ul == 1)                     /* 1x1 loop */
+        return (FLT_OR_DBL)(P->expint11[type][type2][si1][sj1] * salt_loop_correction);
+
+      if (ul == 2) {
+        /* 2x1 loop */
+        if (u1 == 1)
+          return (FLT_OR_DBL)(P->expint21[type][type2][si1][sq1][sj1] * salt_loop_correction);
+        else
+          return (FLT_OR_DBL)(P->expint21[type2][type][sq1][si1][sp1] * salt_loop_correction);
+      } else {
+        /* 1xn loop */
+        z = P->expinternal[ul + us] * P->expmismatch1nI[type][si1][sj1] *
+            P->expmismatch1nI[type2][sq1][sp1];
+        return (FLT_OR_DBL)(z * P->expninio[2][ul - us] * salt_loop_correction);
+      }
+    } else if (us == 2) {
+      if (ul == 2) {
+        /* 2x2 loop */
+        return (FLT_OR_DBL)(P->expint22[type][type2][si1][sp1][sq1][sj1] * salt_loop_correction);
+      } else if (ul == 3) {
+        /* 2x3 loop */
+        z = P->expinternal[5] * P->expmismatch23I[type][si1][sj1] *
+            P->expmismatch23I[type2][sq1][sp1];
+        return (FLT_OR_DBL)(z * P->expninio[2][1] * salt_loop_correction);
+      }
+    }
+
+    /* generic interior loop (no else here!)*/
+    z = P->expinternal[ul + us] * P->expmismatchI[type][si1][sj1] *
+        P->expmismatchI[type2][sq1][sp1];
+    return (FLT_OR_DBL)(z * P->expninio[2][ul - us] * salt_loop_correction);
+  }
+
+  return (FLT_OR_DBL)z;
+}
+
+
+PRIVATE INLINE void
+free_sc_int_exp(struct sc_int_exp_dat *sc_wrapper)
+{
+  free(sc_wrapper->up_comparative);
+  free(sc_wrapper->bp_comparative);
+  free(sc_wrapper->bp_local_comparative);
+  free(sc_wrapper->stack_comparative);
+  free(sc_wrapper->user_cb_comparative);
+  free(sc_wrapper->user_data_comparative);
+}
+
+#define VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP 4U
+
+PRIVATE FLT_OR_DBL
+exp_E_ext_int_loop(vrna_fold_compound_t *fc,
+                   int                  i,
+                   int                  j)
+{
+  unsigned char         *hc_mx, eval_loop;
+  short                 *S, *S2, **SS, **S5, **S3;
+  unsigned int          *tt, n_seq, s, **a2s, type, type2;
+  int                   k, l, u1, u2, u3, qmin, with_ud,
+                        n, *my_iindx, *hc_up,
+                        u1_local, u2_local, u3_local;
+  FLT_OR_DBL            q, q_temp, *qb, *scale;
+  vrna_exp_param_t      *pf_params;
+  vrna_md_t             *md;
+  vrna_ud_t             *domains_up;
+  eval_hc               evaluate;
+  struct hc_int_def_dat hc_dat_local;
+  struct sc_int_exp_dat sc_wrapper;
+
+  n           = fc->length;
+  n_seq       = (fc->type == VRNA_FC_TYPE_SINGLE) ? 1 : fc->n_seq;
+  S           = (fc->type == VRNA_FC_TYPE_SINGLE) ? fc->sequence_encoding : NULL;
+  S2          = (fc->type == VRNA_FC_TYPE_SINGLE) ? fc->sequence_encoding2 : NULL;
+  SS          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S;
+  S5          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S5;
+  S3          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S3;
+  a2s         = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->a2s;
+  my_iindx    = fc->iindx;
+  qb          = fc->exp_matrices->qb;
+  scale       = fc->exp_matrices->scale;
+  hc_mx       = fc->hc->mx;
+  hc_up       = fc->hc->up_int;
+  pf_params   = fc->exp_params;
+  md          = &(pf_params->model_details);
+  type        = 0;
+  tt          = NULL;
+  domains_up  = fc->domains_up;
+  with_ud     = ((domains_up) && (domains_up->exp_energy_cb)) ? 1 : 0;
+
+  q = 0.;
+
+  evaluate = prepare_hc_int_def(fc, &hc_dat_local);
+
+  init_sc_int_exp(fc, &sc_wrapper);
+
+  /* CONSTRAINED INTERIOR LOOP start */
+  if (hc_mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) {
+    /* prepare necessary variables */
+    if (fc->type == VRNA_FC_TYPE_SINGLE) {
+      type = vrna_get_ptype_md(S2[j], S2[i], md);
+    } else {
+      tt = (unsigned int *)vrna_alloc(sizeof(unsigned int) * n_seq);
+
+      for (s = 0; s < n_seq; s++)
+        tt[s] = vrna_get_ptype_md(SS[s][j], SS[s][i], md);
+    }
+
+    for (k = j + 1; k < n; k++) {
+      u2 = k - j - 1;
+      if (u2 + i - 1 > MAXLOOP)
+        break;
+
+      if (hc_up[j + 1] < u2)
+        break;
+
+      qmin = u2 + i - 1 + n - MAXLOOP;
+      if (qmin < k + 1)
+        qmin = k + 1;
+
+      for (l = n; l >= qmin; l--) {
+        u1  = i - 1;
+        u3  = n - l;
+        if (hc_up[l + 1] < (u1 + u3))
+          break;
+
+        if (u1 + u2 + u3 > MAXLOOP)
+          continue;
+
+        eval_loop = hc_mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_INT_LOOP;
+
+        if (eval_loop && evaluate(i, j, k, l, &hc_dat_local)) {
+          q_temp = qb[my_iindx[k] - l];
+
+          switch (fc->type) {
+            case VRNA_FC_TYPE_SINGLE:
+              type2 = vrna_get_ptype_md(S2[l], S2[k], md);
+
+              /* regular interior loop */
+              q_temp *=
+                exp_E_IntLoop(u2,
+                              u1 + u3,
+                              type,
+                              type2,
+                              S[j + 1],
+                              S[i - 1],
+                              S[k - 1],
+                              S[l + 1],
+                              pf_params);
+              break;
+
+          }
+
+          if (sc_wrapper.pair_ext)
+            q_temp *= sc_wrapper.pair_ext(i, j, k, l, &sc_wrapper);
+
+          q += q_temp *
+               scale[u1 + u2 + u3];
+
+          if (with_ud) {
+            FLT_OR_DBL q5, q3;
+
+            q5  = q3 = 0.;
+            u1  = i - 1;
+            u2  = k - j - 1;
+            u3  = n - l;
+
+            if (u2 > 0) {
+              q5 = domains_up->exp_energy_cb(fc,
+                                             j + 1, k - 1,
+                                             VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                             domains_up->data);
+            }
+
+            if (u1 + u3 > 0) {
+              q3 = domains_up->exp_energy_cb(fc,
+                                             l + 1, i - 1,
+                                             VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                             domains_up->data);
+            }
+
+            q += q_temp *
+                 q5 *
+                 scale[u1 + u2 + u3];
+            q += q_temp *
+                 q3 *
+                 scale[u1 + u2 + u3];
+            q += q_temp *
+                 q5 *
+                 q3 *
+                 scale[u1 + u2 + u3];
+          }
+        }
+      }
+    }
+  }
+
+  free(tt);
+  free_sc_int_exp(&sc_wrapper);
+
+  return q;
+}
+
+
+PUBLIC unsigned int
+vrna_get_ptype(int  ij,
+               char *ptype)
+{
+  unsigned int tt = (unsigned int)ptype[ij];
+
+  return (tt == 0) ? 7 : tt;
+}
+
+PUBLIC unsigned int
+vrna_get_ptype_window(int   i,
+                      int   j,
+                      char  **ptype)
+{
+  unsigned int tt = (unsigned int)ptype[i][j - i];
+
+  return (tt == 0) ? 7 : tt;
+}
+
+
+
+PRIVATE INLINE
+FLT_OR_DBL
+exp_E_GQuad_IntLoop(int               i,
+                    int               j,
+                    int               type,
+                    short             *S,
+                    FLT_OR_DBL        *G,
+                    FLT_OR_DBL        *scale,
+                    int               *index,
+                    vrna_exp_param_t  *pf)
+{
+  int         k, l, minl, maxl, u, r;
+  FLT_OR_DBL  q, qe;
+  double      *expintern;
+  short       si, sj;
+
+  q         = 0;
+  si        = S[i + 1];
+  sj        = S[j - 1];
+  qe        = (FLT_OR_DBL)pf->expmismatchI[type][si][sj];
+  expintern = &(pf->expinternal[0]);
+
+  if (type > 2)
+    qe *= (FLT_OR_DBL)pf->expTermAU;
+
+  k = i + 1;
+  if (S[k] == 3) {
+    if (k < j - VRNA_GQUAD_MIN_BOX_SIZE) {
+      minl  = j - MAXLOOP - 1;
+      u     = k + VRNA_GQUAD_MIN_BOX_SIZE - 1;
+      minl  = MAX2(u, minl);
+      u     = j - 3;
+      maxl  = k + VRNA_GQUAD_MAX_BOX_SIZE + 1;
+      maxl  = MIN2(u, maxl);
+      for (l = minl; l < maxl; l++) {
+        if (S[l] != 3)
+          continue;
+
+        if (G[index[k] - l] == 0.)
+          continue;
+
+        q += qe
+             * G[index[k] - l]
+             * (FLT_OR_DBL)expintern[j - l - 1]
+             * scale[j - l + 1];
+      }
+    }
+  }
+
+  for (k = i + 2;
+       k <= j - VRNA_GQUAD_MIN_BOX_SIZE;
+       k++) {
+    u = k - i - 1;
+    if (u > MAXLOOP)
+      break;
+
+    if (S[k] != 3)
+      continue;
+
+    minl  = j - i + k - MAXLOOP - 2;
+    r     = k + VRNA_GQUAD_MIN_BOX_SIZE - 1;
+    minl  = MAX2(r, minl);
+    maxl  = k + VRNA_GQUAD_MAX_BOX_SIZE + 1;
+    r     = j - 1;
+    maxl  = MIN2(r, maxl);
+    for (l = minl; l < maxl; l++) {
+      if (S[l] != 3)
+        continue;
+
+      if (G[index[k] - l] == 0.)
+        continue;
+
+      q += qe
+           * G[index[k] - l]
+           * (FLT_OR_DBL)expintern[u + j - l - 1]
+           * scale[u + j - l + 1];
+    }
+  }
+
+  l = j - 1;
+  if (S[l] == 3)
+    for (k = i + 4; k <= j - VRNA_GQUAD_MIN_BOX_SIZE; k++) {
+      u = k - i - 1;
+      if (u > MAXLOOP)
+        break;
+
+      if (S[k] != 3)
+        continue;
+
+      if (G[index[k] - l] == 0.)
+        continue;
+
+      q += qe
+           * G[index[k] - l]
+           * (FLT_OR_DBL)expintern[u]
+           * scale[u + 2];
+    }
+
+  return q;
+}
+
+
+PRIVATE FLT_OR_DBL
+exp_E_int_loop(vrna_fold_compound_t *fc,
+               int                  i,
+               int                  j)
+{
+  unsigned char         sliding_window, hc_decompose_ij, hc_decompose_kl;
+  char                  *ptype, **ptype_local;
+  unsigned char         *hc_mx, **hc_mx_local;
+  short                 *S1, **SS, **S5, **S3;
+  unsigned int          *sn, *se, *ss, n_seq, s, **a2s, n;
+  int                   *rtype, noclose, *my_iindx, *jindx, *hc_up, ij,
+                        with_gquad, with_ud;
+  FLT_OR_DBL            qbt1, q_temp, *qb, **qb_local, *G, *scale;
+  vrna_exp_param_t      *pf_params;
+  vrna_md_t             *md;
+  vrna_ud_t             *domains_up;
+  eval_hc               evaluate;
+  struct hc_int_def_dat hc_dat_local;
+  struct sc_int_exp_dat sc_wrapper;
+
+  sliding_window  = (fc->hc->type == VRNA_HC_WINDOW) ? 1 : 0;
+  n               = fc->length;
+  n_seq           = (fc->type == VRNA_FC_TYPE_SINGLE) ? 1 : fc->n_seq;
+  sn              = fc->strand_number;
+  se              = fc->strand_end;
+  ss              = fc->strand_start;
+  ptype           = (fc->type == VRNA_FC_TYPE_SINGLE) ? (sliding_window ? NULL : fc->ptype) : NULL;
+  ptype_local     =
+    (fc->type == VRNA_FC_TYPE_SINGLE) ? (sliding_window ? fc->ptype_local : NULL) : NULL;
+  S1          = (fc->type == VRNA_FC_TYPE_SINGLE) ? fc->sequence_encoding : NULL;
+  SS          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S;
+  S5          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S5;
+  S3          = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S3;
+  a2s         = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->a2s;
+  qb          = (sliding_window) ? NULL : fc->exp_matrices->qb;
+  G           = (sliding_window) ? NULL : fc->exp_matrices->G;
+  qb_local    = (sliding_window) ? fc->exp_matrices->qb_local : NULL;
+  scale       = fc->exp_matrices->scale;
+  my_iindx    = fc->iindx;
+  jindx       = fc->jindx;
+  hc_mx       = (sliding_window) ? NULL : fc->hc->mx;
+  hc_mx_local = (sliding_window) ? fc->hc->matrix_local : NULL;
+  hc_up       = fc->hc->up_int;
+  pf_params   = fc->exp_params;
+  md          = &(pf_params->model_details);
+  with_gquad  = md->gquad;
+  domains_up  = fc->domains_up;
+  with_ud     = ((domains_up) && (domains_up->exp_energy_cb)) ? 1 : 0;
+  rtype       = &(md->rtype[0]);
+  qbt1        = 0.;
+  evaluate    = prepare_hc_int_def(fc, &hc_dat_local);
+
+  init_sc_int_exp(fc, &sc_wrapper);
+
+  ij = (sliding_window) ? 0 : jindx[j] + i;
+
+  hc_decompose_ij = (sliding_window) ? hc_mx_local[i][j - i] : hc_mx[n * i + j];
+
+  /* CONSTRAINED INTERIOR LOOP start */
+  if (hc_decompose_ij & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) {
+    unsigned int  type, type2, *tt;
+    int           k, l, kl, last_k, first_l, u1, u2, noGUclosure;
+
+    noGUclosure = md->noGUclosure;
+    tt          = NULL;
+    type        = 0;
+
+    if (fc->type == VRNA_FC_TYPE_SINGLE)
+      type = sliding_window ?
+             vrna_get_ptype_window(i, j + i, ptype_local) :
+             vrna_get_ptype(ij, ptype);
+
+    noclose = ((noGUclosure) && (type == 3 || type == 4)) ? 1 : 0;
+
+
+    /* handle stacks separately */
+    k = i + 1;
+    l = j - 1;
+    if ((k < l) && (sn[i] == sn[k]) && (sn[l] == sn[j])) {
+      kl              = (sliding_window) ? 0 : jindx[l] + k;
+      hc_decompose_kl = (sliding_window) ? hc_mx_local[k][l - k] : hc_mx[n * k + l];
+
+      if ((hc_decompose_kl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC) &&
+          (evaluate(i, j, k, l, &hc_dat_local))) {
+        q_temp = (sliding_window) ? qb_local[k][l] : qb[my_iindx[k] - l];
+
+        switch (fc->type) {
+          case VRNA_FC_TYPE_SINGLE:
+            type2 = sliding_window ?
+                    rtype[vrna_get_ptype_window(k, l + k, ptype_local)] :
+                    rtype[vrna_get_ptype(kl, ptype)];
+
+            q_temp *= exp_E_IntLoop(0,
+                                    0,
+                                    type,
+                                    type2,
+                                    S1[i + 1],
+                                    S1[j - 1],
+                                    S1[k - 1],
+                                    S1[l + 1],
+                                    pf_params);
+
+            break;
+
+          
+        }
+
+        if (sc_wrapper.pair)
+          q_temp *= sc_wrapper.pair(i, j, k, l, &sc_wrapper);
+
+        qbt1 += q_temp *
+                scale[2];
+      }
+    }
+
+    if (!noclose) {
+      /* only proceed if the enclosing pair is allowed */
+
+      /* handle bulges in 5' side */
+      l = j - 1;
+      if ((l > i + 2) && (sn[j] == sn[l])) {
+        last_k = l - 1;
+
+        if (last_k > i + 1 + MAXLOOP)
+          last_k = i + 1 + MAXLOOP;
+
+        if (last_k > i + 1 + hc_up[i + 1])
+          last_k = i + 1 + hc_up[i + 1];
+
+        if (last_k > se[sn[i]])
+          last_k = se[sn[i]];
+
+        u1 = 1;
+
+        k     = i + 2;
+        kl    = (sliding_window) ? 0 : jindx[l] + k;
+        hc_mx += n * l;
+
+        for (; k <= last_k; k++, u1++, kl++) {
+          hc_decompose_kl = (sliding_window) ? hc_mx_local[k][l - k] : hc_mx[k];
+
+          if ((hc_decompose_kl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC) &&
+              (evaluate(i, j, k, l, &hc_dat_local))) {
+            q_temp = (sliding_window) ? qb_local[k][l] : qb[my_iindx[k] - l];
+
+            switch (fc->type) {
+              case VRNA_FC_TYPE_SINGLE:
+                type2 = sliding_window ?
+                        rtype[vrna_get_ptype_window(k, l + k, ptype_local)] :
+                        rtype[vrna_get_ptype(kl, ptype)];
+
+                if ((noGUclosure) && (type2 == 3 || type2 == 4))
+                  continue;
+
+                q_temp *= exp_E_IntLoop(u1,
+                                        0,
+                                        type,
+                                        type2,
+                                        S1[i + 1],
+                                        S1[j - 1],
+                                        S1[k - 1],
+                                        S1[l + 1],
+                                        pf_params);
+
+                break;
+
+              
+            }
+
+            if (sc_wrapper.pair)
+              q_temp *= sc_wrapper.pair(i, j, k, l, &sc_wrapper);
+
+            qbt1 += q_temp *
+                    scale[u1 + 2];
+
+            if (with_ud) {
+              q_temp *= domains_up->exp_energy_cb(fc,
+                                                  i + 1, k - 1,
+                                                  VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                                  domains_up->data);
+              qbt1 += q_temp *
+                      scale[u1 + 2];
+            }
+          }
+        }
+
+        hc_mx -= n * l;
+      }
+
+      /* handle bulges in 3' side */
+      k = i + 1;
+      if ((k < j - 2) && (sn[i] == sn[k])) {
+        first_l = k + 1;
+        if (first_l < j - 1 - MAXLOOP)
+          first_l = j - 1 - MAXLOOP;
+
+        if (first_l < ss[sn[j]])
+          first_l = ss[sn[j]];
+
+        u2    = 1;
+        hc_mx += n * k;
+
+        for (l = j - 2; l >= first_l; l--, u2++) {
+          if (u2 > hc_up[l + 1])
+            break;
+
+          kl              = (sliding_window) ? 0 : jindx[l] + k;
+          hc_decompose_kl = (sliding_window) ? hc_mx_local[k][l - k] : hc_mx[l];
+
+          if ((hc_decompose_kl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC) &&
+              (evaluate(i, j, k, l, &hc_dat_local))) {
+            q_temp = (sliding_window) ? qb_local[k][l] : qb[my_iindx[k] - l];
+
+            switch (fc->type) {
+              case VRNA_FC_TYPE_SINGLE:
+                type2 = sliding_window ?
+                        rtype[vrna_get_ptype_window(k, l + k, ptype_local)] :
+                        rtype[vrna_get_ptype(kl, ptype)];
+
+                if ((noGUclosure) && (type2 == 3 || type2 == 4))
+                  continue;
+
+                q_temp *= exp_E_IntLoop(0,
+                                        u2,
+                                        type,
+                                        type2,
+                                        S1[i + 1],
+                                        S1[j - 1],
+                                        S1[k - 1],
+                                        S1[l + 1],
+                                        pf_params);
+
+                break;
+
+              
+            }
+
+            if (sc_wrapper.pair)
+              q_temp *= sc_wrapper.pair(i, j, k, l, &sc_wrapper);
+
+            qbt1 += q_temp *
+                    scale[u2 + 2];
+
+            if (with_ud) {
+              q_temp *= domains_up->exp_energy_cb(fc,
+                                                  l + 1, j - 1,
+                                                  VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                                  domains_up->data);
+              qbt1 += q_temp *
+                      scale[u2 + 2];
+            }
+          }
+        }
+
+        hc_mx -= n * k;
+      }
+
+      /* last but not least, all other internal loops */
+      last_k = j - 3;
+
+      if (last_k > i + MAXLOOP + 1)
+        last_k = i + MAXLOOP + 1;
+
+      if (last_k > i + 1 + hc_up[i + 1])
+        last_k = i + 1 + hc_up[i + 1];
+
+      if (last_k > se[sn[i]])
+        last_k = se[sn[i]];
+
+      u1 = 1;
+
+      for (k = i + 2; k <= last_k; k++, u1++) {
+        first_l = k + 1;
+
+        if (first_l < j - 1 - MAXLOOP + u1)
+          first_l = j - 1 - MAXLOOP + u1;
+
+        if (first_l < ss[sn[j]])
+          first_l = ss[sn[j]];
+
+        u2 = 1;
+
+        hc_mx += n * k;
+
+        for (l = j - 2; l >= first_l; l--, u2++) {
+          if (hc_up[l + 1] < u2)
+            break;
+
+          kl              = (sliding_window) ? 0 : jindx[l] + k;
+          hc_decompose_kl = (sliding_window) ? hc_mx_local[k][l - k] : hc_mx[l];
+
+          if ((hc_decompose_kl & VRNA_CONSTRAINT_CONTEXT_INT_LOOP_ENC) &&
+              (evaluate(i, j, k, l, &hc_dat_local))) {
+            q_temp = (sliding_window) ? qb_local[k][l] : qb[my_iindx[k] - l];
+
+            switch (fc->type) {
+              case VRNA_FC_TYPE_SINGLE:
+                type2 = sliding_window ?
+                        rtype[vrna_get_ptype_window(k, l + k, ptype_local)] :
+                        rtype[vrna_get_ptype(kl, ptype)];
+
+                if ((noGUclosure) && (type2 == 3 || type2 == 4))
+                  continue;
+
+                q_temp *= exp_E_IntLoop(u1,
+                                        u2,
+                                        type,
+                                        type2,
+                                        S1[i + 1],
+                                        S1[j - 1],
+                                        S1[k - 1],
+                                        S1[l + 1],
+                                        pf_params);
+
+                break;
+
+            }
+
+            if (sc_wrapper.pair)
+              q_temp *= sc_wrapper.pair(i, j, k, l, &sc_wrapper);
+
+            qbt1 += q_temp *
+                    scale[u1 + u2 + 2];
+
+            if (with_ud) {
+              FLT_OR_DBL q5, q3;
+
+              q5 = domains_up->exp_energy_cb(fc,
+                                             i + 1, k - 1,
+                                             VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                             domains_up->data);
+              q3 = domains_up->exp_energy_cb(fc,
+                                             l + 1, j - 1,
+                                             VRNA_UNSTRUCTURED_DOMAIN_INT_LOOP,
+                                             domains_up->data);
+
+              qbt1 += q_temp *
+                      q5 *
+                      scale[u1 + u2 + 2];
+              qbt1 += q_temp *
+                      q3 *
+                      scale[u1 + u2 + 2];
+              qbt1 += q_temp *
+                      q5 *
+                      q3 *
+                      scale[u1 + u2 + 2];
+            }
+          }
+        }
+
+        hc_mx -= n * k;
+      }
+
+      if ((with_gquad) && (!noclose)) {
+        switch (fc->type) {
+          case VRNA_FC_TYPE_SINGLE:
+            if (sliding_window) {
+              /* no G-Quadruplex support for sliding window partition function yet! */
+            } else if (sn[j] == sn[i]) {
+              qbt1 += exp_E_GQuad_IntLoop(i, j, type, S1, G, scale, my_iindx, pf_params);
+            }
+
+            break;
+
+        }
+      }
+    }
+
+    free(tt);
+  }
+
+  free_sc_int_exp(&sc_wrapper);
+
+  return qbt1;
+}
+
+
+
+PUBLIC FLT_OR_DBL
+vrna_exp_E_int_loop(vrna_fold_compound_t  *fc,
+                    int                   i,
+                    int                   j)
+{
+  FLT_OR_DBL q = 0.;
+
+  if ((fc) && (i > 0) && (j > 0)) {
+    if (j < i) {
+      /* Note: j < i indicates that we want to evaluate exterior int loop (for circular RNAs)! */
+      if (fc->hc->type == VRNA_HC_WINDOW) {
+        printf(
+          "vrna_exp_E_int_loop: invalid sequence positions for pair (i,j) = (%d,%d)!",
+          i,
+          j);
+      } else {
+        q = exp_E_ext_int_loop(fc, j, i);
+      }
+    } else {
+      q = exp_E_int_loop(fc, i, j);
+    }
+  }
+
+  return q;
+}
+
+
+struct hc_mb_def_dat {
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  unsigned int              n;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+struct sc_mb_exp_dat;
+
+typedef FLT_OR_DBL (*sc_mb_exp_pair_cb)(int                  i,
+                                       int                  j,
+                                       struct sc_mb_exp_dat *data);
+
+
+typedef FLT_OR_DBL (*sc_mb_exp_red_cb)(int                   i,
+                                      int                   j,
+                                      int                   k,
+                                      int                   l,
+                                      struct sc_mb_exp_dat  *data);
+
+
+struct sc_mb_exp_dat {
+  unsigned int                n;
+  unsigned int                n_seq;
+  unsigned int                **a2s;
+
+  int                         *idx;
+
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+
+  sc_mb_exp_pair_cb           pair;
+  sc_mb_exp_pair_cb           pair_ext;
+  sc_mb_exp_red_cb            red_stem;
+  sc_mb_exp_red_cb            red_ml;
+  sc_mb_exp_red_cb            decomp_ml;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+};
+
+PRIVATE unsigned char
+hc_mb_cb_def(int            i,
+             int            j,
+             int            k,
+             int            l,
+             unsigned char  d,
+             void           *data)
+{
+  unsigned char         eval;
+  unsigned int          n;
+  int                   di, dj, u;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  eval  = (unsigned char)0;
+  di    = k - i;
+  dj    = j - l;
+  n     = dat->n;
+
+  switch (d) {
+    case VRNA_DECOMP_ML_ML_ML:
+      u     = l - k - 1;
+      eval  = (unsigned char)1;
+      if ((u != 0) &&
+          (dat->hc_up[k + 1] < u))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_ML_ML:
+      eval = (unsigned char)1;
+
+      if ((di != 0) &&
+          (dat->hc_up[i] < di))
+        eval = (unsigned char)0;
+
+      if ((dj != 0) &&
+          (dat->hc_up[l + 1] < dj))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_ML_STEM:
+      if (dat->mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC) {
+        eval = (unsigned char)1;
+        if ((di != 0) &&
+            (dat->hc_up[i] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) &&
+            (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_PAIR_ML:
+      if (dat->mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP) {
+        eval = (unsigned char)1;
+        di--;
+        dj--;
+        if ((di != 0) &&
+            (dat->hc_up[i + 1] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) &&
+            (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_PAIR_ML_EXT:
+      if (dat->mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP) {
+        eval = (unsigned char)1;
+        di++;
+        dj++;
+        if ((di != 0) &&
+            (dat->hc_up[k + 1] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) &&
+            (dat->hc_up[j + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_ML_ML_STEM:
+      u     = l - k - 1;
+      if (dat->mx[n * j + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC)
+        eval = (unsigned char)1;
+
+      if ((u != 0) && (dat->hc_up[k + 1] < u))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL:
+      if (dat->mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC)
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL_ENC:
+      if ((dat->mx[n * i + j] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC) &&
+          (dat->mx[n * k + l] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC))
+        eval = (unsigned char)1;
+
+      break;
+
+    default:
+      printf("hc_mb_cb_def@multibranch_hc.inc: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+
+
+PRIVATE unsigned char
+hc_sn(int           i,
+      int           j,
+      int           k,
+      int           l,
+      unsigned char d,
+      void          *data)
+{
+  unsigned int          *sn;
+  unsigned char         eval;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  sn    = dat->sn;
+  eval  = (unsigned char)0;
+
+  switch (d) {
+    case VRNA_DECOMP_ML_ML_ML:
+      /* fall through */
+    case VRNA_DECOMP_ML_ML_STEM:
+      if (sn[k] == sn[l])
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_ML_STEM:
+    /* fall through */
+
+    case VRNA_DECOMP_ML_ML:
+      if ((sn[i] == sn[k]) &&
+          (sn[l] == sn[j]) &&
+          (sn[i - 1] == sn[i]) &&
+          (sn[j + 1] == sn[j]))
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_PAIR_ML_EXT:
+      /* fall through */
+    case VRNA_DECOMP_PAIR_ML:
+      if ((sn[i] == sn[k]) &&
+          (sn[l] == sn[j]))
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL:
+      if ((i == k - 1) &&
+          (sn[i] == sn[k]))
+        eval = (unsigned char)1;
+      else if ((l + 1 == j) &&
+               (sn[l] == sn[j]))
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL_ENC:
+      if (sn[j] == sn[k])
+        eval = (unsigned char)1;
+
+      break;
+
+    default:
+      printf("hc_sn@multibranch_hc.inc: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_mb_cb_def_window(int           i,
+                    int           j,
+                    int           k,
+                    int           l,
+                    unsigned char d,
+                    void          *data)
+{
+  int                   di, dj, u;
+  unsigned char         eval;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  eval  = (unsigned char)0;
+  di    = k - i;
+  dj    = j - l;
+
+  switch (d) {
+    case VRNA_DECOMP_ML_ML_ML:
+      u     = l - k - 1;
+      eval  = (unsigned char)1;
+      if ((u != 0) && (dat->hc_up[k + 1] < u))
+        eval = (unsigned char)0;
+
+      if (dat->sn[k] != dat->sn[l])
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_ML_ML:
+      eval = (unsigned char)1;
+      if ((di != 0) && ((dat->hc_up[i] < di) || (dat->sn[i] != dat->sn[k])))
+        eval = (unsigned char)0;
+
+      if ((dj != 0) && ((dat->hc_up[l + 1] < dj) || (dat->sn[l] != dat->sn[j])))
+        eval = (unsigned char)0;
+
+      break;
+
+    case VRNA_DECOMP_ML_STEM:
+      if (dat->mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC) {
+        eval = (unsigned char)1;
+        if ((di != 0) && (dat->hc_up[i] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_PAIR_ML:
+      if (dat->mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP) {
+        eval = (unsigned char)1;
+        di--;
+        dj--;
+        if ((di != 0) && (dat->hc_up[i + 1] < di))
+          eval = (unsigned char)0;
+
+        if ((dj != 0) && (dat->hc_up[l + 1] < dj))
+          eval = (unsigned char)0;
+      }
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL:
+      if (dat->mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC)
+        eval = (unsigned char)1;
+
+      break;
+
+    case VRNA_DECOMP_ML_COAXIAL_ENC:
+      if ((dat->mx_window[i][j - i] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC) &&
+          (dat->mx_window[k][l - k] & VRNA_CONSTRAINT_CONTEXT_MB_LOOP_ENC))
+        eval = (unsigned char)1;
+
+      break;
+
+    default:
+      printf("hc_mb_cb_def_window@multibranch_hc.inc: "
+                           "Unrecognized decomposition %d",
+                           d);
+  }
+
+  return eval;
+}
+
+
+PRIVATE INLINE unsigned char
+hc_mb_cb_def_sn(int           i,
+                int           j,
+                int           k,
+                int           l,
+                unsigned char d,
+                void          *data)
+{
+  unsigned char eval;
+
+  eval  = hc_mb_cb_def(i, j, k, l, d, data);
+  eval  = hc_sn(i, j, k, l, d, data) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_mb_cb_def_user(int           i,
+                  int           j,
+                  int           k,
+                  int           l,
+                  unsigned char d,
+                  void          *data)
+{
+  unsigned char         eval;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  eval  = hc_mb_cb_def(i, j, k, l, d, data);
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_mb_cb_def_sn_user(int            i,
+                     int            j,
+                     int            k,
+                     int            l,
+                     unsigned char  d,
+                     void           *data)
+{
+  unsigned char         eval;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  eval  = hc_mb_cb_def(i, j, k, l, d, data);
+  eval  = hc_sn(i, j, k, l, d, data) ? eval : (unsigned char)0;
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE unsigned char
+hc_mb_cb_def_user_window(int            i,
+                         int            j,
+                         int            k,
+                         int            l,
+                         unsigned char  d,
+                         void           *data)
+{
+  unsigned char         eval;
+  struct hc_mb_def_dat  *dat = (struct hc_mb_def_dat *)data;
+
+  eval  = hc_mb_cb_def_window(i, j, k, l, d, data);
+  eval  = (dat->hc_f(i, j, k, l, d, dat->hc_dat)) ? eval : (unsigned char)0;
+
+  return eval;
+}
+
+
+PRIVATE INLINE vrna_hc_eval_f
+prepare_hc_mb_def(vrna_fold_compound_t  *fc,
+                  struct hc_mb_def_dat  *dat)
+{
+  dat->mx         = fc->hc->mx;
+  dat->n          = fc->hc->n;
+  dat->mx_window  = fc->hc->matrix_local;
+  dat->hc_up      = fc->hc->up_ml;
+  dat->sn         = fc->strand_number;
+
+  if (fc->hc->f) {
+    dat->hc_f   = fc->hc->f;
+    dat->hc_dat = fc->hc->data;
+    return (fc->hc->type == VRNA_HC_WINDOW) ?
+           &hc_mb_cb_def_user_window :
+           ((fc->strands == 1) ?
+            &hc_mb_cb_def_user :
+            &hc_mb_cb_def_sn_user);
+  }
+
+  return (fc->hc->type == VRNA_HC_WINDOW) ?
+         &hc_mb_cb_def_window :
+         ((fc->strands == 1) ?
+          &hc_mb_cb_def :
+          hc_mb_cb_def_sn);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_cb_bp(int                  i,
+                     int                  j,
+                     struct sc_mb_exp_dat *data)
+{
+  return data->bp[data->idx[j] + i];
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_cb_bp_local(int                  i,
+                           int                  j,
+                           struct sc_mb_exp_dat *data)
+{
+  return data->bp_local[i][j - i];
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_cb_user(int                  i,
+                       int                  j,
+                       struct sc_mb_exp_dat *data)
+{
+  return data->user_cb(i, j, i + 1, j - 1,
+                       VRNA_DECOMP_PAIR_ML,
+                       data->user_data);
+}
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_ext_cb_user(int                  i,
+                           int                  j,
+                           struct sc_mb_exp_dat *data)
+{
+  return data->user_cb(i, j, i - 1, j + 1,
+                       VRNA_DECOMP_PAIR_ML,
+                       data->user_data);
+}
+
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_cb_bp_user(int                   i,
+                          int                   j,
+                          struct sc_mb_exp_dat  *data)
+{
+  return sc_mb_exp_pair_cb_bp(i, j, data) *
+         sc_mb_exp_pair_cb_user(i, j, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_pair_cb_bp_local_user(int                   i,
+                                int                   j,
+                                struct sc_mb_exp_dat  *data)
+{
+  return sc_mb_exp_pair_cb_bp_local(i, j, data) *
+         sc_mb_exp_pair_cb_user(i, j, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_red_cb_up(int                   i,
+                    int                   j,
+                    int                   k,
+                    int                   l,
+                    struct sc_mb_exp_dat  *data)
+{
+  int         l1  = k - i;
+  int         l2  = j - l;
+  FLT_OR_DBL  sc  = 1.;
+
+  if (l1 > 0)
+    sc *= data->up[i][l1];
+
+  if (l2 > 0)
+    sc *= data->up[l + 1][l2];
+
+  return sc;
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_red_cb_user(int                   i,
+                      int                   j,
+                      int                   k,
+                      int                   l,
+                      struct sc_mb_exp_dat  *data)
+{
+  return data->user_cb(i, j, k, l,
+                       VRNA_DECOMP_ML_ML,
+                       data->user_data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_red_cb_up_user(int                  i,
+                         int                  j,
+                         int                  k,
+                         int                  l,
+                         struct sc_mb_exp_dat *data)
+{
+  return sc_mb_exp_red_cb_up(i, j, k, l, data) *
+         sc_mb_exp_red_cb_user(i, j, k, l, data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_red_cb_stem_user(int                  i,
+                           int                  j,
+                           int                  k,
+                           int                  l,
+                           struct sc_mb_exp_dat *data)
+{
+  return data->user_cb(i, j, k, l,
+                       VRNA_DECOMP_ML_STEM,
+                       data->user_data);
+}
+
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_red_cb_stem_up_user(int                   i,
+                              int                   j,
+                              int                   k,
+                              int                   l,
+                              struct sc_mb_exp_dat  *data)
+{
+  return sc_mb_exp_red_cb_up(i, j, k, l, data) *
+         sc_mb_exp_red_cb_stem_user(i, j, k, l, data);
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+sc_mb_exp_split_cb_user(int                   i,
+                        int                   j,
+                        int                   k,
+                        int                   l,
+                        struct sc_mb_exp_dat  *data)
+{
+  return data->user_cb(i, j, k, l,
+                       VRNA_DECOMP_ML_ML_ML,
+                       data->user_data);
+}
+
+
+
+PRIVATE INLINE void
+init_sc_mb_exp(vrna_fold_compound_t *fc,
+               struct sc_mb_exp_dat *sc_wrapper)
+{
+  unsigned char sliding_window;
+  vrna_sc_t     *sc, **scs;
+
+  sc_wrapper->n     = fc->length;
+  sc_wrapper->n_seq = 1;
+  sc_wrapper->idx   = fc->jindx;
+  sc_wrapper->a2s   = NULL;
+
+  sc_wrapper->up                    = NULL;
+  sc_wrapper->up_comparative        = NULL;
+  sc_wrapper->bp                    = NULL;
+  sc_wrapper->bp_comparative        = NULL;
+  sc_wrapper->bp_local              = NULL;
+  sc_wrapper->bp_local_comparative  = NULL;
+
+  sc_wrapper->user_cb               = NULL;
+  sc_wrapper->user_data             = NULL;
+  sc_wrapper->user_cb_comparative   = NULL;
+  sc_wrapper->user_data_comparative = NULL;
+
+  sc_wrapper->pair      = NULL;
+  sc_wrapper->pair_ext  = NULL;
+  sc_wrapper->red_stem  = NULL;
+  sc_wrapper->red_ml    = NULL;
+  sc_wrapper->decomp_ml = NULL;
+
+  sliding_window = (fc->hc->type == VRNA_HC_WINDOW) ? 1 : 0;
+
+  switch (fc->type) {
+    case VRNA_FC_TYPE_SINGLE:
+      sc = fc->sc;
+
+      if (sc) {
+        unsigned int provides_sc_up, provides_sc_bp, provides_sc_user;
+
+        provides_sc_up    = 0;
+        provides_sc_bp    = 0;
+        provides_sc_user  = 0;
+
+        sc_wrapper->up        = sc->exp_energy_up;
+        sc_wrapper->user_cb   = sc->exp_f;
+        sc_wrapper->user_data = sc->data;
+
+        if (sliding_window)
+          sc_wrapper->bp_local = sc->exp_energy_bp_local;
+        else
+          sc_wrapper->bp = sc->exp_energy_bp;
+
+        if (sc->exp_energy_up)
+          provides_sc_up = 1;
+
+        if (sliding_window) {
+          if (sc->exp_energy_bp_local)
+            provides_sc_bp = 1;
+        } else if (sc->exp_energy_bp) {
+          provides_sc_bp = 1;
+        }
+
+        if (sc->exp_f)
+          provides_sc_user = 1;
+
+        /* done initializing, now assign function pointers */
+        if (provides_sc_user) {
+          sc_wrapper->decomp_ml = &sc_mb_exp_split_cb_user;
+          sc_wrapper->red_stem  = &sc_mb_exp_red_cb_stem_user;
+          sc_wrapper->red_ml    = &sc_mb_exp_red_cb_user;
+          sc_wrapper->pair      = &sc_mb_exp_pair_cb_user;
+          if (!sliding_window)
+            sc_wrapper->pair_ext  = &sc_mb_exp_pair_ext_cb_user;
+
+          if (provides_sc_bp) {
+            if (sliding_window) {
+              sc_wrapper->pair = &sc_mb_exp_pair_cb_bp_local_user;
+            } else {
+              sc_wrapper->pair      = &sc_mb_exp_pair_cb_bp_user;
+              sc_wrapper->pair_ext  = &sc_mb_exp_pair_ext_cb_user;
+            }
+          }
+
+          if (provides_sc_up) {
+            sc_wrapper->red_stem  = &sc_mb_exp_red_cb_stem_up_user;
+            sc_wrapper->red_ml    = &sc_mb_exp_red_cb_up_user;
+          }
+        } else if (provides_sc_bp) {
+          if (sliding_window) {
+            sc_wrapper->pair = &sc_mb_exp_pair_cb_bp_local;
+          } else {
+            sc_wrapper->pair      = &sc_mb_exp_pair_cb_bp;
+          }
+
+          if (provides_sc_up) {
+            sc_wrapper->red_stem  = &sc_mb_exp_red_cb_up;
+            sc_wrapper->red_ml    = &sc_mb_exp_red_cb_up;
+          }
+        } else if (provides_sc_up) {
+          sc_wrapper->red_stem  = &sc_mb_exp_red_cb_up;
+          sc_wrapper->red_ml    = &sc_mb_exp_red_cb_up;
+        }
+      }
+
+      break;
+  }
+}
+
+
+
+PRIVATE INLINE FLT_OR_DBL
+exp_E_MLstem(int              type,
+             int              si1,
+             int              sj1,
+             vrna_exp_param_t *P)
+{
+  double energy = 1.0;
+
+  if (si1 >= 0 && sj1 >= 0)
+    energy = P->expmismatchM[type][si1][sj1];
+  else if (si1 >= 0)
+    energy = P->expdangle5[type][si1];
+  else if (sj1 >= 0)
+    energy = P->expdangle3[type][sj1];
+
+  if (type > 2)
+    energy *= P->expTermAU;
+
+  energy *= P->expMLintern[type];
+  return (FLT_OR_DBL)energy;
+}
+
+
+
+PRIVATE INLINE void
+free_sc_mb_exp(struct sc_mb_exp_dat *sc_wrapper)
+{
+  free(sc_wrapper->up_comparative);
+  free(sc_wrapper->bp_comparative);
+  free(sc_wrapper->bp_local_comparative);
+  free(sc_wrapper->user_cb_comparative);
+  free(sc_wrapper->user_data_comparative);
+}
+
+
+
+PRIVATE FLT_OR_DBL
+exp_E_mb_loop_fast(vrna_fold_compound_t       *fc,
+                   int                        i,
+                   int                        j,
+                   struct vrna_mx_pf_aux_ml_s *aux_mx)
+{
+  unsigned char             sliding_window;
+  char                      *ptype, **ptype_local;
+  short                     *S1, **SS, **S5, **S3;
+  unsigned int              *sn, n_seq, s, *se;
+  int                       ij, k, kl, *my_iindx, *jindx, *rtype, tt;
+  FLT_OR_DBL                qbt1, temp, qqqmmm, *qm, **qm_local, *scale, expMLclosing, *qqm1;
+  vrna_hc_t                 *hc;
+  vrna_exp_param_t          *pf_params;
+  vrna_md_t                 *md;
+  vrna_hc_eval_f evaluate;
+  struct hc_mb_def_dat      hc_dat_local;
+  struct sc_mb_exp_dat      sc_wrapper;
+
+  qqm1            = aux_mx->qqm1;
+  sliding_window  = (fc->hc->type == VRNA_HC_WINDOW) ? 1 : 0;
+  n_seq           = (fc->type == VRNA_FC_TYPE_SINGLE) ? 1 : fc->n_seq;
+  se              = fc->strand_end;
+  my_iindx        = (sliding_window) ? NULL : fc->iindx;
+  jindx           = (sliding_window) ? NULL : fc->jindx;
+  ptype           = (fc->type == VRNA_FC_TYPE_SINGLE) ? (sliding_window ? NULL : fc->ptype) : NULL;
+  ptype_local     = (sliding_window) ? fc->ptype_local : NULL;
+  S1              = (fc->type == VRNA_FC_TYPE_SINGLE) ? fc->sequence_encoding : NULL;
+  SS              = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S;
+  S5              = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S5;
+  S3              = (fc->type == VRNA_FC_TYPE_SINGLE) ? NULL : fc->S3;
+  qm              = (sliding_window) ? NULL : fc->exp_matrices->qm;
+  qm_local        = (sliding_window) ? fc->exp_matrices->qm_local : NULL;
+  scale           = fc->exp_matrices->scale;
+  pf_params       = fc->exp_params;
+  md              = &(pf_params->model_details);
+  ij              = (sliding_window) ? 0 : jindx[j] + i;
+  sn              = fc->strand_number;
+  hc              = fc->hc;
+  expMLclosing    = pf_params->expMLclosing;
+  qbt1            = 0.;
+  rtype           = &(md->rtype[0]);
+  evaluate        = prepare_hc_mb_def(fc, &hc_dat_local);
+
+  init_sc_mb_exp(fc, &sc_wrapper);
+
+  /* multiple stem loop contribution */
+  if (evaluate(i, j, i + 1, j - 1, VRNA_DECOMP_PAIR_ML, &hc_dat_local)) {
+    qqqmmm = pow(expMLclosing, (double)n_seq) *
+             scale[2];
+
+    switch (fc->type) {
+      case VRNA_FC_TYPE_SINGLE:
+        tt = (sliding_window) ?
+             rtype[vrna_get_ptype_window(i, j + i, ptype_local)] :
+             rtype[vrna_get_ptype(ij, ptype)];
+        qqqmmm *= exp_E_MLstem(tt, S1[j - 1], S1[i + 1], pf_params);
+
+        break;
+
+
+      case VRNA_FC_TYPE_COMPARATIVE:
+        for (s = 0; s < n_seq; s++) {
+          tt      = vrna_get_ptype_md(SS[s][j], SS[s][i], md);
+          qqqmmm  *= exp_E_MLstem(tt, S5[s][j], S3[s][i], pf_params);
+        }
+        break;
+    }
+
+    if (sc_wrapper.pair)
+      qqqmmm *= sc_wrapper.pair(i, j, &sc_wrapper);
+
+    FLT_OR_DBL *qqm1_tmp = qqm1;
+
+    if (hc->f) {
+      qqm1_tmp  = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (j - i + 2));
+      qqm1_tmp  -= i;
+
+      for (k = i + 2; k <= j - 1; k++) {
+        qqm1_tmp[k] = qqm1[k];
+        if (!evaluate(i + 1, j - 1, k - 1, k, VRNA_DECOMP_ML_ML_ML, &hc_dat_local))
+          qqm1_tmp[k] = 0.;
+      }
+    }
+
+    if (sc_wrapper.decomp_ml) {
+      if (qqm1_tmp == qqm1) {
+        qqm1_tmp  = (FLT_OR_DBL *)vrna_alloc(sizeof(FLT_OR_DBL) * (j - i + 2));
+        qqm1_tmp  -= i;
+
+        for (k = i + 2; k <= j - 1; k++)
+          qqm1_tmp[k] = qqm1[k];
+      }
+
+      for (k = i + 2; k <= j - 1; k++)
+        qqm1_tmp[k] *= sc_wrapper.decomp_ml(i + 1, j - 1, k - 1, k, &sc_wrapper);
+    }
+
+    temp = 0.0;
+
+    /* set initial decomposition split point */
+    k = i + 2;
+
+    if (sliding_window) {
+      for (; k <= j - 1; k++, kl--)
+        temp += qm_local[i + 1][k - 1] *
+                qqm1_tmp[k];
+    } else {
+      kl = my_iindx[i + 1] - (i + 1);
+      /*
+       *  loop over entire range but skip decompositions with in-between strand nick,
+       *  this should be faster than evaluating hard constraints callback for each
+       *  decomposition
+       */
+      while (1) {
+        /* limit for-loop to last nucleotide of 5' part strand */
+        int stop = MIN2(j - 1, se[sn[k - 1]]);
+
+        for (; k <= stop; k++, kl--)
+          temp += qm[kl] *
+                  qqm1_tmp[k];
+
+        k++;
+        kl--;
+
+        if (stop == j - 1)
+          break;
+      }
+    }
+
+    if (qqm1_tmp != qqm1) {
+      qqm1_tmp += i;
+      free(qqm1_tmp);
+    }
+
+    qbt1 += temp *
+            qqqmmm;
+  }
+
+  free_sc_mb_exp(&sc_wrapper);
+
+  return qbt1;
+}
+
+
+PUBLIC FLT_OR_DBL
+vrna_exp_E_mb_loop_fast(vrna_fold_compound_t        *fc,
+                        int                         i,
+                        int                         j,
+                        struct vrna_mx_pf_aux_ml_s  *aux_mx)
+{
+  FLT_OR_DBL q = 0.;
+
+  if ((fc) && (aux_mx))
+    q = exp_E_mb_loop_fast(fc, i, j, aux_mx);
+
+  return q;
+}
+
+
+
+PRIVATE FLT_OR_DBL
+decompose_pair(vrna_fold_compound_t *fc,
+               int                  i,
+               int                  j,
+               vrna_mx_pf_aux_ml_t  aux_mx_ml)
+{
+  unsigned int  n;
+  int           *jindx, *pscore;
+  FLT_OR_DBL    contribution;
+  double        kTn;
+  vrna_hc_t     *hc;
+
+  contribution  = 0.;
+  n             = fc->length;
+  hc            = fc->hc;
+
+  if (hc->mx[j * n + i]) {
+    /* process hairpin loop(s) */
+    contribution += vrna_exp_E_hp_loop(fc, i, j);
+    /* process interior loop(s) */
+    contribution += vrna_exp_E_int_loop(fc, i, j);
+    /* process multibranch loop(s) */
+    contribution += vrna_exp_E_mb_loop_fast(fc, i, j, aux_mx_ml);
+
+    if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_c))
+      contribution += fc->aux_grammar->cb_aux_exp_c(fc, i, j, fc->aux_grammar->data);
+
+    if (fc->type == VRNA_FC_TYPE_COMPARATIVE) {
+      jindx         = fc->jindx;
+      pscore        = fc->pscore;
+      kTn           = fc->exp_params->kT / 10.;  /* kT in cal/mol */
+      contribution  *= exp(pscore[jindx[j] + i] / kTn);
+    }
+  }
+
+  return contribution;
+}
+
+
+
+
+PRIVATE int
+fill_arrays(vrna_fold_compound_t *fc)
+{ 
+  int                 n, i, j, k, ij, *my_iindx, *jindx, with_gquad, with_ud;
+  FLT_OR_DBL          temp, Qmax, *q, *qb, *qm, *qm1, *q1k, *qln;
+  double              max_real;
+  vrna_ud_t           *domains_up;
+  vrna_md_t           *md;
+  vrna_mx_pf_t        *matrices;
+  vrna_mx_pf_aux_el_t aux_mx_el;
+  vrna_mx_pf_aux_ml_t aux_mx_ml;
+  vrna_exp_param_t    *pf_params;
+
+  n           = fc->length;
+  my_iindx    = fc->iindx;
+  jindx       = fc->jindx;
+  matrices    = fc->exp_matrices;
+  pf_params   = fc->exp_params;
+  domains_up  = fc->domains_up;
+  q           = matrices->q;
+  qb          = matrices->qb;
+  qm          = matrices->qm;
+  qm1         = matrices->qm1;
+  q1k         = matrices->q1k;
+  qln         = matrices->qln;
+  md          = &(pf_params->model_details);
+  with_gquad  = md->gquad;
+
+  with_ud = (domains_up && domains_up->exp_energy_cb && (!(fc->type == VRNA_FC_TYPE_COMPARATIVE)));
+  Qmax    = 0;
+
+  max_real = (sizeof(FLT_OR_DBL) == sizeof(float)) ? FLT_MAX : DBL_MAX;
+
+  if (with_ud && domains_up->exp_prod_cb) // not into
+    domains_up->exp_prod_cb(fc, domains_up->data);
+
+  /* no G-Quadruplexes for comparative partition function (yet) */
+  // if (with_gquad) { // not into
+  //   free(fc->exp_matrices->G);
+  //   fc->exp_matrices->G = NULL;
+
+  //   switch (fc->type) {
+  //     case VRNA_FC_TYPE_SINGLE:
+  //       fc->exp_matrices->G = get_gquad_pf_matrix(fc->sequence_encoding2,
+  //                                                 fc->exp_matrices->scale,
+  //                                                 fc->exp_params);
+  //       break;
+  //   }
+  // }
+
+  /* init auxiliary arrays for fast exterior/multibranch loops */
+  aux_mx_el = vrna_exp_E_ext_fast_init(fc);
+  aux_mx_ml = vrna_exp_E_ml_fast_init(fc);
+
+  /*array initialization ; qb,qm,q
+   * qb,qm,q (i,j) are stored as ((n+1-i)*(n-i) div 2 + n+1-j */
+  for (i = 1; i <= n; i++) {
+    ij      = my_iindx[i] - i;
+    qb[ij]  = 0.0;
+  }
+
+  for (j = 2; j <= n; j++) {
+    for (i = j - 1; i >= 1; i--) {
+      ij = my_iindx[i] - j;
+
+      qb[ij] = decompose_pair(fc, i, j, aux_mx_ml);
+
+      /* Multibranch loop */
+      qm[ij] = vrna_exp_E_ml_fast(fc, i, j, aux_mx_ml);
+
+      if (qm1) { // not into
+        temp = vrna_exp_E_ml_fast_qqm(aux_mx_ml)[i]; /* for stochastic backtracking and circfold */
+
+        /* apply auxiliary grammar rule for multibranch loop (M1) case */
+        if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_m1))
+          temp += fc->aux_grammar->cb_aux_exp_m1(fc, i, j, fc->aux_grammar->data);
+
+        qm1[jindx[j] + i] = temp;
+      }
+
+      /* Exterior loop */
+      q[ij] = vrna_exp_E_ext_fast(fc, i, j, aux_mx_el);
+
+      /* apply auxiliary grammar rule (storage takes place in user-defined data structure */
+      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp)) // not into
+        fc->aux_grammar->cb_aux_exp(fc, i, j, fc->aux_grammar->data);
+
+      if (q[ij] > Qmax) {
+        Qmax = q[ij];
+        if (Qmax > max_real / 10.) // not into
+          printf("Q close to overflow: %d %d %g", i, j, q[ij]);
+      }
+
+      // if (q[ij] >= max_real) { // not into
+      //   printf("overflow while computing partition function for segment q[%d,%d]\n"
+      //                        "use larger pf_scale", i, j);
+
+      //   vrna_exp_E_ml_fast_free(aux_mx_ml);
+      //   vrna_exp_E_ext_fast_free(aux_mx_el);
+
+      //   return 0; /* failure */
+      // }
+    }
+
+    /* rotate auxiliary arrays */
+    vrna_exp_E_ext_fast_rotate(aux_mx_el);
+    vrna_exp_E_ml_fast_rotate(aux_mx_ml);
+  }
+
+  /* prefill linear qln, q1k arrays */
+  if (q1k && qln) {
+    for (k = 1; k <= n; k++) {
+      q1k[k]  = q[my_iindx[1] - k];
+      qln[k]  = q[my_iindx[k] - n];
+    }
+    q1k[0]      = 1.0;
+    qln[n + 1]  = 1.0;
+  }
+
+  /* free memory occupied by auxiliary arrays for fast exterior/multibranch loops */
+  vrna_exp_E_ml_fast_free(aux_mx_ml);
+  vrna_exp_E_ext_fast_free(aux_mx_el);
+
+  return 1;
+}
+
+
+
+
 PUBLIC FLT_OR_DBL
 vrna_pf(vrna_fold_compound_t  *fc,
         char                  *structure)
@@ -2880,7 +6262,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
   if (fc) {
     /* make sure, everything is set up properly to start partition function computations */
     // if (!vrna_fold_compound_prepare(fc, VRNA_OPTION_PF)) {
-    //   vrna_message_warning("vrna_pf@part_func.c: Failed to prepare vrna_fold_compound");
+    //   printf("vrna_pf@part_func.c: Failed to prepare vrna_fold_compound");
     //   return dG;
     // }
 
@@ -2996,6 +6378,300 @@ vrna_pf(vrna_fold_compound_t  *fc,
   return dG;
 }
 
+
+
+PRIVATE size_t *
+get_BM_BCT(const char *needle,
+           size_t     needle_size)
+{
+  size_t *table, i;
+
+  table = vrna_alloc(sizeof(size_t) * (127 + 2));
+
+  /* store maximum element value at position 0 */
+  table[0] = 127;
+
+  /* use remainder of array for actual bad character table */
+  for (i = 1; i <= 127 + 1; i++)
+    table[i] = needle_size;
+
+  for (i = 0; i < needle_size - 1; i++)
+    table[needle[i] + 1] = needle_size - i - 1;
+
+  return table;
+}
+
+
+
+#define BMH { \
+    hit     = NULL; \
+    shift   = start; \
+    margin  = (cyclic) ? 0 : needle_size; \
+    max     = bad_chars[0]; \
+    /* pop first element since the Bad Character Table starts at position 1 */ \
+    bad_chars++; \
+    /* main loop - go through haystack */ \
+    while (shift + margin < haystack_size) { \
+      /* \
+       *  matching loop, note that we allow for possibly wrapping the \
+       *  pattern around the haystack \
+       */\
+      for (i = needle_size - 1; \
+           haystack[(shift + i) % haystack_size] == needle[i]; \
+           i--) { \
+        if (i == 0) \
+        return haystack + shift; \
+      } \
+      val = haystack[(shift + needle_size - 1) % haystack_size]; \
+      if (val > max) { \
+        printf("vrna_search_BMH: " \
+                             "haystack value %d at hit %d " \
+                             "out of bad character table range [%d : %d]\n" \
+                             "Aborting search...", \
+                             (shift + needle_size - 1) % haystack_size, \
+                             val, \
+                             0, \
+                             max); \
+        return NULL; \
+      } \
+      shift += bad_chars[(size_t)val]; \
+    } \
+}
+
+
+
+PRIVATE const char *
+BoyerMooreHorspool(const char     *needle,
+                   size_t         needle_size,
+                   const char     *haystack,
+                   size_t         haystack_size,
+                   size_t         start,
+                   size_t         *bad_chars,
+                   unsigned char  cyclic)
+{
+  const char  *hit;
+  char        val, max;
+  size_t      i, shift, margin;
+
+  /* empty pattern matches element in haystack */
+  if (!needle)
+    return haystack;
+
+  /* empty pattern matches element in haystack */
+  if (needle_size == 0)
+    return haystack;
+
+  /* empty haystack can't contain any pattern */
+  if (haystack_size == 0)
+    return NULL;
+
+  /* haystack mustn't be shorter than needle */
+  if (haystack_size < needle_size)
+    return NULL;
+
+  /* begin actual algorithm */
+  BMH;
+
+  return hit;
+}
+
+
+
+
+PUBLIC const char *
+vrna_search_BMH(const char    *needle,
+                size_t        needle_size,
+                const char    *haystack,
+                size_t        haystack_size,
+                size_t        start,
+                size_t        *badchars,
+                unsigned char cyclic)
+{
+  const char  *hit;
+  size_t      *bc;
+
+  if ((!needle) || (!haystack) || (start > haystack_size))
+    return NULL;
+
+  bc = badchars;
+
+  /* create bad character table in case none is supplied */
+  if (!bc)
+    bc = get_BM_BCT(needle, needle_size);
+
+  /* perform actual search */
+  hit = BoyerMooreHorspool(needle,
+                           needle_size,
+                           haystack,
+                           haystack_size,
+                           start,
+                           bc,
+                           cyclic);
+
+  if (bc != badchars)
+    free(bc);
+
+  return hit;
+}
+
+
+PUBLIC size_t *
+vrna_search_BM_BCT(const char *pattern)
+{
+  if (!pattern)
+    return NULL;
+
+  size_t pattern_size = strlen(pattern);
+
+  return get_BM_BCT(pattern, pattern_size);
+}
+
+
+PUBLIC unsigned int
+vrna_rotational_symmetry_pos(const char   *string,
+                             unsigned int **positions)
+{
+  const char    *ptr;
+  unsigned int  matches, shifts_size;
+  size_t        *badchars, shift, i, string_length;
+
+  if (!string) {
+    if (positions)
+      *positions = NULL;
+
+    return 0;
+  }
+
+  string_length = strlen(string);
+
+  if (string_length == 0) {
+    if (positions)
+      *positions = NULL;
+
+    return 0;
+  }
+
+  /* any string is at least order 1 */
+  matches = 1;
+
+  if (positions) {
+    shifts_size = 10; /* initial guess for the order of rotational symmetry */
+    *positions  = vrna_alloc(sizeof(unsigned int) * shifts_size);
+
+    /* store trivial symmetry */
+    (*positions)[matches - 1] = 0;
+  }
+
+  /* strings of length 1 are order 1 */
+  if (string_length == 1) {
+    /* resize positions array to actual length */
+    if (positions)
+      *positions = vrna_realloc(*positions, sizeof(unsigned int) * matches);
+
+    return matches;
+  }
+
+  /* determine largest number/character in string */
+  badchars = vrna_search_BM_BCT(string);
+
+  shift = 1; /* skip trivial symmetry */
+
+  /* detect order of rotational symmetry */
+
+  /*
+   *  Note, that finding the smallest shift s of the string that
+   *  results in an identity mapping of the string to itself
+   *  already determines the order of rotational symmetry R, i.e.
+   *  R = n / r where n is the length of the string
+   */
+  ptr = vrna_search_BMH(string,
+                        string_length,
+                        string,
+                        string_length,
+                        shift,
+                        badchars,
+                        1);
+
+  if (ptr) {
+    shift   = ptr - string;
+    matches = string_length / shift;
+    if (positions) {
+      *positions = vrna_realloc(*positions, sizeof(unsigned int) * matches);
+      for (i = 0; i < matches; i++)
+        (*positions)[i] = i * shift;
+    }
+  }
+
+  free(badchars);
+
+  return matches;
+}
+
+
+
+PUBLIC unsigned int
+vrna_rotational_symmetry(const char *string)
+{
+  return vrna_rotational_symmetry_pos(string,
+                                      NULL);
+}
+
+
+PRIVATE void
+extract_dimer_props(vrna_fold_compound_t  *fc,
+                    double                *F0AB,  /**< @brief Null model without DuplexInit */
+                    double                *FAB,   /**< @brief all states with DuplexInit correction */
+                    double                *FcAB,  /**< @brief true hybrid states only */
+                    double                *FA,    /**< @brief monomer A */
+                    double                *FB     /**< @brief monomer B */
+                    )
+{
+  unsigned int      n, sym, *ss, *so, *se;
+  double            kT, QAB, QToT, Qzero;
+  vrna_mx_pf_t      *matrices;
+  vrna_exp_param_t  *params;
+
+  n         = fc->length;
+  ss        = fc->strand_start;
+  se        = fc->strand_end;
+  so        = fc->strand_order;
+  params    = fc->exp_params;
+  matrices  = fc->exp_matrices;
+
+  if (fc->strands > 1) {
+    kT  = params->kT / 1000.0;
+    QAB = matrices->q[fc->iindx[1] - n];
+
+    /* check for rotational symmetry correction */
+    sym = vrna_rotational_symmetry(fc->sequence);
+    QAB /= (FLT_OR_DBL)sym;
+
+    /* add interaction penalty */
+    QAB *= pow(params->expDuplexInit, (FLT_OR_DBL)(fc->strands - 1));
+
+    Qzero = matrices->q[fc->iindx[1] - n] +
+            matrices->q[fc->iindx[1] - se[so[0]]] *
+            matrices->q[fc->iindx[ss[so[1]]] - n];
+
+    QToT = matrices->q[fc->iindx[1] - se[so[0]]] *
+           matrices->q[fc->iindx[ss[so[1]]] - n] +
+           QAB;
+
+    *FAB  = -kT * (log(QToT) + n * log(params->pf_scale));
+    *F0AB = -kT * (log(Qzero) + n * log(params->pf_scale));
+    *FcAB = (QAB > 1e-17) ? -kT * (log(QAB) + n * log(params->pf_scale)) : 999;
+    *FA   = -kT *
+            (log(matrices->q[fc->iindx[1] - se[so[0]]]) + (se[so[0]]) *
+             log(params->pf_scale));
+    *FB = -kT *
+          (log(matrices->q[fc->iindx[ss[so[1]]] - n]) + (n - ss[so[1]] + 1) *
+           log(params->pf_scale));
+  } else {
+    *FA = *FB = *FAB = *F0AB = (-log(matrices->q[fc->iindx[1] - n]) - n * log(params->pf_scale)) *
+                               params->kT / 1000.0;
+    *FcAB = 0;
+  }
+}
 
 
 
