@@ -6,7 +6,8 @@ into col row
 into !(options & VRNA_OPTION_EVAL_ONLY)
 into else
 into else
->primer_f7,temp_r7
+get_constraints_helpercircular is 0
+with_ud_outside is 0>primer_f7,temp_r7
 CTTCCTCGGGTTCAAAGCTGGATT&GTCCAGTTTTCCCAGGAAT
 .(((((.(((...((((((((((.&)))))))))))))))))). (-21.90)
 .(((((.(((...((((((((((.&)))))))))))))))))). [-22.33]

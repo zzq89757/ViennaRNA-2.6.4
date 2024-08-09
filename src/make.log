@@ -1,39 +1,16 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
-  CC       fold_compound.lo
-  CC       part_func.lo
-  CC       loops/external_pf.lo
-  CCLD     libRNA_loops.la
+  CC       equilibrium_probs.lo
   CXXLD    libRNA_conv.la
   CXXLD    libRNA.la
   GEN      libRNA.a
 Making all in bin
-  CCLD     RNAfold
-  CCLD     RNAeval
-  CCLD     RNAheat
-  CCLD     RNApdist
-  CCLD     RNAdistance
-  CCLD     RNAinverse
-  CCLD     RNAplot
-  CCLD     RNAsubopt
-  CCLD     RNALfold
+ cd ../.. && /bin/bash /data/ntc/Repository/ViennaRNA-2.6.4/config/missing automake-1.16 --foreign src/bin/Makefile
+ cd ../.. && /bin/bash ./config.status src/bin/Makefile depfiles
+config.status: creating src/bin/Makefile
+config.status: executing depfiles commands
   CCLD     RNAcofold
-  CCLD     RNApaln
-  CCLD     RNAduplex
-  CCLD     RNAalifold
-  CCLD     RNAplfold
-  CCLD     RNAup
-  CCLD     RNAaliduplex
-  CCLD     RNALalifold
-  CCLD     RNA2Dfold
-  CCLD     RNAparconv
-  CCLD     RNAPKplex
-  CCLD     RNAplex
-  CCLD     RNAsnoop
-  CCLD     RNApvmin
-  CCLD     RNAdos
-  CCLD     RNAmultifold
 Making all in Utils
   CCLD     b2ct
   CCLD     popt

@@ -86,7 +86,6 @@ PUBLIC int GQuadLayerMismatchMax  = 1;
 
 #define VRNA_OPTION_WINDOW (1 << 4)
 #define VRNA_OPTION_EVAL_ONLY (1 << 3)
-VRNA_MX_WINDOW = 1;
 
 #define WITH_PTYPE 1L
 #define WITH_PTYPE_COMPAT 2L
@@ -1934,6 +1933,77 @@ struct vrna_structured_domains_s {
 typedef struct vrna_structured_domains_s vrna_sd_t;
 
 
+
+
+
+struct vrna_exp_param_s {
+  int     id;   /**<  @brief  An identifier for the data structure
+                 *    @deprecated This attribute will be removed in version 3
+                 */
+  double  expstack[NBPAIRS + 1][NBPAIRS + 1];
+  double  exphairpin[31];
+  double  expbulge[MAXLOOP + 1];
+  double  expinternal[MAXLOOP + 1];
+  double  expmismatchExt[NBPAIRS + 1][5][5];
+  double  expmismatchI[NBPAIRS + 1][5][5];
+  double  expmismatch23I[NBPAIRS + 1][5][5];
+  double  expmismatch1nI[NBPAIRS + 1][5][5];
+  double  expmismatchH[NBPAIRS + 1][5][5];
+  double  expmismatchM[NBPAIRS + 1][5][5];
+  double  expdangle5[NBPAIRS + 1][5];
+  double  expdangle3[NBPAIRS + 1][5];
+  double  expint11[NBPAIRS + 1][NBPAIRS + 1][5][5];
+  double  expint21[NBPAIRS + 1][NBPAIRS + 1][5][5][5];
+  double  expint22[NBPAIRS + 1][NBPAIRS + 1][5][5][5][5];
+  double  expninio[5][MAXLOOP + 1];
+  double  lxc;
+  double  expMLbase;
+  double  expMLintern[NBPAIRS + 1];
+  double  expMLclosing;
+  double  expTermAU;
+  double  expDuplexInit;
+  double  exptetra[40];
+  double  exptri[40];
+  double  exphex[40];
+  char    Tetraloops[1401];
+  double  expTriloop[40];
+  char    Triloops[241];
+  char    Hexaloops[1801];
+  double  expTripleC;
+  double  expMultipleCA;
+  double  expMultipleCB;
+  double  expgquad[VRNA_GQUAD_MAX_STACK_SIZE + 1][3 * VRNA_GQUAD_MAX_LINKER_LENGTH + 1];
+  double  expgquadLayerMismatch;
+  int     gquadLayerMismatchMax;
+
+  double  kT;
+  double  pf_scale;           /**<  @brief    Scaling factor to avoid over-/underflows */
+
+  double  temperature;        /**<  @brief    Temperature used for loop contribution scaling */
+  double  alpha;              /**<  @brief    Scaling factor for the thermodynamic temperature
+                               *    @details  This allows for temperature scaling in Boltzmann
+                               *              factors independently from the energy contributions.
+                               *              The resulting Boltzmann factors are then computed by
+                               *              @f$ e^{-E/(\alpha \cdot K \cdot T)} @f$
+                               */
+
+  vrna_md_t model_details;    /**<  @brief  Model details to be used in the recursions */
+  char      param_file[256];  /**<  @brief  The filename the parameters were derived from, or empty string if they represent the default */
+
+  double    expSaltStack;
+  double    expSaltLoop[MAXLOOP + 2];
+  double    SaltLoopDbl[MAXLOOP + 2];
+  int       SaltMLbase;
+  int       SaltMLintern;
+  int       SaltMLclosing;
+  int       SaltDPXInit;
+};
+
+
+typedef struct  vrna_exp_param_s vrna_exp_param_t;
+
+
+
 typedef void (*vrna_ud_production_f)(vrna_fold_compound_t *fc,
                                            void                 *data);
 typedef void (*vrna_ud_exp_production_f)(vrna_fold_compound_t *fc,
@@ -2004,178 +2074,6 @@ struct vrna_unstructured_domain_s {
 
 
 typedef struct vrna_unstructured_domain_s vrna_ud_t;
-
-
-typedef void (*vrna_grammar_cond_f)(vrna_fold_compound_t *fc,
-                                     unsigned char        stage,
-                                     void                 *data);
-
-typedef int (*vrna_grammar_rule_f)(vrna_fold_compound_t  *fc,
-                                    int                   i,
-                                    int                   j,
-                                    void                  *data);
-
-
-typedef void (*vrna_grammar_rule_f_aux)(vrna_fold_compound_t  *fc,
-                                    int                   i,
-                                    int                   j,
-                                    void                  *data);
-
-
-typedef FLT_OR_DBL (*vrna_grammar_rule_f_exp)(vrna_fold_compound_t *fc,
-                                               int                  i,
-                                               int                  j,
-                                               void                 *data);
-
-
-typedef void (*vrna_grammar_rule_f_aux_exp)(vrna_fold_compound_t *fc,
-                                               int                  i,
-                                               int                  j,
-                                               void                 *data);
-
-
-typedef void (*vrna_grammar_data_free_f)(void *data);
-
-
-
-struct vrna_gr_aux_s {
-  vrna_grammar_cond_f       cb_proc; /**< @brief A callback for pre- and post-processing of auxiliary grammar rules */
-
-  vrna_grammar_rule_f       cb_aux_f;
-  vrna_grammar_rule_f       cb_aux_c;
-  vrna_grammar_rule_f       cb_aux_m;
-  vrna_grammar_rule_f       cb_aux_m1;
-  vrna_grammar_rule_f_aux       cb_aux;
-
-  vrna_grammar_rule_f_exp   cb_aux_exp_f;
-  vrna_grammar_rule_f_exp   cb_aux_exp_c;
-  vrna_grammar_rule_f_exp     cb_aux_exp_m;
-  vrna_grammar_rule_f_exp     cb_aux_exp_m1;
-  vrna_grammar_rule_f_aux_exp   cb_aux_exp;
-
-  void                        *data;
-  vrna_grammar_data_free_f  free_data;
-};
-
-
-typedef struct vrna_gr_aux_s vrna_gr_aux_t;
-
-
-typedef enum {
-  VRNA_SC_DEFAULT = 0,  /**<  @brief  Default Soft Constraints */
-  VRNA_SC_WINDOW = 1   /**<  @brief  Soft Constraints suitable for local structure prediction using
-                     *    window approach.
-                     *    @see    vrna_mfe_window(), vrna_mfe_window_zscore(), pfl_fold()
-                     */
-} vrna_sc_type_e;
-
-typedef struct {
-  unsigned int  interval_start;
-  unsigned int  interval_end;
-  int           e;
-} vrna_sc_bp_storage_t;
-
-typedef int (*vrna_sc_f)(int            i,
-                         int            j,
-                         int            k,
-                         int            l,
-                         unsigned char  d,
-                         void           *data);
-
-struct vrna_basepair_s {
-  int i;
-  int j;
-};
-
-typedef struct vrna_basepair_s vrna_basepair_t;
-
-typedef vrna_basepair_t *(*vrna_sc_bt_f)(int            i,
-                                         int            j,
-                                         int            k,
-                                         int            l,
-                                         unsigned char  d,
-                                         void           *data);
-
-typedef FLT_OR_DBL (*vrna_sc_exp_f)(int           i,
-                                    int           j,
-                                    int           k,
-                                    int           l,
-                                    unsigned char d,
-                                    void          *data);
-
-
-typedef int (*vrna_auxdata_prepare_f)(vrna_fold_compound_t  *fc,
-                                      void                  *data,
-                                      unsigned int          event,
-                                      void                  *event_data);
-
-
-
-
-struct vrna_sc_s {
-  const vrna_sc_type_e  type;
-  unsigned int          n;
-
-  unsigned char         state;
-
-  int                   **energy_up;      /**<  @brief Energy contribution for stretches of unpaired nucleotides */
-  FLT_OR_DBL            **exp_energy_up;  /**<  @brief Boltzmann Factors of the energy contributions for unpaired sequence stretches */
-
-  int                   *up_storage;      /**<  @brief  Storage container for energy contributions per unpaired nucleotide */
-  vrna_sc_bp_storage_t  **bp_storage;     /**<  @brief  Storage container for energy contributions per base pair */
-
-#ifndef VRNA_DISABLE_C11_FEATURES
-  /* C11 support for unnamed unions/structs */
-  union {
-    struct {
-#endif
-  int *energy_bp;                               /**<  @brief Energy contribution for base pairs */
-  FLT_OR_DBL *exp_energy_bp;                    /**<  @brief Boltzmann Factors of the energy contribution for base pairs */
-#ifndef VRNA_DISABLE_C11_FEATURES
-  /* C11 support for unnamed unions/structs */
-};
-struct {
-#endif
-  int         **energy_bp_local;                        /**<  @brief Energy contribution for base pairs (sliding window approach) */
-  FLT_OR_DBL  **exp_energy_bp_local;                    /**<  @brief Boltzmann Factors of the energy contribution for base pairs (sliding window approach) */
-#ifndef VRNA_DISABLE_C11_FEATURES
-  /* C11 support for unnamed unions/structs */
-};
-};
-#endif
-
-  int           *energy_stack;                    /**<  @brief Pseudo Energy contribution per base pair involved in a stack */
-  FLT_OR_DBL    *exp_energy_stack;                /**<  @brief Boltzmann weighted pseudo energy contribution per nucleotide involved in a stack */
-
-  /* generic soft contraints below */
-  vrna_sc_f     f;            /**<  @brief  A function pointer used for pseudo
-                               *            energy contribution in MFE calculations
-                               *    @see    vrna_sc_add_f()
-                               */
-
-  vrna_sc_bt_f  bt;           /**<  @brief  A function pointer used to obtain backtraced
-                               *            base pairs in loop regions that were altered
-                               *            by soft constrained pseudo energy contributions
-                               *    @see    vrna_sc_add_bt()
-                               */
-
-  vrna_sc_exp_f exp_f;        /**<  @brief  A function pointer used for pseudo energy
-                               *            contribution boltzmann factors in PF
-                               *            calculations
-                               *    @see    vrna_sc_add_exp_f()
-                               */
-
-  void                *data;  /**<  @brief  A pointer to the data object provided for
-                               *            for pseudo energy contribution functions of the
-                               *            generic soft constraints feature
-                               */
-
-  vrna_auxdata_prepare_f  prepare_data;
-  vrna_auxdata_free_f     free_data;
-};
-
-
-typedef struct  vrna_sc_s vrna_sc_t;
 
 
 struct vrna_fc_s {
@@ -2394,6 +2292,182 @@ typedef struct vrna_fc_s vrna_fold_compound_t;
 
 
 
+
+
+typedef void (*vrna_grammar_cond_f)(vrna_fold_compound_t *fc,
+                                     unsigned char        stage,
+                                     void                 *data);
+
+typedef int (*vrna_grammar_rule_f)(vrna_fold_compound_t  *fc,
+                                    int                   i,
+                                    int                   j,
+                                    void                  *data);
+
+
+typedef void (*vrna_grammar_rule_f_aux)(vrna_fold_compound_t  *fc,
+                                    int                   i,
+                                    int                   j,
+                                    void                  *data);
+
+
+typedef FLT_OR_DBL (*vrna_grammar_rule_f_exp)(vrna_fold_compound_t *fc,
+                                               int                  i,
+                                               int                  j,
+                                               void                 *data);
+
+
+typedef void (*vrna_grammar_rule_f_aux_exp)(vrna_fold_compound_t *fc,
+                                               int                  i,
+                                               int                  j,
+                                               void                 *data);
+
+
+typedef void (*vrna_grammar_data_free_f)(void *data);
+
+
+
+struct vrna_gr_aux_s {
+  vrna_grammar_cond_f       cb_proc; /**< @brief A callback for pre- and post-processing of auxiliary grammar rules */
+
+  vrna_grammar_rule_f       cb_aux_f;
+  vrna_grammar_rule_f       cb_aux_c;
+  vrna_grammar_rule_f       cb_aux_m;
+  vrna_grammar_rule_f       cb_aux_m1;
+  vrna_grammar_rule_f_aux       cb_aux;
+
+  vrna_grammar_rule_f_exp   cb_aux_exp_f;
+  vrna_grammar_rule_f_exp   cb_aux_exp_c;
+  vrna_grammar_rule_f_exp     cb_aux_exp_m;
+  vrna_grammar_rule_f_exp     cb_aux_exp_m1;
+  vrna_grammar_rule_f_aux_exp   cb_aux_exp;
+
+  void                        *data;
+  vrna_grammar_data_free_f  free_data;
+};
+
+
+typedef struct vrna_gr_aux_s vrna_gr_aux_t;
+
+
+typedef enum {
+  VRNA_SC_DEFAULT = 0,  /**<  @brief  Default Soft Constraints */
+  VRNA_SC_WINDOW = 1   /**<  @brief  Soft Constraints suitable for local structure prediction using
+                     *    window approach.
+                     *    @see    vrna_mfe_window(), vrna_mfe_window_zscore(), pfl_fold()
+                     */
+} vrna_sc_type_e;
+
+typedef struct {
+  unsigned int  interval_start;
+  unsigned int  interval_end;
+  int           e;
+} vrna_sc_bp_storage_t;
+
+typedef int (*vrna_sc_f)(int            i,
+                         int            j,
+                         int            k,
+                         int            l,
+                         unsigned char  d,
+                         void           *data);
+
+struct vrna_basepair_s {
+  int i;
+  int j;
+};
+
+typedef struct vrna_basepair_s vrna_basepair_t;
+
+typedef vrna_basepair_t *(*vrna_sc_bt_f)(int            i,
+                                         int            j,
+                                         int            k,
+                                         int            l,
+                                         unsigned char  d,
+                                         void           *data);
+
+typedef FLT_OR_DBL (*vrna_sc_exp_f)(int           i,
+                                    int           j,
+                                    int           k,
+                                    int           l,
+                                    unsigned char d,
+                                    void          *data);
+
+
+typedef int (*vrna_auxdata_prepare_f)(vrna_fold_compound_t  *fc,
+                                      void                  *data,
+                                      unsigned int          event,
+                                      void                  *event_data);
+
+
+
+
+struct vrna_sc_s {
+  const vrna_sc_type_e  type;
+  unsigned int          n;
+
+  unsigned char         state;
+
+  int                   **energy_up;      /**<  @brief Energy contribution for stretches of unpaired nucleotides */
+  FLT_OR_DBL            **exp_energy_up;  /**<  @brief Boltzmann Factors of the energy contributions for unpaired sequence stretches */
+
+  int                   *up_storage;      /**<  @brief  Storage container for energy contributions per unpaired nucleotide */
+  vrna_sc_bp_storage_t  **bp_storage;     /**<  @brief  Storage container for energy contributions per base pair */
+
+#ifndef VRNA_DISABLE_C11_FEATURES
+  /* C11 support for unnamed unions/structs */
+  union {
+    struct {
+#endif
+  int *energy_bp;                               /**<  @brief Energy contribution for base pairs */
+  FLT_OR_DBL *exp_energy_bp;                    /**<  @brief Boltzmann Factors of the energy contribution for base pairs */
+#ifndef VRNA_DISABLE_C11_FEATURES
+  /* C11 support for unnamed unions/structs */
+};
+struct {
+#endif
+  int         **energy_bp_local;                        /**<  @brief Energy contribution for base pairs (sliding window approach) */
+  FLT_OR_DBL  **exp_energy_bp_local;                    /**<  @brief Boltzmann Factors of the energy contribution for base pairs (sliding window approach) */
+#ifndef VRNA_DISABLE_C11_FEATURES
+  /* C11 support for unnamed unions/structs */
+};
+};
+#endif
+
+  int           *energy_stack;                    /**<  @brief Pseudo Energy contribution per base pair involved in a stack */
+  FLT_OR_DBL    *exp_energy_stack;                /**<  @brief Boltzmann weighted pseudo energy contribution per nucleotide involved in a stack */
+
+  /* generic soft contraints below */
+  vrna_sc_f     f;            /**<  @brief  A function pointer used for pseudo
+                               *            energy contribution in MFE calculations
+                               *    @see    vrna_sc_add_f()
+                               */
+
+  vrna_sc_bt_f  bt;           /**<  @brief  A function pointer used to obtain backtraced
+                               *            base pairs in loop regions that were altered
+                               *            by soft constrained pseudo energy contributions
+                               *    @see    vrna_sc_add_bt()
+                               */
+
+  vrna_sc_exp_f exp_f;        /**<  @brief  A function pointer used for pseudo energy
+                               *            contribution boltzmann factors in PF
+                               *            calculations
+                               *    @see    vrna_sc_add_exp_f()
+                               */
+
+  void                *data;  /**<  @brief  A pointer to the data object provided for
+                               *            for pseudo energy contribution functions of the
+                               *            generic soft constraints feature
+                               */
+
+  vrna_auxdata_prepare_f  prepare_data;
+  vrna_auxdata_free_f     free_data;
+};
+
+
+typedef struct  vrna_sc_s vrna_sc_t;
+
+
+
+
 struct vrna_dimer_pf_s {
   /* free energies for: */
   double  F0AB; /**< @brief Null model without DuplexInit */
@@ -2415,74 +2489,126 @@ struct vrna_dimer_conc_s {
   double  Bc;
 };
 
-struct vrna_exp_param_s {
-  int     id;   /**<  @brief  An identifier for the data structure
-                 *    @deprecated This attribute will be removed in version 3
-                 */
-  double  expstack[NBPAIRS + 1][NBPAIRS + 1];
-  double  exphairpin[31];
-  double  expbulge[MAXLOOP + 1];
-  double  expinternal[MAXLOOP + 1];
-  double  expmismatchExt[NBPAIRS + 1][5][5];
-  double  expmismatchI[NBPAIRS + 1][5][5];
-  double  expmismatch23I[NBPAIRS + 1][5][5];
-  double  expmismatch1nI[NBPAIRS + 1][5][5];
-  double  expmismatchH[NBPAIRS + 1][5][5];
-  double  expmismatchM[NBPAIRS + 1][5][5];
-  double  expdangle5[NBPAIRS + 1][5];
-  double  expdangle3[NBPAIRS + 1][5];
-  double  expint11[NBPAIRS + 1][NBPAIRS + 1][5][5];
-  double  expint21[NBPAIRS + 1][NBPAIRS + 1][5][5][5];
-  double  expint22[NBPAIRS + 1][NBPAIRS + 1][5][5][5][5];
-  double  expninio[5][MAXLOOP + 1];
-  double  lxc;
-  double  expMLbase;
-  double  expMLintern[NBPAIRS + 1];
-  double  expMLclosing;
-  double  expTermAU;
-  double  expDuplexInit;
-  double  exptetra[40];
-  double  exptri[40];
-  double  exphex[40];
-  char    Tetraloops[1401];
-  double  expTriloop[40];
-  char    Triloops[241];
-  char    Hexaloops[1801];
-  double  expTripleC;
-  double  expMultipleCA;
-  double  expMultipleCB;
-  double  expgquad[VRNA_GQUAD_MAX_STACK_SIZE + 1][3 * VRNA_GQUAD_MAX_LINKER_LENGTH + 1];
-  double  expgquadLayerMismatch;
-  int     gquadLayerMismatchMax;
-
-  double  kT;
-  double  pf_scale;           /**<  @brief    Scaling factor to avoid over-/underflows */
-
-  double  temperature;        /**<  @brief    Temperature used for loop contribution scaling */
-  double  alpha;              /**<  @brief    Scaling factor for the thermodynamic temperature
-                               *    @details  This allows for temperature scaling in Boltzmann
-                               *              factors independently from the energy contributions.
-                               *              The resulting Boltzmann factors are then computed by
-                               *              @f$ e^{-E/(\alpha \cdot K \cdot T)} @f$
-                               */
-
-  vrna_md_t model_details;    /**<  @brief  Model details to be used in the recursions */
-  char      param_file[256];  /**<  @brief  The filename the parameters were derived from, or empty string if they represent the default */
-
-  double    expSaltStack;
-  double    expSaltLoop[MAXLOOP + 2];
-  double    SaltLoopDbl[MAXLOOP + 2];
-  int       SaltMLbase;
-  int       SaltMLintern;
-  int       SaltMLclosing;
-  int       SaltDPXInit;
-};
-
-
-typedef struct  vrna_exp_param_s vrna_exp_param_t;
 
 
 typedef struct vrna_dimer_conc_s vrna_dimer_conc_t;
 
 
 #define VRNA_OPTION_PF (1 << 1)
+
+
+
+PUBLIC int
+vrna_gr_set_aux_exp_c(vrna_fold_compound_t      *fc,
+                      vrna_grammar_rule_f_exp cb);
+
+typedef struct {
+  FLT_OR_DBL  *prm_l;
+  FLT_OR_DBL  *prm_l1;
+  FLT_OR_DBL  *prml;
+
+  int         ud_max_size;
+  FLT_OR_DBL  **pmlu;
+  FLT_OR_DBL  *prm_MLbu;
+} helper_arrays;
+
+
+
+typedef struct {
+  struct hc_ext_def_dat     hc_dat_ext;
+  vrna_hc_eval_f hc_eval_ext;
+
+  struct hc_hp_def_dat      hc_dat_hp;
+  vrna_hc_eval_f hc_eval_hp;
+
+  struct hc_int_def_dat     hc_dat_int;
+  eval_hc                   hc_eval_int;
+
+  struct hc_mb_def_dat      hc_dat_mb;
+  vrna_hc_eval_f hc_eval_mb;
+
+  struct sc_ext_exp_dat     sc_wrapper_ext;
+  struct sc_hp_exp_dat      sc_wrapper_hp;
+  struct sc_int_exp_dat     sc_wrapper_int;
+  struct sc_mb_exp_dat      sc_wrapper_mb;
+} constraints_helper;
+
+PRIVATE helper_arrays *
+get_ml_helper_arrays(vrna_fold_compound_t *fc);
+
+PRIVATE constraints_helper *
+get_constraints_helper(vrna_fold_compound_t *fc);
+
+PRIVATE void
+compute_bpp_internal(vrna_fold_compound_t *fc,
+                     int                  l,
+                     vrna_ep_t            **bp_correction,
+                     int                  *corr_cnt,
+                     int                  *corr_size,
+                     FLT_OR_DBL           *Qmax,
+                     int                  *ov,
+                     constraints_helper   *constraints);
+
+
+PRIVATE void
+compute_bpp_multibranch(vrna_fold_compound_t  *fc,
+                        int                   l,
+                        helper_arrays         *ml_helpers,
+                        FLT_OR_DBL            *Qmax,
+                        int                   *ov,
+                        constraints_helper    *constraints);
+
+PRIVATE void
+compute_bpp_external(vrna_fold_compound_t *fc,
+                     constraints_helper   *constraints);
+
+
+
+PRIVATE void
+multistrand_update_Y5(vrna_fold_compound_t  *fc,
+                      int                   l,
+                      FLT_OR_DBL            *Y5,
+                      FLT_OR_DBL            **Y5p,
+                      constraints_helper    *constraints);
+
+
+
+PRIVATE void
+multistrand_update_Y3(vrna_fold_compound_t  *fc,
+                      int                   l,
+                      FLT_OR_DBL            **Y3,
+                      FLT_OR_DBL            **Y3p,
+                      constraints_helper    *constraints);
+
+
+
+PRIVATE void
+multistrand_contrib(vrna_fold_compound_t  *fc,
+                    int                   l,
+                    FLT_OR_DBL            *Y5,
+                    FLT_OR_DBL            **Y3,
+                    constraints_helper    *constraints,
+                    FLT_OR_DBL            *Qmax,
+                    int                   *ov);
+
+
+
+
+PUBLIC char *
+vrna_db_from_probs(const FLT_OR_DBL *p,
+                   unsigned int     length);
+
+
+
+PRIVATE void
+free_ml_helper_arrays(helper_arrays *ml_helpers);
+
+
+PRIVATE void
+free_constraints_helper(constraints_helper *helper);
+
+
+
+PUBLIC vrna_dimer_pf_t
+vrna_pf_dimer(vrna_fold_compound_t  *fc,
+              char                  *structure);

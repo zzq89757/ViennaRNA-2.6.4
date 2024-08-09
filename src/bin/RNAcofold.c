@@ -180,7 +180,7 @@ init_default_options(struct options *opt)
   opt->pf             = 1;
   opt->doT            = 0; /* compute dimer free energies etc. */
   opt->noPS           = 1;
-  opt->noconv         = 0;
+  opt->noconv         = 1;
   opt->centroid       = 0;  /* off by default due to historical reasons */
   opt->MEA            = 0;
   opt->MEAgamma       = 1.;
@@ -786,8 +786,10 @@ process_record(struct record_data *record)
                                VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
   }
 
-  if (opt->commands)
+  if (opt->commands){
+    printf("cmd apply into");
     vrna_commands_apply(vc, opt->commands, VRNA_CMD_PARSE_HC | VRNA_CMD_PARSE_SC);
+  }
 
   /* apply modified base support if requested */
   mod_bases_apply(vc,

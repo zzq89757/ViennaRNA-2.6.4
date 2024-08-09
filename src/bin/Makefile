@@ -95,15 +95,7 @@ host_triplet = x86_64-pc-linux-gnu
 # Link with cthreadpool if parallel input processing is enabled
 am__append_2 = -I$(top_srcdir)/src/cthreadpool
 am__append_3 = ../cthreadpool/thpool.c
-bin_PROGRAMS = RNAfold$(EXEEXT) RNAeval$(EXEEXT) RNAheat$(EXEEXT) \
-	RNApdist$(EXEEXT) RNAdistance$(EXEEXT) RNAinverse$(EXEEXT) \
-	RNAplot$(EXEEXT) RNAsubopt$(EXEEXT) RNALfold$(EXEEXT) \
-	RNAcofold$(EXEEXT) RNApaln$(EXEEXT) RNAduplex$(EXEEXT) \
-	RNAalifold$(EXEEXT) RNAplfold$(EXEEXT) RNAup$(EXEEXT) \
-	RNAaliduplex$(EXEEXT) RNALalifold$(EXEEXT) RNA2Dfold$(EXEEXT) \
-	RNAparconv$(EXEEXT) RNAPKplex$(EXEEXT) RNAplex$(EXEEXT) \
-	RNAsnoop$(EXEEXT) RNApvmin$(EXEEXT) RNAdos$(EXEEXT) \
-	RNAmultifold$(EXEEXT)
+bin_PROGRAMS = RNAcofold$(EXEEXT)
 #am__append_4 = $(MPFR_LIBS)
 
 # Link against stdc++ if we use SVM
@@ -165,161 +157,13 @@ am__v_lt_1 =
 libhelpers_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libhelpers_la_LDFLAGS) $(LDFLAGS) -o $@
-am_RNA2Dfold_OBJECTS = RNA2Dfold_cmdl.$(OBJEXT) RNA2Dfold.$(OBJEXT)
-RNA2Dfold_OBJECTS = $(am_RNA2Dfold_OBJECTS)
-RNA2Dfold_LDADD = $(LDADD)
-am__DEPENDENCIES_1 =
-#am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-RNA2Dfold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNALalifold_OBJECTS = RNALalifold_cmdl.$(OBJEXT) \
-	RNALalifold.$(OBJEXT)
-RNALalifold_OBJECTS = $(am_RNALalifold_OBJECTS)
-RNALalifold_LDADD = $(LDADD)
-RNALalifold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNALfold_OBJECTS = RNALfold_cmdl.$(OBJEXT) RNALfold.$(OBJEXT)
-RNALfold_OBJECTS = $(am_RNALfold_OBJECTS)
-RNALfold_LDADD = $(LDADD)
-RNALfold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAPKplex_OBJECTS = RNAPKplex_cmdl.$(OBJEXT) RNAPKplex.$(OBJEXT)
-RNAPKplex_OBJECTS = $(am_RNAPKplex_OBJECTS)
-RNAPKplex_LDADD = $(LDADD)
-RNAPKplex_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAaliduplex_OBJECTS = RNAaliduplex_cmdl.$(OBJEXT) \
-	RNAaliduplex.$(OBJEXT)
-RNAaliduplex_OBJECTS = $(am_RNAaliduplex_OBJECTS)
-RNAaliduplex_LDADD = $(LDADD)
-RNAaliduplex_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAalifold_OBJECTS = RNAalifold_cmdl.$(OBJEXT) RNAalifold.$(OBJEXT)
-RNAalifold_OBJECTS = $(am_RNAalifold_OBJECTS)
-RNAalifold_LDADD = $(LDADD)
-RNAalifold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
 am_RNAcofold_OBJECTS = RNAcofold_cmdl.$(OBJEXT) RNAcofold.$(OBJEXT)
 RNAcofold_OBJECTS = $(am_RNAcofold_OBJECTS)
 RNAcofold_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+#am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 RNAcofold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAdistance_OBJECTS = RNAdistance_cmdl.$(OBJEXT) \
-	RNAdistance.$(OBJEXT)
-RNAdistance_OBJECTS = $(am_RNAdistance_OBJECTS)
-RNAdistance_LDADD = $(LDADD)
-RNAdistance_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAdos_OBJECTS = RNAdos_cmdl.$(OBJEXT) RNAdos.$(OBJEXT)
-RNAdos_OBJECTS = $(am_RNAdos_OBJECTS)
-RNAdos_LDADD = $(LDADD)
-RNAdos_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAduplex_OBJECTS = RNAduplex_cmdl.$(OBJEXT) RNAduplex.$(OBJEXT)
-RNAduplex_OBJECTS = $(am_RNAduplex_OBJECTS)
-RNAduplex_LDADD = $(LDADD)
-RNAduplex_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAeval_OBJECTS = RNAeval_cmdl.$(OBJEXT) RNAeval.$(OBJEXT)
-RNAeval_OBJECTS = $(am_RNAeval_OBJECTS)
-RNAeval_LDADD = $(LDADD)
-RNAeval_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAfold_OBJECTS = RNAfold_cmdl.$(OBJEXT) RNAfold.$(OBJEXT)
-RNAfold_OBJECTS = $(am_RNAfold_OBJECTS)
-RNAfold_LDADD = $(LDADD)
-RNAfold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAheat_OBJECTS = RNAheat_cmdl.$(OBJEXT) RNAheat.$(OBJEXT)
-RNAheat_OBJECTS = $(am_RNAheat_OBJECTS)
-RNAheat_LDADD = $(LDADD)
-RNAheat_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAinverse_OBJECTS = RNAinverse_cmdl.$(OBJEXT) RNAinverse.$(OBJEXT)
-RNAinverse_OBJECTS = $(am_RNAinverse_OBJECTS)
-RNAinverse_LDADD = $(LDADD)
-RNAinverse_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAmultifold_OBJECTS = RNAmultifold_cmdl.$(OBJEXT) \
-	RNAmultifold.$(OBJEXT)
-RNAmultifold_OBJECTS = $(am_RNAmultifold_OBJECTS)
-am__DEPENDENCIES_4 = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-RNAmultifold_DEPENDENCIES = $(am__DEPENDENCIES_4)
-am_RNApaln_OBJECTS = RNApaln_cmdl.$(OBJEXT) RNApaln.$(OBJEXT)
-RNApaln_OBJECTS = $(am_RNApaln_OBJECTS)
-RNApaln_LDADD = $(LDADD)
-RNApaln_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAparconv_OBJECTS = RNAparconv_cmdl.$(OBJEXT) RNAparconv.$(OBJEXT)
-RNAparconv_OBJECTS = $(am_RNAparconv_OBJECTS)
-RNAparconv_LDADD = $(LDADD)
-RNAparconv_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNApdist_OBJECTS = RNApdist_cmdl.$(OBJEXT) RNApdist.$(OBJEXT)
-RNApdist_OBJECTS = $(am_RNApdist_OBJECTS)
-RNApdist_LDADD = $(LDADD)
-RNApdist_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAplex_OBJECTS = RNAplex_cmdl.$(OBJEXT) RNAplex.$(OBJEXT)
-RNAplex_OBJECTS = $(am_RNAplex_OBJECTS)
-RNAplex_LDADD = $(LDADD)
-RNAplex_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAplfold_OBJECTS = RNAplfold_cmdl.$(OBJEXT) RNAplfold.$(OBJEXT)
-RNAplfold_OBJECTS = $(am_RNAplfold_OBJECTS)
-RNAplfold_LDADD = $(LDADD)
-RNAplfold_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAplot_OBJECTS = RNAplot_cmdl.$(OBJEXT) RNAplot.$(OBJEXT)
-RNAplot_OBJECTS = $(am_RNAplot_OBJECTS)
-RNAplot_LDADD = $(LDADD)
-RNAplot_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNApvmin_OBJECTS = RNApvmin_cmdl.$(OBJEXT) RNApvmin.$(OBJEXT)
-RNApvmin_OBJECTS = $(am_RNApvmin_OBJECTS)
-RNApvmin_LDADD = $(LDADD)
-RNApvmin_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAsnoop_OBJECTS = RNAsnoop_cmdl.$(OBJEXT) RNAsnoop.$(OBJEXT)
-RNAsnoop_OBJECTS = $(am_RNAsnoop_OBJECTS)
-RNAsnoop_LDADD = $(LDADD)
-RNAsnoop_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAsubopt_OBJECTS = RNAsubopt_cmdl.$(OBJEXT) RNAsubopt.$(OBJEXT)
-RNAsubopt_OBJECTS = $(am_RNAsubopt_OBJECTS)
-RNAsubopt_LDADD = $(LDADD)
-RNAsubopt_DEPENDENCIES = libhelpers.la \
-	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am_RNAup_OBJECTS = RNAup_cmdl.$(OBJEXT) RNAup.$(OBJEXT)
-RNAup_OBJECTS = $(am_RNAup_OBJECTS)
-RNAup_LDADD = $(LDADD)
-RNAup_DEPENDENCIES = libhelpers.la \
 	$(top_builddir)/src/ViennaRNA/libRNA_conv.la \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
 AM_V_P = $(am__v_P_$(V))
@@ -337,31 +181,7 @@ DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../cthreadpool/$(DEPDIR)/thpool.Plo \
-	./$(DEPDIR)/RNA2Dfold.Po ./$(DEPDIR)/RNA2Dfold_cmdl.Po \
-	./$(DEPDIR)/RNALalifold.Po ./$(DEPDIR)/RNALalifold_cmdl.Po \
-	./$(DEPDIR)/RNALfold.Po ./$(DEPDIR)/RNALfold_cmdl.Po \
-	./$(DEPDIR)/RNAPKplex.Po ./$(DEPDIR)/RNAPKplex_cmdl.Po \
-	./$(DEPDIR)/RNAaliduplex.Po ./$(DEPDIR)/RNAaliduplex_cmdl.Po \
-	./$(DEPDIR)/RNAalifold.Po ./$(DEPDIR)/RNAalifold_cmdl.Po \
 	./$(DEPDIR)/RNAcofold.Po ./$(DEPDIR)/RNAcofold_cmdl.Po \
-	./$(DEPDIR)/RNAdistance.Po ./$(DEPDIR)/RNAdistance_cmdl.Po \
-	./$(DEPDIR)/RNAdos.Po ./$(DEPDIR)/RNAdos_cmdl.Po \
-	./$(DEPDIR)/RNAduplex.Po ./$(DEPDIR)/RNAduplex_cmdl.Po \
-	./$(DEPDIR)/RNAeval.Po ./$(DEPDIR)/RNAeval_cmdl.Po \
-	./$(DEPDIR)/RNAfold.Po ./$(DEPDIR)/RNAfold_cmdl.Po \
-	./$(DEPDIR)/RNAheat.Po ./$(DEPDIR)/RNAheat_cmdl.Po \
-	./$(DEPDIR)/RNAinverse.Po ./$(DEPDIR)/RNAinverse_cmdl.Po \
-	./$(DEPDIR)/RNAmultifold.Po ./$(DEPDIR)/RNAmultifold_cmdl.Po \
-	./$(DEPDIR)/RNApaln.Po ./$(DEPDIR)/RNApaln_cmdl.Po \
-	./$(DEPDIR)/RNAparconv.Po ./$(DEPDIR)/RNAparconv_cmdl.Po \
-	./$(DEPDIR)/RNApdist.Po ./$(DEPDIR)/RNApdist_cmdl.Po \
-	./$(DEPDIR)/RNAplex.Po ./$(DEPDIR)/RNAplex_cmdl.Po \
-	./$(DEPDIR)/RNAplfold.Po ./$(DEPDIR)/RNAplfold_cmdl.Po \
-	./$(DEPDIR)/RNAplot.Po ./$(DEPDIR)/RNAplot_cmdl.Po \
-	./$(DEPDIR)/RNApvmin.Po ./$(DEPDIR)/RNApvmin_cmdl.Po \
-	./$(DEPDIR)/RNAsnoop.Po ./$(DEPDIR)/RNAsnoop_cmdl.Po \
-	./$(DEPDIR)/RNAsubopt.Po ./$(DEPDIR)/RNAsubopt_cmdl.Po \
-	./$(DEPDIR)/RNAup.Po ./$(DEPDIR)/RNAup_cmdl.Po \
 	./$(DEPDIR)/gengetopt_helpers.Plo \
 	./$(DEPDIR)/input_id_helpers.Plo \
 	./$(DEPDIR)/modified_bases_helpers.Plo \
@@ -383,28 +203,8 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_1 = 
-SOURCES = $(libhelpers_la_SOURCES) $(RNA2Dfold_SOURCES) \
-	$(RNALalifold_SOURCES) $(RNALfold_SOURCES) \
-	$(RNAPKplex_SOURCES) $(RNAaliduplex_SOURCES) \
-	$(RNAalifold_SOURCES) $(RNAcofold_SOURCES) \
-	$(RNAdistance_SOURCES) $(RNAdos_SOURCES) $(RNAduplex_SOURCES) \
-	$(RNAeval_SOURCES) $(RNAfold_SOURCES) $(RNAheat_SOURCES) \
-	$(RNAinverse_SOURCES) $(RNAmultifold_SOURCES) \
-	$(RNApaln_SOURCES) $(RNAparconv_SOURCES) $(RNApdist_SOURCES) \
-	$(RNAplex_SOURCES) $(RNAplfold_SOURCES) $(RNAplot_SOURCES) \
-	$(RNApvmin_SOURCES) $(RNAsnoop_SOURCES) $(RNAsubopt_SOURCES) \
-	$(RNAup_SOURCES)
-DIST_SOURCES = $(am__libhelpers_la_SOURCES_DIST) $(RNA2Dfold_SOURCES) \
-	$(RNALalifold_SOURCES) $(RNALfold_SOURCES) \
-	$(RNAPKplex_SOURCES) $(RNAaliduplex_SOURCES) \
-	$(RNAalifold_SOURCES) $(RNAcofold_SOURCES) \
-	$(RNAdistance_SOURCES) $(RNAdos_SOURCES) $(RNAduplex_SOURCES) \
-	$(RNAeval_SOURCES) $(RNAfold_SOURCES) $(RNAheat_SOURCES) \
-	$(RNAinverse_SOURCES) $(RNAmultifold_SOURCES) \
-	$(RNApaln_SOURCES) $(RNAparconv_SOURCES) $(RNApdist_SOURCES) \
-	$(RNAplex_SOURCES) $(RNAplfold_SOURCES) $(RNAplot_SOURCES) \
-	$(RNApvmin_SOURCES) $(RNAsnoop_SOURCES) $(RNAsubopt_SOURCES) \
-	$(RNAup_SOURCES)
+SOURCES = $(libhelpers_la_SOURCES) $(RNAcofold_SOURCES)
+DIST_SOURCES = $(am__libhelpers_la_SOURCES_DIST) $(RNAcofold_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1085,105 +885,9 @@ clean-noinstLTLIBRARIES:
 libhelpers.la: $(libhelpers_la_OBJECTS) $(libhelpers_la_DEPENDENCIES) $(EXTRA_libhelpers_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhelpers_la_LINK)  $(libhelpers_la_OBJECTS) $(libhelpers_la_LIBADD) $(LIBS)
 
-RNA2Dfold$(EXEEXT): $(RNA2Dfold_OBJECTS) $(RNA2Dfold_DEPENDENCIES) $(EXTRA_RNA2Dfold_DEPENDENCIES) 
-	@rm -f RNA2Dfold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNA2Dfold_OBJECTS) $(RNA2Dfold_LDADD) $(LIBS)
-
-RNALalifold$(EXEEXT): $(RNALalifold_OBJECTS) $(RNALalifold_DEPENDENCIES) $(EXTRA_RNALalifold_DEPENDENCIES) 
-	@rm -f RNALalifold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNALalifold_OBJECTS) $(RNALalifold_LDADD) $(LIBS)
-
-RNALfold$(EXEEXT): $(RNALfold_OBJECTS) $(RNALfold_DEPENDENCIES) $(EXTRA_RNALfold_DEPENDENCIES) 
-	@rm -f RNALfold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNALfold_OBJECTS) $(RNALfold_LDADD) $(LIBS)
-
-RNAPKplex$(EXEEXT): $(RNAPKplex_OBJECTS) $(RNAPKplex_DEPENDENCIES) $(EXTRA_RNAPKplex_DEPENDENCIES) 
-	@rm -f RNAPKplex$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAPKplex_OBJECTS) $(RNAPKplex_LDADD) $(LIBS)
-
-RNAaliduplex$(EXEEXT): $(RNAaliduplex_OBJECTS) $(RNAaliduplex_DEPENDENCIES) $(EXTRA_RNAaliduplex_DEPENDENCIES) 
-	@rm -f RNAaliduplex$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAaliduplex_OBJECTS) $(RNAaliduplex_LDADD) $(LIBS)
-
-RNAalifold$(EXEEXT): $(RNAalifold_OBJECTS) $(RNAalifold_DEPENDENCIES) $(EXTRA_RNAalifold_DEPENDENCIES) 
-	@rm -f RNAalifold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAalifold_OBJECTS) $(RNAalifold_LDADD) $(LIBS)
-
 RNAcofold$(EXEEXT): $(RNAcofold_OBJECTS) $(RNAcofold_DEPENDENCIES) $(EXTRA_RNAcofold_DEPENDENCIES) 
 	@rm -f RNAcofold$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(RNAcofold_OBJECTS) $(RNAcofold_LDADD) $(LIBS)
-
-RNAdistance$(EXEEXT): $(RNAdistance_OBJECTS) $(RNAdistance_DEPENDENCIES) $(EXTRA_RNAdistance_DEPENDENCIES) 
-	@rm -f RNAdistance$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAdistance_OBJECTS) $(RNAdistance_LDADD) $(LIBS)
-
-RNAdos$(EXEEXT): $(RNAdos_OBJECTS) $(RNAdos_DEPENDENCIES) $(EXTRA_RNAdos_DEPENDENCIES) 
-	@rm -f RNAdos$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAdos_OBJECTS) $(RNAdos_LDADD) $(LIBS)
-
-RNAduplex$(EXEEXT): $(RNAduplex_OBJECTS) $(RNAduplex_DEPENDENCIES) $(EXTRA_RNAduplex_DEPENDENCIES) 
-	@rm -f RNAduplex$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAduplex_OBJECTS) $(RNAduplex_LDADD) $(LIBS)
-
-RNAeval$(EXEEXT): $(RNAeval_OBJECTS) $(RNAeval_DEPENDENCIES) $(EXTRA_RNAeval_DEPENDENCIES) 
-	@rm -f RNAeval$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAeval_OBJECTS) $(RNAeval_LDADD) $(LIBS)
-
-RNAfold$(EXEEXT): $(RNAfold_OBJECTS) $(RNAfold_DEPENDENCIES) $(EXTRA_RNAfold_DEPENDENCIES) 
-	@rm -f RNAfold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAfold_OBJECTS) $(RNAfold_LDADD) $(LIBS)
-
-RNAheat$(EXEEXT): $(RNAheat_OBJECTS) $(RNAheat_DEPENDENCIES) $(EXTRA_RNAheat_DEPENDENCIES) 
-	@rm -f RNAheat$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAheat_OBJECTS) $(RNAheat_LDADD) $(LIBS)
-
-RNAinverse$(EXEEXT): $(RNAinverse_OBJECTS) $(RNAinverse_DEPENDENCIES) $(EXTRA_RNAinverse_DEPENDENCIES) 
-	@rm -f RNAinverse$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAinverse_OBJECTS) $(RNAinverse_LDADD) $(LIBS)
-
-RNAmultifold$(EXEEXT): $(RNAmultifold_OBJECTS) $(RNAmultifold_DEPENDENCIES) $(EXTRA_RNAmultifold_DEPENDENCIES) 
-	@rm -f RNAmultifold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAmultifold_OBJECTS) $(RNAmultifold_LDADD) $(LIBS)
-
-RNApaln$(EXEEXT): $(RNApaln_OBJECTS) $(RNApaln_DEPENDENCIES) $(EXTRA_RNApaln_DEPENDENCIES) 
-	@rm -f RNApaln$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNApaln_OBJECTS) $(RNApaln_LDADD) $(LIBS)
-
-RNAparconv$(EXEEXT): $(RNAparconv_OBJECTS) $(RNAparconv_DEPENDENCIES) $(EXTRA_RNAparconv_DEPENDENCIES) 
-	@rm -f RNAparconv$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAparconv_OBJECTS) $(RNAparconv_LDADD) $(LIBS)
-
-RNApdist$(EXEEXT): $(RNApdist_OBJECTS) $(RNApdist_DEPENDENCIES) $(EXTRA_RNApdist_DEPENDENCIES) 
-	@rm -f RNApdist$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNApdist_OBJECTS) $(RNApdist_LDADD) $(LIBS)
-
-RNAplex$(EXEEXT): $(RNAplex_OBJECTS) $(RNAplex_DEPENDENCIES) $(EXTRA_RNAplex_DEPENDENCIES) 
-	@rm -f RNAplex$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAplex_OBJECTS) $(RNAplex_LDADD) $(LIBS)
-
-RNAplfold$(EXEEXT): $(RNAplfold_OBJECTS) $(RNAplfold_DEPENDENCIES) $(EXTRA_RNAplfold_DEPENDENCIES) 
-	@rm -f RNAplfold$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAplfold_OBJECTS) $(RNAplfold_LDADD) $(LIBS)
-
-RNAplot$(EXEEXT): $(RNAplot_OBJECTS) $(RNAplot_DEPENDENCIES) $(EXTRA_RNAplot_DEPENDENCIES) 
-	@rm -f RNAplot$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAplot_OBJECTS) $(RNAplot_LDADD) $(LIBS)
-
-RNApvmin$(EXEEXT): $(RNApvmin_OBJECTS) $(RNApvmin_DEPENDENCIES) $(EXTRA_RNApvmin_DEPENDENCIES) 
-	@rm -f RNApvmin$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNApvmin_OBJECTS) $(RNApvmin_LDADD) $(LIBS)
-
-RNAsnoop$(EXEEXT): $(RNAsnoop_OBJECTS) $(RNAsnoop_DEPENDENCIES) $(EXTRA_RNAsnoop_DEPENDENCIES) 
-	@rm -f RNAsnoop$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAsnoop_OBJECTS) $(RNAsnoop_LDADD) $(LIBS)
-
-RNAsubopt$(EXEEXT): $(RNAsubopt_OBJECTS) $(RNAsubopt_DEPENDENCIES) $(EXTRA_RNAsubopt_DEPENDENCIES) 
-	@rm -f RNAsubopt$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAsubopt_OBJECTS) $(RNAsubopt_LDADD) $(LIBS)
-
-RNAup$(EXEEXT): $(RNAup_OBJECTS) $(RNAup_DEPENDENCIES) $(EXTRA_RNAup_DEPENDENCIES) 
-	@rm -f RNAup$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(RNAup_OBJECTS) $(RNAup_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1194,56 +898,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ../cthreadpool/$(DEPDIR)/thpool.Plo # am--include-marker
-include ./$(DEPDIR)/RNA2Dfold.Po # am--include-marker
-include ./$(DEPDIR)/RNA2Dfold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNALalifold.Po # am--include-marker
-include ./$(DEPDIR)/RNALalifold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNALfold.Po # am--include-marker
-include ./$(DEPDIR)/RNALfold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAPKplex.Po # am--include-marker
-include ./$(DEPDIR)/RNAPKplex_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAaliduplex.Po # am--include-marker
-include ./$(DEPDIR)/RNAaliduplex_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAalifold.Po # am--include-marker
-include ./$(DEPDIR)/RNAalifold_cmdl.Po # am--include-marker
 include ./$(DEPDIR)/RNAcofold.Po # am--include-marker
 include ./$(DEPDIR)/RNAcofold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAdistance.Po # am--include-marker
-include ./$(DEPDIR)/RNAdistance_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAdos.Po # am--include-marker
-include ./$(DEPDIR)/RNAdos_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAduplex.Po # am--include-marker
-include ./$(DEPDIR)/RNAduplex_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAeval.Po # am--include-marker
-include ./$(DEPDIR)/RNAeval_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAfold.Po # am--include-marker
-include ./$(DEPDIR)/RNAfold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAheat.Po # am--include-marker
-include ./$(DEPDIR)/RNAheat_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAinverse.Po # am--include-marker
-include ./$(DEPDIR)/RNAinverse_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAmultifold.Po # am--include-marker
-include ./$(DEPDIR)/RNAmultifold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNApaln.Po # am--include-marker
-include ./$(DEPDIR)/RNApaln_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAparconv.Po # am--include-marker
-include ./$(DEPDIR)/RNAparconv_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNApdist.Po # am--include-marker
-include ./$(DEPDIR)/RNApdist_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAplex.Po # am--include-marker
-include ./$(DEPDIR)/RNAplex_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAplfold.Po # am--include-marker
-include ./$(DEPDIR)/RNAplfold_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAplot.Po # am--include-marker
-include ./$(DEPDIR)/RNAplot_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNApvmin.Po # am--include-marker
-include ./$(DEPDIR)/RNApvmin_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAsnoop.Po # am--include-marker
-include ./$(DEPDIR)/RNAsnoop_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAsubopt.Po # am--include-marker
-include ./$(DEPDIR)/RNAsubopt_cmdl.Po # am--include-marker
-include ./$(DEPDIR)/RNAup.Po # am--include-marker
-include ./$(DEPDIR)/RNAup_cmdl.Po # am--include-marker
 include ./$(DEPDIR)/gengetopt_helpers.Plo # am--include-marker
 include ./$(DEPDIR)/input_id_helpers.Plo # am--include-marker
 include ./$(DEPDIR)/modified_bases_helpers.Plo # am--include-marker
@@ -1417,56 +1073,8 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ../cthreadpool/$(DEPDIR)/thpool.Plo
-	-rm -f ./$(DEPDIR)/RNA2Dfold.Po
-	-rm -f ./$(DEPDIR)/RNA2Dfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNALalifold.Po
-	-rm -f ./$(DEPDIR)/RNALalifold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNALfold.Po
-	-rm -f ./$(DEPDIR)/RNALfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAPKplex.Po
-	-rm -f ./$(DEPDIR)/RNAPKplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAaliduplex.Po
-	-rm -f ./$(DEPDIR)/RNAaliduplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAalifold.Po
-	-rm -f ./$(DEPDIR)/RNAalifold_cmdl.Po
 	-rm -f ./$(DEPDIR)/RNAcofold.Po
 	-rm -f ./$(DEPDIR)/RNAcofold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAdistance.Po
-	-rm -f ./$(DEPDIR)/RNAdistance_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAdos.Po
-	-rm -f ./$(DEPDIR)/RNAdos_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAduplex.Po
-	-rm -f ./$(DEPDIR)/RNAduplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAeval.Po
-	-rm -f ./$(DEPDIR)/RNAeval_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAfold.Po
-	-rm -f ./$(DEPDIR)/RNAfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAheat.Po
-	-rm -f ./$(DEPDIR)/RNAheat_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAinverse.Po
-	-rm -f ./$(DEPDIR)/RNAinverse_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAmultifold.Po
-	-rm -f ./$(DEPDIR)/RNAmultifold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApaln.Po
-	-rm -f ./$(DEPDIR)/RNApaln_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAparconv.Po
-	-rm -f ./$(DEPDIR)/RNAparconv_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApdist.Po
-	-rm -f ./$(DEPDIR)/RNApdist_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplex.Po
-	-rm -f ./$(DEPDIR)/RNAplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplfold.Po
-	-rm -f ./$(DEPDIR)/RNAplfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplot.Po
-	-rm -f ./$(DEPDIR)/RNAplot_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApvmin.Po
-	-rm -f ./$(DEPDIR)/RNApvmin_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAsnoop.Po
-	-rm -f ./$(DEPDIR)/RNAsnoop_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAsubopt.Po
-	-rm -f ./$(DEPDIR)/RNAsubopt_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAup.Po
-	-rm -f ./$(DEPDIR)/RNAup_cmdl.Po
 	-rm -f ./$(DEPDIR)/gengetopt_helpers.Plo
 	-rm -f ./$(DEPDIR)/input_id_helpers.Plo
 	-rm -f ./$(DEPDIR)/modified_bases_helpers.Plo
@@ -1517,56 +1125,8 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ../cthreadpool/$(DEPDIR)/thpool.Plo
-	-rm -f ./$(DEPDIR)/RNA2Dfold.Po
-	-rm -f ./$(DEPDIR)/RNA2Dfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNALalifold.Po
-	-rm -f ./$(DEPDIR)/RNALalifold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNALfold.Po
-	-rm -f ./$(DEPDIR)/RNALfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAPKplex.Po
-	-rm -f ./$(DEPDIR)/RNAPKplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAaliduplex.Po
-	-rm -f ./$(DEPDIR)/RNAaliduplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAalifold.Po
-	-rm -f ./$(DEPDIR)/RNAalifold_cmdl.Po
 	-rm -f ./$(DEPDIR)/RNAcofold.Po
 	-rm -f ./$(DEPDIR)/RNAcofold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAdistance.Po
-	-rm -f ./$(DEPDIR)/RNAdistance_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAdos.Po
-	-rm -f ./$(DEPDIR)/RNAdos_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAduplex.Po
-	-rm -f ./$(DEPDIR)/RNAduplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAeval.Po
-	-rm -f ./$(DEPDIR)/RNAeval_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAfold.Po
-	-rm -f ./$(DEPDIR)/RNAfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAheat.Po
-	-rm -f ./$(DEPDIR)/RNAheat_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAinverse.Po
-	-rm -f ./$(DEPDIR)/RNAinverse_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAmultifold.Po
-	-rm -f ./$(DEPDIR)/RNAmultifold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApaln.Po
-	-rm -f ./$(DEPDIR)/RNApaln_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAparconv.Po
-	-rm -f ./$(DEPDIR)/RNAparconv_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApdist.Po
-	-rm -f ./$(DEPDIR)/RNApdist_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplex.Po
-	-rm -f ./$(DEPDIR)/RNAplex_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplfold.Po
-	-rm -f ./$(DEPDIR)/RNAplfold_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAplot.Po
-	-rm -f ./$(DEPDIR)/RNAplot_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNApvmin.Po
-	-rm -f ./$(DEPDIR)/RNApvmin_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAsnoop.Po
-	-rm -f ./$(DEPDIR)/RNAsnoop_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAsubopt.Po
-	-rm -f ./$(DEPDIR)/RNAsubopt_cmdl.Po
-	-rm -f ./$(DEPDIR)/RNAup.Po
-	-rm -f ./$(DEPDIR)/RNAup_cmdl.Po
 	-rm -f ./$(DEPDIR)/gengetopt_helpers.Plo
 	-rm -f ./$(DEPDIR)/input_id_helpers.Plo
 	-rm -f ./$(DEPDIR)/modified_bases_helpers.Plo

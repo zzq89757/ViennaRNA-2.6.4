@@ -32,11 +32,7 @@ libhelpers_la_SOURCES += ../cthreadpool/thpool.c
 endif
 
 bin_PROGRAMS = \
-        RNAfold RNAeval RNAheat RNApdist RNAdistance RNAinverse \
-        RNAplot RNAsubopt RNALfold RNAcofold RNApaln RNAduplex \
-        RNAalifold RNAplfold RNAup RNAaliduplex RNALalifold RNA2Dfold \
-        RNAparconv RNAPKplex RNAplex RNAsnoop RNApvmin RNAdos \
-        RNAmultifold
+        RNAcofold
 
 LDADD = \
         libhelpers.la \
