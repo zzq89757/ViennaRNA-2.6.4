@@ -659,6 +659,22 @@ process_input(FILE            *input_stream,
 }
 
 
+void print_vrna_ep_list(const vrna_ep_t *plist) {
+    int index = 0;
+    
+    while (plist[index].i != 0 || plist[index].j != 0) {
+        // 打印每个 vrna_ep_t 结构体的所有属性
+        printf("Element %d:\n", index + 1);
+        printf("  Start Position (i): %d\n", plist[index].i);
+        printf("  End Position (j): %d\n", plist[index].j);
+        printf("  Probability (p): %.2f\n", plist[index].p);
+        printf("  Type (type): %d\n", plist[index].type);
+        printf("\n");
+        index++;
+    }
+}
+
+
 static void
 process_record(struct record_data *record)
 {
@@ -820,10 +836,11 @@ process_record(struct record_data *record)
 
   /* compute mfe of AB dimer */
   min_en  = vrna_mfe_dimer(vc, mfe_structure); /* vc.matrices changed*/
-
-  // 
+  
+  // 0.95设置每对碱基配对的概率的浮点值 返回的列表的末尾由一个特殊的条目标记，该条目中的 i 和 j 都设置为 0。这个特殊标记用于指示配对元素列表的结束，遍历列表时可以使用这个条件停止
   mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
-  // mfAB:vrna_elem_prob_s(vrna_ep_t)
+  // mfAB为vrna_ep_t 结构体指针的数组 对于点括号字符串中的每一对配对(不含.与括号的配对)，创建一个 vrna_ep_t 结构体。每个结构体包含配对的起始位置(不含两端的.对.和中间的括号对点) i(从1开始) 和结束位置 j(在以&分隔的字符串从左数的位置)，以及配对的概率 p
+  // print_vrna_ep_list(mfAB);
   /* check whether the constraint allows for any solution */
   if ((fold_constrained) || (opt->commands)) {
     if (min_en == (double)(INF / 100.)) {

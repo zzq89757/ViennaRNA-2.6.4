@@ -6,6 +6,114 @@ into col row
 into !(options & VRNA_OPTION_EVAL_ONLY)
 into else
 into else
+Element 1:
+  Start Position (i): 2
+  End Position (j): 42
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 2:
+  Start Position (i): 3
+  End Position (j): 41
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 3:
+  Start Position (i): 4
+  End Position (j): 40
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 4:
+  Start Position (i): 5
+  End Position (j): 39
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 5:
+  Start Position (i): 6
+  End Position (j): 38
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 6:
+  Start Position (i): 8
+  End Position (j): 37
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 7:
+  Start Position (i): 9
+  End Position (j): 36
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 8:
+  Start Position (i): 10
+  End Position (j): 35
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 9:
+  Start Position (i): 14
+  End Position (j): 34
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 10:
+  Start Position (i): 15
+  End Position (j): 33
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 11:
+  Start Position (i): 16
+  End Position (j): 32
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 12:
+  Start Position (i): 17
+  End Position (j): 31
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 13:
+  Start Position (i): 18
+  End Position (j): 30
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 14:
+  Start Position (i): 19
+  End Position (j): 29
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 15:
+  Start Position (i): 20
+  End Position (j): 28
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 16:
+  Start Position (i): 21
+  End Position (j): 27
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 17:
+  Start Position (i): 22
+  End Position (j): 26
+  Probability (p): 0.95
+  Type (type): 0
+
+Element 18:
+  Start Position (i): 23
+  End Position (j): 25
+  Probability (p): 0.95
+  Type (type): 0
+
 get_constraints_helpercircular is 0
 with_ud_outside is 0>primer_f7,temp_r7
 CTTCCTCGGGTTCAAAGCTGGATT&GTCCAGTTTTCCCAGGAAT

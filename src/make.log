@@ -2,7 +2,6 @@ Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
 Making all in bin
-  CC       RNAcofold_cmdl.o
   CC       RNAcofold.o
   CCLD     RNAcofold
 Making all in Utils
