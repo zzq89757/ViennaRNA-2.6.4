@@ -820,8 +820,10 @@ process_record(struct record_data *record)
 
   /* compute mfe of AB dimer */
   min_en  = vrna_mfe_dimer(vc, mfe_structure); /* vc.matrices changed*/
+
+  // 
   mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
-  // mfAB:vrna_elem_prob_s 
+  // mfAB:vrna_elem_prob_s(vrna_ep_t)
   /* check whether the constraint allows for any solution */
   if ((fold_constrained) || (opt->commands)) {
     if (min_en == (double)(INF / 100.)) {
