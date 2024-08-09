@@ -756,6 +756,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       probs[my_iindx[i] - i] = 0.;
     // printf("probs is :%f", probs);
     /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
+    printf("circular is %d\n",circular);
     if (circular)
       bppm_circ(vc, constraints);
     else
@@ -803,6 +804,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     }
     // linked vc 
     if (vc->type == VRNA_FC_TYPE_SINGLE) {
+        printf("with_ud_outside is %d", with_ud_outside);
       if (with_ud_outside) {
         /*
          *  The above recursions only deal with base pairs, and how they might be
@@ -827,6 +829,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       if ((sc) &&
           (sc->f) &&
           (sc->bt)) {
+        
         for (i = 1; i <= n; i++)
           for (j = i + 1; j <= n; j++) {
             ij = my_iindx[i] - j;
@@ -871,6 +874,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         ij = my_iindx[i] - j;
 
         if (with_gquad) {
+          printf("into with_gquad\n");
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
@@ -1050,7 +1054,7 @@ get_constraints_helper(vrna_fold_compound_t *fc)
   constraints_helper *helpers;
 
   helpers = (constraints_helper *)vrna_alloc(sizeof(constraints_helper));
-
+  printf("get_constraints_helper");
   helpers->hc_eval_ext  = prepare_hc_ext_def(fc, &(helpers->hc_dat_ext));
   helpers->hc_eval_hp   = prepare_hc_hp_def(fc, &(helpers->hc_dat_hp));
   helpers->hc_eval_int  = prepare_hc_int_def(fc, &(helpers->hc_dat_int));

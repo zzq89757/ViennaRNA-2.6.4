@@ -1571,9 +1571,6 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
       kT  = pf->kT;
       md  = &(pf->model_details);
 
-      if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
-        kT /= vc->n_seq;
-
       /* re-compute scaling factor if necessary */
       if ((mfe) || (pf->pf_scale < 1.)) {
         if (mfe)  /* use largest known Boltzmann factor for scaling */
@@ -2613,7 +2610,7 @@ struct vrna_mx_pf_aux_el_s {
   int         qqu_size;
   FLT_OR_DBL  **qqu;
 };
-
+typedef struct vrna_mx_pf_aux_el_s *vrna_mx_pf_aux_el_t;
 #define VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP 1U
 
 PRIVATE INLINE FLT_OR_DBL
@@ -2848,16 +2845,6 @@ vrna_pf_multifold_prepare(vrna_fold_compound_t *fc)
   return 0;
 }
 
-struct vrna_mx_pf_aux_el_s {
-  FLT_OR_DBL  *qq;
-  FLT_OR_DBL  *qq1;
-
-  int         qqu_size;
-  FLT_OR_DBL  **qqu;
-};
-
-
-typedef struct vrna_mx_pf_aux_el_s *vrna_mx_pf_aux_el_t;
 
 struct vrna_mx_pf_aux_ml_s {
   FLT_OR_DBL  *qqm;
@@ -7223,17 +7210,6 @@ get_BM_BCT(const char *needle,
         return haystack + shift; \
       } \
       val = haystack[(shift + needle_size - 1) % haystack_size]; \
-      if (val > max) { \
-        printf("vrna_search_BMH: " \
-                             "haystack value %d at hit %d " \
-                             "out of bad character table range [%d : %d]\n" \
-                             "Aborting search...", \
-                             (shift + needle_size - 1) % haystack_size, \
-                             val, \
-                             0, \
-                             max); \
-        return NULL; \
-      } \
       shift += bad_chars[(size_t)val]; \
     } \
 }
@@ -7418,15 +7394,7 @@ vrna_rotational_symmetry(const char *string)
 
 
 
-typedef struct {
-  FLT_OR_DBL  *prm_l;
-  FLT_OR_DBL  *prm_l1;
-  FLT_OR_DBL  *prml;
 
-  int         ud_max_size;
-  FLT_OR_DBL  **pmlu;
-  FLT_OR_DBL  *prm_MLbu;
-} helper_arrays;
 
 PRIVATE helper_arrays *
 get_ml_helper_arrays(vrna_fold_compound_t *fc)
@@ -7471,25 +7439,6 @@ get_ml_helper_arrays(vrna_fold_compound_t *fc)
 
   return ml_helpers;
 }
-
-typedef struct {
-  struct hc_ext_def_dat     hc_dat_ext;
-  vrna_hc_eval_f hc_eval_ext;
-
-  struct hc_hp_def_dat      hc_dat_hp;
-  vrna_hc_eval_f hc_eval_hp;
-
-  struct hc_int_def_dat     hc_dat_int;
-  eval_hc                   hc_eval_int;
-
-  struct hc_mb_def_dat      hc_dat_mb;
-  vrna_hc_eval_f hc_eval_mb;
-
-  struct sc_ext_exp_dat     sc_wrapper_ext;
-  struct sc_hp_exp_dat      sc_wrapper_hp;
-  struct sc_int_exp_dat     sc_wrapper_int;
-  struct sc_mb_exp_dat      sc_wrapper_mb;
-} constraints_helper;
 
 
 
@@ -10244,8 +10193,8 @@ vrna_pf(vrna_fold_compound_t  *fc,
       vrna_pf_multifold_prepare(fc);
 
     /* call user-defined grammar pre-condition callback function */
-    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
-      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
+    // if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
+    //   fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
 
     if (!fill_arrays(fc)) {
 // #ifdef SUN4
@@ -10417,8 +10366,8 @@ vrna_pf_dimer(vrna_fold_compound_t  *fc,
 
 
 static void 
-process_record(struct record_data *record){
-  char                  *mfe_structure, *sequence, **rec_rest;
+process_record(char *sequence){
+  char                  *mfe_structure, **rec_rest;
   unsigned int          n, i;
   double                min_en, kT, *concentrations;
   vrna_ep_t             *prAB, *prAA, *prBB, *prA, *prB, *mfAB, *mfAA, *mfBB, *mfA, *mfB;
@@ -10432,7 +10381,7 @@ process_record(struct record_data *record){
   concentrations  = NULL;
   init_default_options(&opt);
   o_stream        = (struct output_stream *)vrna_alloc(sizeof(struct output_stream));
-  sequence        = strdup(record->sequence);
+  // sequence        = strdup(record->sequence);
   // rec_rest        = record->rest;
   vrna_fold_compound_t *vc = vrna_fold_compound(sequence,
                                                 &(opt->md),
@@ -10463,7 +10412,7 @@ process_record(struct record_data *record){
   AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
   char *costruc;
   // prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
-
+  printf("%s", pairing_propensity);
   // costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
 
 }
@@ -10472,5 +10421,7 @@ process_record(struct record_data *record){
 
 
 int main(){
+  char *s1 = "CGATCGTAGCTA";
+  process_record(s1);
   return 0;
 }

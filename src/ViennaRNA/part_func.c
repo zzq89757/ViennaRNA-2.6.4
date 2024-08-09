@@ -133,8 +133,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
 #endif
       return dG;
     }
-
-    if (md->circ)
+    if (md->circ) // not into
       /* do post processing step for circular RNAs */
       postprocess_circular(fc);
 

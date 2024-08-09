@@ -51,14 +51,14 @@ struct options {
   int             filename_full;
   char            *filename_delim;
   int             pf;
-  int             doT;
-  int             doC;
+  int             doT; // 是否考虑链末端（终端）区域的处理
+  int             doC; // 是否考虑用户提供的结构约束
   int             noPS;
   int             noconv;
   int             centroid;
   int             MEA;
   double          MEAgamma;
-  double          bppmThreshold;
+  double          bppmThreshold; //用于过滤或限制 BPPM（Base Pair Probability Matrix） 中的对概率。可以帮助去除那些低概率的碱基对
   int             verbose;
   vrna_md_t       md;
   vrna_cmd_t      commands;
@@ -180,12 +180,12 @@ init_default_options(struct options *opt)
   opt->pf             = 1;
   opt->doT            = 0; /* compute dimer free energies etc. */
   opt->noPS           = 1;
-  opt->noconv         = 0;
+  opt->noconv         = 1;
   opt->centroid       = 0;  /* off by default due to historical reasons */
   opt->MEA            = 0;
   opt->MEAgamma       = 1.;
   opt->bppmThreshold  = 1e-5;
-  opt->verbose        = 0;
+  opt->verbose        = 1;  // printf more information
   opt->commands       = NULL;
   opt->id_control     = NULL;
   set_model_details(&(opt->md));
@@ -271,7 +271,7 @@ main(int  argc,
    # check the command line parameters
    #############################################
    */
-  if (RNAcofold_cmdline_parser(argc, argv, &args_info) != 0)
+  if (RNAcofold_cmdline_parser(argc, argv, &args_info) != 0) // rm
     exit(1);
 
   /* get basic set of model details */
@@ -283,7 +283,7 @@ main(int  argc,
   ggo_get_temperature(args_info, opt.md.temperature);
 
   /* check dangle model */
-  if ((opt.md.dangles < 0) || (opt.md.dangles > 3)) {
+  if ((opt.md.dangles < 0) || (opt.md.dangles > 3)) { // dangles constant eq 0,rm
     vrna_message_warning("required dangle model not implemented, falling back to default dangles=2");
     opt.md.dangles = dangles = 2;
   }
@@ -300,11 +300,11 @@ main(int  argc,
                                opt.constraint_batch);
 
   /* enforce canonical base pairs in any case? */
-  if (args_info.canonicalBPonly_given)
+  if (args_info.canonicalBPonly_given) // not into 
     opt.constraint_canonical = 1;
 
   /* do not convert DNA nucleotide "T" to appropriate RNA "U" */
-  if (args_info.noconv_given)
+  if (args_info.noconv_given) // always noconv,no need to judge
     opt.noconv = 1;
 
   /*  */
@@ -678,13 +678,13 @@ process_record(struct record_data *record)
   o_stream        = (struct output_stream *)vrna_alloc(sizeof(struct output_stream));
   sequence        = strdup(record->sequence);
   rec_rest        = record->rest;
-
+  // 修饰碱基所在位置 未设置不用管
   mod_positions   = mod_positions_seq_prepare(sequence,
                                               opt->mod_params,
                                               opt->verbose,
                                               &mod_param_sets);
 
-  /* convert DNA alphabet to RNA if not explicitely switched off */
+  /* DNA的T转换为U convert DNA alphabet to RNA if not explicitely switched off */
   if (!opt->noconv) {
     vrna_seq_toRNA(sequence);
     vrna_seq_toRNA(record->sequence);
@@ -692,7 +692,7 @@ process_record(struct record_data *record)
 
   /* convert sequence to uppercase letters only */
   vrna_seq_toupper(sequence);
-
+  // 构建fold结构体 关键！！！
   vrna_fold_compound_t *vc = vrna_fold_compound(sequence,
                                                 &(opt->md),
                                                 VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
@@ -723,7 +723,7 @@ process_record(struct record_data *record)
                         (int)n - vc->cutpoint + 1);
     }
   }
-
+  // 检查一个 RNA 结构是否具有旋转对称性，并在检测到这种对称性时发出警告
   if (vc->cutpoint == vc->length / 2 + 1) {
     if (!strncmp(vc->sequence, vc->sequence + vc->cutpoint - 1, vc->cutpoint - 1)) {
       vrna_cstr_message_warning(o_stream->err,
@@ -734,7 +734,7 @@ process_record(struct record_data *record)
 
   mfe_structure = (char *)vrna_alloc(sizeof(char) * (n + 1));
 
-  /* parse the rest of the current dataset to obtain a structure constraint */
+  /* 结构约束（碱基配对和自由能约束）不指定就不走这里 parse the rest of the current dataset to obtain a structure constraint */
   if (fold_constrained) {
     if (opt->constraint_file) {
       vrna_constraints_add(vc, opt->constraint_file, VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
@@ -785,16 +785,18 @@ process_record(struct record_data *record)
                                opt->verbose,
                                VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
   }
-
-  if (opt->commands)
+  // 默认情况下未从文件中获取命令 不管
+  if (opt->commands){
+    printf("cmd apply into");
     vrna_commands_apply(vc, opt->commands, VRNA_CMD_PARSE_HC | VRNA_CMD_PARSE_SC);
+  }
 
-  /* apply modified base support if requested */
+  /* apply modified base support if requested 添加修饰碱基 未设置不改变vc和opt->mode_params*/
   mod_bases_apply(vc,
                   mod_param_sets,
                   mod_positions,
                   opt->mod_params);
-
+  // 启用结构约束(不管)
   if (opt->doC) {
     if (opt->concentration_file) {
       /* read from file */
@@ -819,7 +821,7 @@ process_record(struct record_data *record)
   /* compute mfe of AB dimer */
   min_en  = vrna_mfe_dimer(vc, mfe_structure); /* vc.matrices changed*/
   mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
-
+  // mfAB:vrna_elem_prob_s 
   /* check whether the constraint allows for any solution */
   if ((fold_constrained) || (opt->commands)) {
     if (min_en == (double)(INF / 100.)) {
