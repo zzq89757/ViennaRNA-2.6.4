@@ -53,7 +53,7 @@ struct options {
   int             pf;
   int             doT; // 是否考虑链末端（终端）区域的处理
   int             doC; // 是否考虑用户提供的结构约束
-  int             noPS;
+  int             noPS; 
   int             noconv;
   int             centroid;
   int             MEA;
@@ -179,7 +179,7 @@ init_default_options(struct options *opt)
   opt->filename_delim = NULL;
   opt->pf             = 1;
   opt->doT            = 0; /* compute dimer free energies etc. */
-  opt->noPS           = 1;
+  opt->noPS           = 1;  // Do not produce postscript drawing of the mfe structure
   opt->noconv         = 1;
   opt->centroid       = 0;  /* off by default due to historical reasons */
   opt->MEA            = 0;
@@ -307,7 +307,7 @@ main(int  argc,
   if (args_info.noconv_given) // always noconv,no need to judge
     opt.noconv = 1;
 
-  /*  */
+  // Do not produce postscript drawing of the mfe structure
   if (args_info.noPS_given)
     opt.noPS = 1;
 
@@ -680,7 +680,8 @@ process_record(struct record_data *record)
 {
   char                  *mfe_structure, *sequence, **rec_rest;
   unsigned int          n, i;
-  double                min_en, kT, *concentrations;
+  double                min_en, *concentrations;
+  double                kT; // 玻尔兹曼常数 
   vrna_ep_t             *prAB, *prAA, *prBB, *prA, *prB, *mfAB, *mfAA, *mfBB, *mfA, *mfB;
   struct options        *opt;
   struct output_stream  *o_stream;
@@ -841,7 +842,7 @@ process_record(struct record_data *record)
   mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
   // mfAB为vrna_ep_t 结构体指针的数组 对于点括号字符串中的每一对配对(不含.与括号的配对)，创建一个 vrna_ep_t 结构体。每个结构体包含配对的起始位置(不含两端的.对.和中间的括号对点) i(从1开始) 和结束位置 j(在以&分隔的字符串从左数的位置)，以及配对的概率 p
   // print_vrna_ep_list(mfAB);
-  /* check whether the constraint allows for any solution */
+  /* 约束 依旧不用管 check whether the constraint allows for any solution */
   if ((fold_constrained) || (opt->commands)) {
     if (min_en == (double)(INF / 100.)) {
       vrna_message_error(
@@ -851,9 +852,9 @@ process_record(struct record_data *record)
     }
   }
 
-  {
-    char *pstruct = vrna_cut_point_insert(mfe_structure, vc->cutpoint);
-
+  { 
+    char *pstruct = vrna_cut_point_insert(mfe_structure, vc->cutpoint);// 带&分隔符的mfe结构体指针
+    // 结果输出 不用管
     if (opt->csv_output) {
       vrna_cstr_printf(o_stream->data,
                        "%ld%c"          /* sequence number */
@@ -875,6 +876,7 @@ process_record(struct record_data *record)
                                  min_en);
     }
 
+    // Do not produce postscript drawing of the mfe structure
     if (!opt->noPS)
       postscript_layout(vc, record->sequence, pstruct, record->SEQ_ID, opt);
 
@@ -907,9 +909,10 @@ process_record(struct record_data *record)
       min_en                            = vrna_eval_structure(vc, mfe_structure);
       vc->params->model_details.dangles = 1;
     }
-
+    // 配置vc的exp_params参数
+    // “预计算的自由能贡献作为玻尔兹曼因子”指的是在计算RNA结构或其他分子结构的自由能时，已经预先计算并储存了一些贡献值，这些值是以玻尔兹曼因子的形式存在的。玻尔兹曼因子是指由玻尔兹曼方程（e^-Δ𝐺/RT）计算得到的因子，其中 Δ𝐺 是自由能变化，R 是气体常数，T 是绝对温度。这些预计算的因子可以用来加速结构的自由能计算，而不需要在每次计算时都重新计算这些值。
     vrna_exp_params_rescale(vc, &min_en);
-    kT = vc->exp_params->kT / 1000.;
+    kT = vc->exp_params->kT / 1000.; // 玻尔兹曼常数 用于计算自由能
 
     if (n > 2000)
       vrna_cstr_message_info(o_stream->err,
