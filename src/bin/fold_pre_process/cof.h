@@ -81,6 +81,36 @@ PUBLIC int GQuadBetadH = 0;
 PUBLIC int GQuadLayerMismatch37   = 300;
 PUBLIC int GQuadLayerMismatchH    = 0;
 PUBLIC int GQuadLayerMismatchMax  = 1;
+#define SCALE 10
+#define CLIP_NEGATIVE(X) ((X) < 0 ? 0 : (X))
+#define TRUNC_MAYBE(X) ((!pf_smooth) ? (double)((int)(X)) : (X))
+
+#define SMOOTH(X) ((!pf_smooth)               ?   CLIP_NEGATIVE(X) : \
+                   ((X) / SCALE < -1.2283697) ?                 0  : \
+                   ((X) / SCALE > 0.8660254) ?                (X) : \
+                   SCALE *0.38490018   \
+                   * (sin((X) / SCALE - 0.34242663) + 1) \
+                   * (sin((X) / SCALE - 0.34242663) + 1) \
+                   )
+/* Rescale Free energy contribution according to deviation of temperature from measurement conditions */
+#define RESCALE_dG(dG, dH, dT)   ((dH) - ((dH) - (dG)) * dT)
+#define RESCALE_BF(dG, dH, dT, kT)          ( \
+    exp( \
+      -TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) \
+      * 10. \
+      / kT \
+      ) \
+    )
+
+#define RESCALE_BF_SMOOTH(dG, dH, dT, kT)   ( \
+    exp(  \
+      SMOOTH( \
+        -TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) \
+        ) \
+      * 10. \
+      / kT \
+      ) \
+    )
 
 #define saltT md->temperature+K0
 

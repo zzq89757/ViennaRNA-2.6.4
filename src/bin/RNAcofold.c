@@ -839,6 +839,7 @@ process_record(struct record_data *record)
   min_en  = vrna_mfe_dimer(vc, mfe_structure); /* vc.matrices changed*/
   
   // 0.95设置每对碱基配对的概率的浮点值 返回的列表的末尾由一个特殊的条目标记，该条目中的 i 和 j 都设置为 0。这个特殊标记用于指示配对元素列表的结束，遍历列表时可以使用这个条件停止
+  // mfAB plot 时用
   mfAB    = vrna_plist(mfe_structure, 0.95); /* mfAB: i = 2;j = 42;p = 0.95;type = 0*/
   // mfAB为vrna_ep_t 结构体指针的数组 对于点括号字符串中的每一对配对(不含.与括号的配对)，创建一个 vrna_ep_t 结构体。每个结构体包含配对的起始位置(不含两端的.对.和中间的括号对点) i(从1开始) 和结束位置 j(在以&分隔的字符串从左数的位置)，以及配对的概率 p
   // print_vrna_ep_list(mfAB);

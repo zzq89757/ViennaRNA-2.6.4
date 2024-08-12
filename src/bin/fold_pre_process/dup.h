@@ -31,3 +31,12 @@ vrna_salt_loop_int(int L, double rho, double T, double backbonelen);
 
 PUBLIC double
 vrna_salt_loop(int L, double rho, double T, double backbonelen);
+
+PUBLIC int
+vrna_salt_stack(double rho, double T, double hrise);
+
+
+PUBLIC void
+vrna_salt_ml(double saltLoop[], int lower, int upper, int* m, int* b);
+PUBLIC int
+vrna_salt_duplex_init(vrna_md_t *md_p);
