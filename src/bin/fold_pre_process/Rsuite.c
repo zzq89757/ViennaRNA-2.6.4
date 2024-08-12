@@ -14507,8 +14507,7 @@ vrna_cut_point_insert(const char  *string,
   return ctmp;
 }
 
-static char* 
-process_record(char *sequence){
+char *process_record(char *sequence){
   char                  *mfe_structure, **rec_rest;
   unsigned int          n, i;
   double                min_en, kT, *concentrations;
