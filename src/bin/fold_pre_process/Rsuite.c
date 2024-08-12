@@ -14507,7 +14507,7 @@ vrna_cut_point_insert(const char  *string,
   return ctmp;
 }
 
-static void 
+static char* 
 process_record(char *sequence){
   char                  *mfe_structure, **rec_rest;
   unsigned int          n, i;
@@ -14553,8 +14553,8 @@ process_record(char *sequence){
   char *costruc;
   // prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
   costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
-  printf("%s", costruc);
-
+//   printf("%s", costruc);
+  return costruc;
 }
 
 
@@ -14562,7 +14562,9 @@ process_record(char *sequence){
 
 int main(){
   char *s1 = "ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA";
-  process_record(s1);
+  char *res;
+  res = process_record(s1);
+  printf("%s",res);
   return 0;
 }
 
