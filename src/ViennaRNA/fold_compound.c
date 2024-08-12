@@ -515,7 +515,6 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
                            unsigned int         options)
 {
   int ret = 1; /* success */
-
   /* check maximum sequence length restrictions */
   if (fc->length > vrna_sequence_length_max(options)) {
     vrna_message_warning(
@@ -550,11 +549,11 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
   }
 
   /* prepare hard constraints */
-  vrna_hc_prepare(fc, options);
+  // vrna_hc_prepare(fc, options);
 
   /* prepare soft constraints data structure, if required */
-  vrna_sc_prepare(fc, options);
-
+  // vrna_sc_prepare(fc, options);
+  printf("no sc");
   /* Add DP matrices, if not they are not present or do not fit current settings */
   vrna_mx_prepare(fc, options);
 
