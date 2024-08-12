@@ -14326,17 +14326,6 @@ vrna_pf(vrna_fold_compound_t  *fc,
     matrices  = fc->exp_matrices;
     md        = &(params->model_details);
 
-// #ifdef _OPENMP
-//     /* Explicitly turn off dynamic threads */
-//     omp_set_dynamic(0);
-// #endif
-
-// #ifdef SUN4
-//     nonstandard_arithmetic();
-// #elif defined(HP9)
-//     fpsetfastmode(1);
-// #endif
-
     /* call user-defined recursion status callback function */
     if (fc->stat_cb) // not into
       fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
@@ -14345,26 +14334,10 @@ vrna_pf(vrna_fold_compound_t  *fc,
     if (fc->strands > 1)
       vrna_pf_multifold_prepare(fc);
 
-    /* call user-defined grammar pre-condition callback function */
-    // if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc)) // not into
-    //   fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_PRE, fc->aux_grammar->data);
-
     if (!fill_arrays(fc)) {
-// #ifdef SUN4
-//       standard_arithmetic();
-// #elif defined(HP9)
-//       fpsetfastmode(0);
-// #endif
       return dG;
     }
 
-    // if (md->circ)
-      /* do post processing step for circular RNAs */
-      // postprocess_circular(fc);
-
-    /* call user-defined grammar post-condition callback function */
-    // if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
-    //   fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
 
     if (fc->strands > 1)
       vrna_gr_reset(fc);
@@ -14420,11 +14393,6 @@ vrna_pf(vrna_fold_compound_t  *fc,
 #endif
     }
 
-// #ifdef SUN4
-//     standard_arithmetic();
-// #elif defined(HP9)
-//     fpsetfastmode(0);
-// #endif
   }
 
   return dG;
@@ -14502,7 +14470,6 @@ vrna_pf_dimer(vrna_fold_compound_t  *fc,
   /* structure changed by vrna_pf */
   if (fc) {
     (void)vrna_pf(fc, structure);
-  // printf("%s*",structure);
 
     /* backward compatibility partition function and ensemble energy computation */
     extract_dimer_props(fc,
@@ -14517,6 +14484,28 @@ vrna_pf_dimer(vrna_fold_compound_t  *fc,
 }
 
 
+PUBLIC char *
+vrna_cut_point_insert(const char  *string,
+                      int         cp)
+{
+  char  *ctmp;
+  int   len;
+
+  if (cp > 0) {
+    len   = strlen(string);
+    ctmp  = (char *)vrna_alloc((len + 2) * sizeof(char));
+    /* first sequence */
+    (void)strncpy(ctmp, string, cp - 1);
+    /* spacer */
+    ctmp[cp - 1] = '&';
+    /* second sequence */
+    (void)strcat(ctmp, string + cp - 1);
+  } else {
+    ctmp = strdup(string);
+  }
+
+  return ctmp;
+}
 
 static void 
 process_record(char *sequence){
@@ -14533,8 +14522,6 @@ process_record(char *sequence){
   concentrations  = NULL;
   init_default_options(&opt);
   o_stream        = (struct output_stream *)vrna_alloc(sizeof(struct output_stream));
-  // sequence        = strdup(record->sequence);
-  // rec_rest        = record->rest;
   vrna_fold_compound_t *vc = vrna_fold_compound(sequence,
                                                 &(opt.md),
                                                 VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
@@ -14565,8 +14552,8 @@ process_record(char *sequence){
   AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
   char *costruc;
   // prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
-  printf("%s", pairing_propensity);
-  // costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
+  costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
+  printf("%s", costruc);
 
 }
 
