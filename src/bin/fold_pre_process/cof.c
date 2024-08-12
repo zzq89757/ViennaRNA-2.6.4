@@ -1466,62 +1466,7 @@ vrna_hc_init(vrna_fold_compound_t *vc)
 #define ALLOC_MFE_DEFAULT (ALLOC_F5 | ALLOC_C | ALLOC_FML)
 #define ALLOC_PF_WO_PROBS (ALLOC_F | ALLOC_C | ALLOC_FML)
 #define ALLOC_PF_DEFAULT (ALLOC_PF_WO_PROBS | ALLOC_PROBS | ALLOC_AUX)
-PRIVATE unsigned int
-get_mx_alloc_vector(vrna_fold_compound_t  *fc,
-                    vrna_mx_type_e        mx_type,
-                    unsigned int          options)
-{
-  unsigned int  v;
-  vrna_md_t     *md_p;
 
-  md_p = &(fc->params->model_details);
-
-  v = ALLOC_NOTHING;
-
-  /* default MFE matrices ? */
-  if (options & VRNA_OPTION_MFE)
-    v |= (mx_type == VRNA_MX_WINDOW) ? ALLOC_MFE_LOCAL : ALLOC_MFE_DEFAULT;
-
-  /* default PF matrices ? */
-  if (options & VRNA_OPTION_PF)
-    v |= (md_p->compute_bpp) ? ALLOC_PF_DEFAULT : ALLOC_PF_WO_PROBS;
-
-  if ((fc->strands > 1) || (options & VRNA_OPTION_HYBRID))
-    v |= ALLOC_MULTISTRAND;
-
-  /* matrices for circular folding ? */
-  if (md_p->circ) {
-    md_p->uniq_ML = 1; /* we need unique ML arrays for circular folding */
-    v             |= ALLOC_CIRC;
-  }
-
-  /* unique ML decomposition ? */
-  if (md_p->uniq_ML)
-    v |= ALLOC_UNIQ;
-
-  return v;
-}
-
-// her
-// PUBLIC int
-// vrna_mx_mfe_add(vrna_fold_compound_t  *vc,
-//                 vrna_mx_type_e        mx_type,
-//                 unsigned int          options)
-// {
-//   unsigned int mx_alloc_vector;
-
-//   if (vc->params) {
-//     options |= VRNA_OPTION_MFE;
-
-//     mx_alloc_vector = get_mx_alloc_vector(vc,
-//                                           mx_type,
-//                                           options);
-//     vrna_mx_mfe_free(vc);
-//     return add_mfe_matrices(vc, mx_type, mx_alloc_vector);
-//   }
-
-//   return 0;
-// }
 
 PUBLIC int
 vrna_mx_add(vrna_fold_compound_t  *vc,
