@@ -3,6 +3,8 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+# define INLINE inline
+# define PUBLIC
 #define STACK_BULGE1  1     /* stacking energies for bulges of size 1 */
 #define NEW_NINIO     1     /* new asymetry penalty */
 #define MAXSECTORS    500   /* dimension for a backtrack array */
@@ -1110,7 +1112,7 @@ PUBLIC int HexaloopdH[40] = { -1680, -1140, -1280, -1540};
     { 0, 2, 2, 2, 1, 2, 0 } /* UA */ }
 
 typedef double FLT_OR_DBL;
-
+typedef struct vrna_fc_s vrna_fold_compound_t;
 
 double          temperature     = VRNA_MODEL_DEFAULT_TEMPERATURE;
 double          pf_scale        = VRNA_MODEL_DEFAULT_PF_SCALE;
@@ -2104,7 +2106,62 @@ struct vrna_unstructured_domain_s {
 
 
 typedef struct vrna_unstructured_domain_s vrna_ud_t;
+typedef struct  vrna_sc_s vrna_sc_t;
 
+
+typedef void (*vrna_grammar_cond_f)(vrna_fold_compound_t *fc,
+                                     unsigned char        stage,
+                                     void                 *data);
+
+typedef int (*vrna_grammar_rule_f)(vrna_fold_compound_t  *fc,
+                                    int                   i,
+                                    int                   j,
+                                    void                  *data);
+
+
+typedef void (*vrna_grammar_rule_f_aux)(vrna_fold_compound_t  *fc,
+                                    int                   i,
+                                    int                   j,
+                                    void                  *data);
+
+
+typedef FLT_OR_DBL (*vrna_grammar_rule_f_exp)(vrna_fold_compound_t *fc,
+                                               int                  i,
+                                               int                  j,
+                                               void                 *data);
+
+
+typedef void (*vrna_grammar_rule_f_aux_exp)(vrna_fold_compound_t *fc,
+                                               int                  i,
+                                               int                  j,
+                                               void                 *data);
+
+
+typedef void (*vrna_grammar_data_free_f)(void *data);
+
+
+
+struct vrna_gr_aux_s {
+  vrna_grammar_cond_f       cb_proc; /**< @brief A callback for pre- and post-processing of auxiliary grammar rules */
+
+  vrna_grammar_rule_f       cb_aux_f;
+  vrna_grammar_rule_f       cb_aux_c;
+  vrna_grammar_rule_f       cb_aux_m;
+  vrna_grammar_rule_f       cb_aux_m1;
+  vrna_grammar_rule_f_aux       cb_aux;
+
+  vrna_grammar_rule_f_exp   cb_aux_exp_f;
+  vrna_grammar_rule_f_exp   cb_aux_exp_c;
+  vrna_grammar_rule_f_exp     cb_aux_exp_m;
+  vrna_grammar_rule_f_exp     cb_aux_exp_m1;
+  vrna_grammar_rule_f_aux_exp   cb_aux_exp;
+
+  void                        *data;
+  vrna_grammar_data_free_f  free_data;
+};
+
+
+typedef struct vrna_gr_aux_s vrna_gr_aux_t;
 
 struct vrna_fc_s {
   /**
@@ -2324,59 +2381,6 @@ typedef struct vrna_fc_s vrna_fold_compound_t;
 
 
 
-typedef void (*vrna_grammar_cond_f)(vrna_fold_compound_t *fc,
-                                     unsigned char        stage,
-                                     void                 *data);
-
-typedef int (*vrna_grammar_rule_f)(vrna_fold_compound_t  *fc,
-                                    int                   i,
-                                    int                   j,
-                                    void                  *data);
-
-
-typedef void (*vrna_grammar_rule_f_aux)(vrna_fold_compound_t  *fc,
-                                    int                   i,
-                                    int                   j,
-                                    void                  *data);
-
-
-typedef FLT_OR_DBL (*vrna_grammar_rule_f_exp)(vrna_fold_compound_t *fc,
-                                               int                  i,
-                                               int                  j,
-                                               void                 *data);
-
-
-typedef void (*vrna_grammar_rule_f_aux_exp)(vrna_fold_compound_t *fc,
-                                               int                  i,
-                                               int                  j,
-                                               void                 *data);
-
-
-typedef void (*vrna_grammar_data_free_f)(void *data);
-
-
-
-struct vrna_gr_aux_s {
-  vrna_grammar_cond_f       cb_proc; /**< @brief A callback for pre- and post-processing of auxiliary grammar rules */
-
-  vrna_grammar_rule_f       cb_aux_f;
-  vrna_grammar_rule_f       cb_aux_c;
-  vrna_grammar_rule_f       cb_aux_m;
-  vrna_grammar_rule_f       cb_aux_m1;
-  vrna_grammar_rule_f_aux       cb_aux;
-
-  vrna_grammar_rule_f_exp   cb_aux_exp_f;
-  vrna_grammar_rule_f_exp   cb_aux_exp_c;
-  vrna_grammar_rule_f_exp     cb_aux_exp_m;
-  vrna_grammar_rule_f_exp     cb_aux_exp_m1;
-  vrna_grammar_rule_f_aux_exp   cb_aux_exp;
-
-  void                        *data;
-  vrna_grammar_data_free_f  free_data;
-};
-
-
-typedef struct vrna_gr_aux_s vrna_gr_aux_t;
 
 
 typedef enum {
@@ -2542,6 +2546,197 @@ typedef struct {
   FLT_OR_DBL  *prm_MLbu;
 } helper_arrays;
 
+typedef unsigned char (*eval_hc)(int   i,
+                                int   j,
+                                int   k,
+                                int   l,
+                                void  *data);
+
+
+
+struct hc_ext_def_dat {
+  unsigned int              n;
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+
+struct hc_hp_def_dat {
+  int                       n;
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+struct hc_int_def_dat {
+  unsigned char             *mx;
+  unsigned char             **mx_local;
+  unsigned int              *sn;
+  unsigned int              n;
+  int                       *up;
+
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+struct hc_mb_def_dat {
+  unsigned char             *mx;
+  unsigned char             **mx_window;
+  unsigned int              *sn;
+  unsigned int              n;
+  int                       *hc_up;
+  void                      *hc_dat;
+  vrna_hc_eval_f hc_f;
+};
+
+
+
+typedef FLT_OR_DBL (*sc_ext_exp_cb)(int                    i,
+                                   int                    j,
+                                   int                    k,
+                                   int                    l,
+                                   struct sc_ext_exp_dat  *data);
+
+typedef FLT_OR_DBL (*sc_ext_exp_red_up)(int                    i,
+                                       int                    j,
+                                       struct sc_ext_exp_dat  *data);
+
+typedef FLT_OR_DBL (*sc_ext_exp_split)(int                   i,
+                                      int                   j,
+                                      int                   k,
+                                      struct sc_ext_exp_dat *data);
+
+struct sc_ext_exp_dat {
+  FLT_OR_DBL                  **up;
+
+  sc_ext_exp_cb               red_ext;
+  sc_ext_exp_cb               red_stem;
+  sc_ext_exp_red_up           red_up;
+  sc_ext_exp_split            split;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  /* below attributes are for comparative structure prediction */
+  int                         n_seq;
+  unsigned int                **a2s;
+  FLT_OR_DBL                  ***up_comparative;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+};
+
+
+typedef FLT_OR_DBL (*sc_hp_exp_cb)(int                   i,
+                                  int                   j,
+                                  struct sc_hp_exp_dat  *data);
+struct sc_hp_exp_dat {
+  int                         n;
+  unsigned int                n_seq;
+  unsigned int                **a2s;
+  int                         *idx;
+
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+
+  sc_hp_exp_cb                pair;
+  sc_hp_exp_cb                pair_ext;
+};
+
+
+
+typedef FLT_OR_DBL (*sc_int_exp_cb)(int                    i,
+                                   int                    j,
+                                   int                    k,
+                                   int                    l,
+                                   struct sc_int_exp_dat  *data);
+
+struct sc_int_exp_dat {
+  unsigned int                n;
+  int                         n_seq;
+  unsigned int                **a2s;
+
+  int                         *idx;
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+  FLT_OR_DBL                  *stack;
+  FLT_OR_DBL                  **stack_comparative;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+
+  sc_int_exp_cb               pair;
+  sc_int_exp_cb               pair_ext;
+};
+
+
+
+struct sc_mb_exp_dat;
+
+typedef FLT_OR_DBL (*sc_mb_exp_pair_cb)(int                  i,
+                                       int                  j,
+                                       struct sc_mb_exp_dat *data);
+
+
+typedef FLT_OR_DBL (*sc_mb_exp_red_cb)(int                   i,
+                                      int                   j,
+                                      int                   k,
+                                      int                   l,
+                                      struct sc_mb_exp_dat  *data);
+
+
+struct sc_mb_exp_dat {
+  unsigned int                n;
+  unsigned int                n_seq;
+  unsigned int                **a2s;
+
+  int                         *idx;
+
+  FLT_OR_DBL                  **up;
+  FLT_OR_DBL                  ***up_comparative;
+  FLT_OR_DBL                  *bp;
+  FLT_OR_DBL                  **bp_comparative;
+  FLT_OR_DBL                  **bp_local;
+  FLT_OR_DBL                  ***bp_local_comparative;
+
+  sc_mb_exp_pair_cb           pair;
+  sc_mb_exp_pair_cb           pair_ext;
+  sc_mb_exp_red_cb            red_stem;
+  sc_mb_exp_red_cb            red_ml;
+  sc_mb_exp_red_cb            decomp_ml;
+
+  vrna_sc_exp_f user_cb;
+  void                        *user_data;
+
+  vrna_sc_exp_f *user_cb_comparative;
+  void                        **user_data_comparative;
+};
 
 
 typedef struct {

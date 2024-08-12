@@ -140,6 +140,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
     /* call user-defined grammar post-condition callback function */
     if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
       fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
+    
 
     if (fc->strands > 1)
       vrna_gr_reset(fc);

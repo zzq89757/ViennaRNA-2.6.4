@@ -1,7 +1,7 @@
 // header include start--------------------------------
+// #include "dup.h"
 #include "cof.h"
 #include "matrices/all_mat.h"
-#include "dup.h"
 
 
 // structure definition start -------------------------------
@@ -989,29 +989,6 @@ vrna_sequence_prepare(vrna_fold_compound_t *fc)
         fc->strand_number[fc->length + 1] = fc->strand_number[fc->length];
 
         break;
-
-      case VRNA_FC_TYPE_COMPARATIVE:
-        /*
-         *  for now, comparative structure prediction does not allow for RNA-RNA interactions,
-         *  so we pretend working on a single strand
-         */
-        fc->nucleotides = (vrna_seq_t *)vrna_realloc(fc->nucleotides,
-                                                     sizeof(vrna_seq_t) * (fc->strands + 1));
-        fc->nucleotides[0].string = NULL;
-        fc->nucleotides[0].type   = VRNA_SEQ_RNA;
-        fc->nucleotides[0].length = fc->length;
-
-        /* 1. store initial strand order */
-        fc->strand_order_uniq = (unsigned int *)vrna_alloc(sizeof(unsigned int) * 2);
-        fc->strand_order      = (unsigned int *)vrna_alloc(sizeof(unsigned int) * 2);
-
-        /* 2. mark start and end positions of sequences */
-        fc->strand_start    = (unsigned int *)vrna_alloc(sizeof(unsigned int) * 2);
-        fc->strand_end      = (unsigned int *)vrna_alloc(sizeof(unsigned int) * 2);
-        fc->strand_start[0] = 1;
-        fc->strand_end[0]   = fc->strand_start[0] + fc->length - 1;
-
-        break;
     }
   }
 }
@@ -1750,16 +1727,6 @@ vrna_gr_set_aux_exp_c(vrna_fold_compound_t      *fc,
 }
 
 
-struct hc_ext_def_dat {
-  unsigned int              n;
-  unsigned char             *mx;
-  unsigned char             **mx_window;
-  unsigned int              *sn;
-  int                       *hc_up;
-  void                      *hc_dat;
-  vrna_hc_eval_f hc_f;
-};
-
 
 #define VRNA_DECOMP_EXT_STEM (unsigned char)14
 
@@ -2351,40 +2318,6 @@ vrna_exp_E_ext_stem(unsigned int      type,
 }
 
 
-typedef FLT_OR_DBL (*sc_ext_exp_cb)(int                    i,
-                                   int                    j,
-                                   int                    k,
-                                   int                    l,
-                                   struct sc_ext_exp_dat  *data);
-
-typedef FLT_OR_DBL (*sc_ext_exp_red_up)(int                    i,
-                                       int                    j,
-                                       struct sc_ext_exp_dat  *data);
-
-typedef FLT_OR_DBL (*sc_ext_exp_split)(int                   i,
-                                      int                   j,
-                                      int                   k,
-                                      struct sc_ext_exp_dat *data);
-
-struct sc_ext_exp_dat {
-  FLT_OR_DBL                  **up;
-
-  sc_ext_exp_cb               red_ext;
-  sc_ext_exp_cb               red_stem;
-  sc_ext_exp_red_up           red_up;
-  sc_ext_exp_split            split;
-
-  vrna_sc_exp_f user_cb;
-  void                        *user_data;
-
-  /* below attributes are for comparative structure prediction */
-  int                         n_seq;
-  unsigned int                **a2s;
-  FLT_OR_DBL                  ***up_comparative;
-
-  vrna_sc_exp_f *user_cb_comparative;
-  void                        **user_data_comparative;
-};
 
 
 PRIVATE unsigned char
@@ -3043,15 +2976,7 @@ vrna_exp_E_ml_fast_init(vrna_fold_compound_t *fc)
 }
 
 
-struct hc_hp_def_dat {
-  int                       n;
-  unsigned char             *mx;
-  unsigned char             **mx_window;
-  unsigned int              *sn;
-  int                       *hc_up;
-  void                      *hc_dat;
-  vrna_hc_eval_f hc_f;
-};
+
 
 
 PRIVATE unsigned char
@@ -3196,31 +3121,6 @@ prepare_hc_hp_def(vrna_fold_compound_t  *fc,
 }
 
 
-typedef FLT_OR_DBL (*sc_hp_exp_cb)(int                   i,
-                                  int                   j,
-                                  struct sc_hp_exp_dat  *data);
-struct sc_hp_exp_dat {
-  int                         n;
-  unsigned int                n_seq;
-  unsigned int                **a2s;
-  int                         *idx;
-
-  FLT_OR_DBL                  **up;
-  FLT_OR_DBL                  ***up_comparative;
-  FLT_OR_DBL                  *bp;
-  FLT_OR_DBL                  **bp_comparative;
-  FLT_OR_DBL                  **bp_local;
-  FLT_OR_DBL                  ***bp_local_comparative;
-
-  vrna_sc_exp_f user_cb;
-  void                        *user_data;
-
-  vrna_sc_exp_f *user_cb_comparative;
-  void                        **user_data_comparative;
-
-  sc_hp_exp_cb                pair;
-  sc_hp_exp_cb                pair_ext;
-};
 
 
 PRIVATE INLINE FLT_OR_DBL
@@ -3736,56 +3636,9 @@ vrna_exp_E_hp_loop(vrna_fold_compound_t *fc,
 }
 
 
-typedef unsigned char (*eval_hc)(int   i,
-                                int   j,
-                                int   k,
-                                int   l,
-                                void  *data);
-
-struct hc_int_def_dat {
-  unsigned char             *mx;
-  unsigned char             **mx_local;
-  unsigned int              *sn;
-  unsigned int              n;
-  int                       *up;
-
-  void                      *hc_dat;
-  vrna_hc_eval_f hc_f;
-};
 
 
-struct sc_int_exp_dat;
 
-typedef FLT_OR_DBL (*sc_int_exp_cb)(int                    i,
-                                   int                    j,
-                                   int                    k,
-                                   int                    l,
-                                   struct sc_int_exp_dat  *data);
-
-struct sc_int_exp_dat {
-  unsigned int                n;
-  int                         n_seq;
-  unsigned int                **a2s;
-
-  int                         *idx;
-  FLT_OR_DBL                  **up;
-  FLT_OR_DBL                  ***up_comparative;
-  FLT_OR_DBL                  *bp;
-  FLT_OR_DBL                  **bp_comparative;
-  FLT_OR_DBL                  **bp_local;
-  FLT_OR_DBL                  ***bp_local_comparative;
-  FLT_OR_DBL                  *stack;
-  FLT_OR_DBL                  **stack_comparative;
-
-  vrna_sc_exp_f user_cb;
-  void                        *user_data;
-
-  vrna_sc_exp_f *user_cb_comparative;
-  void                        **user_data_comparative;
-
-  sc_int_exp_cb               pair;
-  sc_int_exp_cb               pair_ext;
-};
 
 
 PRIVATE unsigned char
@@ -4749,109 +4602,6 @@ vrna_get_ptype_window(int   i,
 }
 
 
-
-PRIVATE INLINE
-FLT_OR_DBL
-exp_E_GQuad_IntLoop(int               i,
-                    int               j,
-                    int               type,
-                    short             *S,
-                    FLT_OR_DBL        *G,
-                    FLT_OR_DBL        *scale,
-                    int               *index,
-                    vrna_exp_param_t  *pf)
-{
-  int         k, l, minl, maxl, u, r;
-  FLT_OR_DBL  q, qe;
-  double      *expintern;
-  short       si, sj;
-
-  q         = 0;
-  si        = S[i + 1];
-  sj        = S[j - 1];
-  qe        = (FLT_OR_DBL)pf->expmismatchI[type][si][sj];
-  expintern = &(pf->expinternal[0]);
-
-  if (type > 2)
-    qe *= (FLT_OR_DBL)pf->expTermAU;
-
-  k = i + 1;
-  if (S[k] == 3) {
-    if (k < j - VRNA_GQUAD_MIN_BOX_SIZE) {
-      minl  = j - MAXLOOP - 1;
-      u     = k + VRNA_GQUAD_MIN_BOX_SIZE - 1;
-      minl  = MAX2(u, minl);
-      u     = j - 3;
-      maxl  = k + VRNA_GQUAD_MAX_BOX_SIZE + 1;
-      maxl  = MIN2(u, maxl);
-      for (l = minl; l < maxl; l++) {
-        if (S[l] != 3)
-          continue;
-
-        if (G[index[k] - l] == 0.)
-          continue;
-
-        q += qe
-             * G[index[k] - l]
-             * (FLT_OR_DBL)expintern[j - l - 1]
-             * scale[j - l + 1];
-      }
-    }
-  }
-
-  for (k = i + 2;
-       k <= j - VRNA_GQUAD_MIN_BOX_SIZE;
-       k++) {
-    u = k - i - 1;
-    if (u > MAXLOOP)
-      break;
-
-    if (S[k] != 3)
-      continue;
-
-    minl  = j - i + k - MAXLOOP - 2;
-    r     = k + VRNA_GQUAD_MIN_BOX_SIZE - 1;
-    minl  = MAX2(r, minl);
-    maxl  = k + VRNA_GQUAD_MAX_BOX_SIZE + 1;
-    r     = j - 1;
-    maxl  = MIN2(r, maxl);
-    for (l = minl; l < maxl; l++) {
-      if (S[l] != 3)
-        continue;
-
-      if (G[index[k] - l] == 0.)
-        continue;
-
-      q += qe
-           * G[index[k] - l]
-           * (FLT_OR_DBL)expintern[u + j - l - 1]
-           * scale[u + j - l + 1];
-    }
-  }
-
-  l = j - 1;
-  if (S[l] == 3)
-    for (k = i + 4; k <= j - VRNA_GQUAD_MIN_BOX_SIZE; k++) {
-      u = k - i - 1;
-      if (u > MAXLOOP)
-        break;
-
-      if (S[k] != 3)
-        continue;
-
-      if (G[index[k] - l] == 0.)
-        continue;
-
-      q += qe
-           * G[index[k] - l]
-           * (FLT_OR_DBL)expintern[u]
-           * scale[u + 2];
-    }
-
-  return q;
-}
-
-
 PRIVATE FLT_OR_DBL
 exp_E_int_loop(vrna_fold_compound_t *fc,
                int                  i,
@@ -5205,19 +4955,6 @@ exp_E_int_loop(vrna_fold_compound_t *fc,
         hc_mx -= n * k;
       }
 
-      if ((with_gquad) && (!noclose)) {
-        switch (fc->type) {
-          case VRNA_FC_TYPE_SINGLE:
-            if (sliding_window) {
-              /* no G-Quadruplex support for sliding window partition function yet! */
-            } else if (sn[j] == sn[i]) {
-              qbt1 += exp_E_GQuad_IntLoop(i, j, type, S1, G, scale, my_iindx, pf_params);
-            }
-
-            break;
-
-        }
-      }
     }
 
     free(tt);
@@ -5257,56 +4994,8 @@ vrna_exp_E_int_loop(vrna_fold_compound_t  *fc,
 }
 
 
-struct hc_mb_def_dat {
-  unsigned char             *mx;
-  unsigned char             **mx_window;
-  unsigned int              *sn;
-  unsigned int              n;
-  int                       *hc_up;
-  void                      *hc_dat;
-  vrna_hc_eval_f hc_f;
-};
-
-struct sc_mb_exp_dat;
-
-typedef FLT_OR_DBL (*sc_mb_exp_pair_cb)(int                  i,
-                                       int                  j,
-                                       struct sc_mb_exp_dat *data);
 
 
-typedef FLT_OR_DBL (*sc_mb_exp_red_cb)(int                   i,
-                                      int                   j,
-                                      int                   k,
-                                      int                   l,
-                                      struct sc_mb_exp_dat  *data);
-
-
-struct sc_mb_exp_dat {
-  unsigned int                n;
-  unsigned int                n_seq;
-  unsigned int                **a2s;
-
-  int                         *idx;
-
-  FLT_OR_DBL                  **up;
-  FLT_OR_DBL                  ***up_comparative;
-  FLT_OR_DBL                  *bp;
-  FLT_OR_DBL                  **bp_comparative;
-  FLT_OR_DBL                  **bp_local;
-  FLT_OR_DBL                  ***bp_local_comparative;
-
-  sc_mb_exp_pair_cb           pair;
-  sc_mb_exp_pair_cb           pair_ext;
-  sc_mb_exp_red_cb            red_stem;
-  sc_mb_exp_red_cb            red_ml;
-  sc_mb_exp_red_cb            decomp_ml;
-
-  vrna_sc_exp_f user_cb;
-  void                        *user_data;
-
-  vrna_sc_exp_f *user_cb_comparative;
-  void                        **user_data_comparative;
-};
 
 PRIVATE unsigned char
 hc_mb_cb_def(int            i,
@@ -6058,14 +5747,6 @@ exp_E_mb_loop_fast(vrna_fold_compound_t       *fc,
         qqqmmm *= exp_E_MLstem(tt, S1[j - 1], S1[i + 1], pf_params);
 
         break;
-
-
-      case VRNA_FC_TYPE_COMPARATIVE:
-        for (s = 0; s < n_seq; s++) {
-          tt      = vrna_get_ptype_md(SS[s][j], SS[s][i], md);
-          qqqmmm  *= exp_E_MLstem(tt, S5[s][j], S3[s][i], pf_params);
-        }
-        break;
     }
 
     if (sc_wrapper.pair)
@@ -6186,13 +5867,6 @@ decompose_pair(vrna_fold_compound_t *fc,
 
     if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_c))
       contribution += fc->aux_grammar->cb_aux_exp_c(fc, i, j, fc->aux_grammar->data);
-
-    if (fc->type == VRNA_FC_TYPE_COMPARATIVE) {
-      jindx         = fc->jindx;
-      pscore        = fc->pscore;
-      kTn           = fc->exp_params->kT / 10.;  /* kT in cal/mol */
-      contribution  *= exp(pscore[jindx[j] + i] / kTn);
-    }
   }
 
   return contribution;
@@ -6313,18 +5987,6 @@ exp_E_ml_fast(vrna_fold_compound_t        *fc,
                              ((j < n) || circular) ? S1[j + 1] : -1,
                              pf_params);
 
-        break;
-
-      case VRNA_FC_TYPE_COMPARATIVE:
-        q_temp = 1.;
-        for (s = 0; s < n_seq; s++) {
-          type    = vrna_get_ptype_md(SS[s][i], SS[s][j], md);
-          q_temp  *= exp_E_MLstem(type,
-                                  ((i > 1) || circular) ? S5[s][i] : -1,
-                                  ((j < n) || circular) ? S3[s][j] : -1,
-                                  pf_params);
-        }
-        qbt1 *= q_temp;
         break;
     }
 
@@ -6608,21 +6270,6 @@ reduce_ext_stem_fast(vrna_fold_compound_t       *fc,
         s5      = (((i > 1) || circular) && (sn[i] == sn[i - 1])) ? S1[i - 1] : -1;
         s3      = (((j < n) || circular) && (sn[j + 1] == sn[j])) ? S1[j + 1] : -1;
         q_temp  *= vrna_exp_E_ext_stem(type, s5, s3, pf_params);
-        break;
-
-      case VRNA_FC_TYPE_COMPARATIVE:
-        n_seq = fc->n_seq;
-        S     = fc->S;
-        S5    = fc->S5;
-        S3    = fc->S3;
-        a2s   = fc->a2s;
-        for (s = 0; s < n_seq; s++) {
-          type    = vrna_get_ptype_md(S[s][i], S[s][j], md);
-          q_temp  *= vrna_exp_E_ext_stem(type,
-                                         ((a2s[s][i] > 1) || circular) ? S5[s][i] : -1,
-                                         ((a2s[s][j] < a2s[s][n]) || circular) ? S3[s][j] : -1,
-                                         pf_params);
-        }
         break;
     }
 
@@ -7099,8 +6746,8 @@ postprocess_circular(vrna_fold_compound_t *fc)
   turn          = pf_params->model_details.min_loop_size;
   hc            = fc->hc;
   sc            = (fc->type == VRNA_FC_TYPE_SINGLE) ? fc->sc : NULL;
-  scs           = (fc->type == VRNA_FC_TYPE_COMPARATIVE) ? fc->scs : NULL;
-  a2s           = (fc->type == VRNA_FC_TYPE_COMPARATIVE) ? fc->a2s : NULL;
+  scs           = NULL;
+  a2s           = NULL;
   qo            = qho = qio = qmo = 0.;
 
   for (p = 1; p < n; p++) {
@@ -7578,112 +7225,6 @@ get_constraints_helper(vrna_fold_compound_t *fc)
 
 
 
-PRIVATE void
-compute_gquad_prob_internal(vrna_fold_compound_t  *fc,
-                            int                   l)
-{
-  unsigned char     type;
-  char              *ptype;
-  short             *S1;
-  int               i, j, k, n, ij, kl, u1, u2, *my_iindx, *jindx;
-  FLT_OR_DBL        tmp2, qe, *G, *probs, *scale;
-  vrna_exp_param_t  *pf_params;
-
-  n         = (int)fc->length;
-  S1        = fc->sequence_encoding;
-  ptype     = fc->ptype;
-  my_iindx  = fc->iindx;
-  jindx     = fc->jindx;
-  pf_params = fc->exp_params;
-  G         = fc->exp_matrices->G;
-  probs     = fc->exp_matrices->probs;
-  scale     = fc->exp_matrices->scale;
-
-  /* 2.5. bonding k,l as gquad enclosed by i,j */
-  double *expintern = &(pf_params->expinternal[0]);
-
-  if (l < n - 3) {
-    for (k = 2; k <= l - VRNA_GQUAD_MIN_BOX_SIZE + 1; k++) {
-      kl = my_iindx[k] - l;
-      if (G[kl] == 0.)
-        continue;
-
-      tmp2  = 0.;
-      i     = k - 1;
-      for (j = MIN2(l + MAXLOOP + 1, n); j > l + 3; j--) {
-        ij    = my_iindx[i] - j;
-        type  = (unsigned char)ptype[jindx[j] + i];
-        if (!type)
-          continue;
-
-        u1    = j - l - 1;
-        qe    = (type > 2) ? pf_params->expTermAU : 1.;
-        tmp2  += probs[ij] *
-                 qe *
-                 (FLT_OR_DBL)expintern[u1] *
-                 pf_params->expmismatchI[type][S1[i + 1]][S1[j - 1]] *
-                 scale[u1 + 2];
-      }
-      probs[kl] += tmp2 * G[kl];
-    }
-  }
-
-  if (l < n - 1) {
-    for (k = 3; k <= l - VRNA_GQUAD_MIN_BOX_SIZE + 1; k++) {
-      kl = my_iindx[k] - l;
-      if (G[kl] == 0.)
-        continue;
-
-      tmp2 = 0.;
-      for (i = MAX2(1, k - MAXLOOP - 1); i <= k - 2; i++) {
-        u1 = k - i - 1;
-        for (j = l + 2; j <= MIN2(l + MAXLOOP - u1 + 1, n); j++) {
-          ij    = my_iindx[i] - j;
-          type  = (unsigned char)ptype[jindx[j] + i];
-          if (!type)
-            continue;
-
-          u2    = j - l - 1;
-          qe    = (type > 2) ? pf_params->expTermAU : 1.;
-          tmp2  += probs[ij] *
-                   qe *
-                   (FLT_OR_DBL)expintern[u1 + u2] *
-                   pf_params->expmismatchI[type][S1[i + 1]][S1[j - 1]] *
-                   scale[u1 + u2 + 2];
-        }
-      }
-      probs[kl] += tmp2 * G[kl];
-    }
-  }
-
-  if (l < n) {
-    for (k = 4; k <= l - VRNA_GQUAD_MIN_BOX_SIZE + 1; k++) {
-      kl = my_iindx[k] - l;
-      if (G[kl] == 0.)
-        continue;
-
-      tmp2  = 0.;
-      j     = l + 1;
-      for (i = MAX2(1, k - MAXLOOP - 1); i < k - 3; i++) {
-        ij    = my_iindx[i] - j;
-        type  = (unsigned char)ptype[jindx[j] + i];
-        if (!type)
-          continue;
-
-        u2    = k - i - 1;
-        qe    = (type > 2) ? pf_params->expTermAU : 1.;
-        tmp2  += probs[ij] *
-                 qe *
-                 (FLT_OR_DBL)expintern[u2] *
-                 pf_params->expmismatchI[type][S1[i + 1]][S1[j - 1]] *
-                 scale[u2 + 2];
-      }
-      probs[kl] += tmp2 * G[kl];
-    }
-  }
-}
-
-
 
 PRIVATE void
 compute_bpp_internal(vrna_fold_compound_t *fc,
@@ -7846,9 +7387,6 @@ compute_bpp_internal(vrna_fold_compound_t *fc,
       probs[kl] = FLT_MAX;
     }
   }
-
-  if (md->gquad)
-    compute_gquad_prob_internal(fc, l);
 }
 
 PRIVATE void
@@ -8887,230 +8425,6 @@ multistrand_contrib(vrna_fold_compound_t  *fc,
 }
 
 
-
-
-PUBLIC int
-vrna_nucleotide_IUPAC_identity(char nt,
-                               char mask)
-{
-  char n1, n2, *p;
-
-  p   = NULL;
-  n1  = toupper(nt);
-  n2  = toupper(mask);
-
-  switch (n1) {
-    case 'A':
-      p = strchr("ARMWDHVN", n2);
-      break;
-    case 'C':
-      p = strchr("CYMSBHVN", n2);
-      break;
-    case 'G':
-      p = strchr("GRKSBDVN", n2);
-      break;
-    case 'T':
-      p = strchr("TYKWBDHN", n2);
-      break;
-    case 'U':
-      p = strchr("UYKWBDHN", n2);
-      break;
-    case 'I':
-      p = strchr("IN", n2);
-      break;
-    case 'R':
-      p = strchr("AGR", n2);
-      break;
-    case 'Y':
-      p = strchr("CTUY", n2);
-      break;
-    case 'K':
-      p = strchr("GTUK", n2);
-      break;
-    case 'M':
-      p = strchr("ACM", n2);
-      break;
-    case 'S':
-      p = strchr("GCS", n2);
-      break;
-    case 'W':
-      p = strchr("ATUW", n2);
-      break;
-    case 'B':
-      p = strchr("GCTBU", n2);
-      break;
-    case 'D':
-      p = strchr("AGTUD", n2);
-      break;
-    case 'H':
-      p = strchr("ACTUH", n2);
-      break;
-    case 'V':
-      p = strchr("ACGV", n2);
-      break;
-    case 'N':
-      p = strchr("ACGTUN", n2);
-      break;
-  }
-
-  return (p) ? 1 : 0;
-}
-
-
-
-PRIVATE int *
-get_motifs(vrna_fold_compound_t *vc,
-           int                  i,
-           unsigned int         loop_type)
-{
-  int       k, j, u, n, *motif_list, cnt, guess;
-  char      *sequence;
-  vrna_ud_t *domains_up;
-
-  sequence    = vc->sequence;
-  n           = (int)vc->length;
-  domains_up  = vc->domains_up;
-
-  cnt         = 0;
-  guess       = domains_up->motif_count;
-  motif_list  = (int *)vrna_alloc(sizeof(int) * (guess + 1));
-
-  /* collect list of motif numbers we find that start at position i */
-  for (k = 0; k < domains_up->motif_count; k++) {
-    if (!(domains_up->motif_type[k] & loop_type))
-      continue;
-
-    j = i + domains_up->motif_size[k] - 1;
-    if (j <= n) {
-      /* only consider motif that does not exceed sequence length (does not work for circular RNAs!) */
-      for (u = i; u <= j; u++)
-        if (!vrna_nucleotide_IUPAC_identity(sequence[u - 1], domains_up->motif[k][u - i]))
-          break;
-
-      if (u > j) /* got a complete motif match */
-        motif_list[cnt++] = k;
-    }
-  }
-
-  if (cnt == 0) {
-    free(motif_list);
-    return NULL;
-  }
-
-  motif_list      = (int *)vrna_realloc(motif_list, sizeof(int) * (cnt + 1));
-  motif_list[cnt] = -1; /* end of list marker */
-
-  return motif_list;
-}
-
-
-
-
-PUBLIC int *
-vrna_ud_get_motif_size_at(vrna_fold_compound_t  *vc,
-                          int                   i,
-                          unsigned int          loop_type)
-{
-  if (vc && vc->domains_up) {
-    int k, l, cnt, *ret, *ptr;
-
-    ret = NULL;
-    if ((i > 0) && (i <= vc->length)) {
-      ptr = get_motifs(vc, i, loop_type);
-      if (ptr) {
-        for (k = 0; ptr[k] != -1; k++) /* replace motif number with its size */
-          ptr[k] = vc->domains_up->motif_size[ptr[k]];
-        /* make the list unique */
-        ret     = (int *)vrna_alloc(sizeof(int) * (k + 1));
-        ret[0]  = -1;
-        cnt     = 0;
-        for (k = 0; ptr[k] != -1; k++) {
-          for (l = 0; l < cnt; l++)
-            if (ptr[k] == ret[l])
-              break;
-
-          /* we've already seen this size */
-
-          if (l == cnt) {
-            /* we've not seen this size before */
-            ret[cnt]      = ptr[k];
-            ret[cnt + 1]  = -1;
-            cnt++;
-          }
-        }
-        /* resize ret array */
-        ret = (int *)vrna_realloc(ret, sizeof(int) * (cnt + 1));
-      }
-
-      free(ptr);
-    }
-
-    return ret;
-  }
-
-  return NULL;
-}
-
-
-PRIVATE INLINE void
-ud_outside_ext_loops(vrna_fold_compound_t *vc)
-{
-  int         i, j, u, n, cnt, *motif_list, *hc_up;
-  FLT_OR_DBL  *q1k, *qln, temp, *scale;
-  vrna_sc_t   *sc;
-  vrna_ud_t   *domains_up;
-
-  n           = vc->length;
-  q1k         = vc->exp_matrices->q1k;
-  qln         = vc->exp_matrices->qln;
-  scale       = vc->exp_matrices->scale;
-  hc_up       = vc->hc->up_ext;
-  domains_up  = vc->domains_up;
-  sc          = vc->sc;
-
-  for (i = 1; i <= n; i++) {
-    motif_list = vrna_ud_get_motif_size_at(vc, i, VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP);
-
-    /* 1. Exterior loops */
-    if (motif_list) {
-      cnt = 0;
-      while (-1 != (u = motif_list[cnt])) {
-        j = i + u - 1;
-        if (j <= n) {
-          if (hc_up[i] >= u) {
-            temp  = q1k[i - 1] * qln[j + 1] / q1k[n];
-            temp  *= domains_up->exp_energy_cb(vc,
-                                               i,
-                                               j,
-                                               VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP | VRNA_UNSTRUCTURED_DOMAIN_MOTIF,
-                                               domains_up->data);
-
-            if (sc)
-              if (sc->exp_energy_up)
-                temp *= sc->exp_energy_up[i][u];
-
-            temp *= scale[u];
-
-            if (temp > 0.) {
-              domains_up->probs_add(vc,
-                                    i,
-                                    j,
-                                    VRNA_UNSTRUCTURED_DOMAIN_EXT_LOOP | VRNA_UNSTRUCTURED_DOMAIN_MOTIF,
-                                    temp,
-                                    domains_up->data);
-            }
-          }
-        }
-
-        cnt++;
-      }
-    }
-
-    free(motif_list);
-  }
-}
-
-
 PRIVATE FLT_OR_DBL
 exp_E_interior_loop(vrna_fold_compound_t  *fc,
                     int                   i,
@@ -9198,27 +8512,6 @@ exp_E_interior_loop(vrna_fold_compound_t  *fc,
                                S1[k - 1],
                                S1[l + 1],
                                pf_params);
-
-        break;
-
-      case VRNA_FC_TYPE_COMPARATIVE:
-        q_temp = 1.;
-
-        for (s = 0; s < n_seq; s++) {
-          int u1_local  = a2s[s][k - 1] - a2s[s][i];
-          int u2_local  = a2s[s][j - 1] - a2s[s][l];
-          type    = vrna_get_ptype_md(SS[s][i], SS[s][j], md);
-          type2   = vrna_get_ptype_md(SS[s][l], SS[s][k], md);
-          q_temp  *= exp_E_IntLoop(u1_local,
-                                   u2_local,
-                                   type,
-                                   type2,
-                                   S3[s][i],
-                                   S5[s][j],
-                                   S5[s][k],
-                                   S3[s][l],
-                                   pf_params);
-        }
 
         break;
     }
@@ -9403,7 +8696,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
   vrna_ud_t         *domains_up;
 
   n           = vc->length;
-  pscore      = (vc->type == VRNA_FC_TYPE_COMPARATIVE) ? vc->pscore : NULL;
+  pscore      = NULL;
   pf_params   = vc->exp_params;
   md          = &(pf_params->model_details);
   my_iindx    = vc->iindx;
@@ -9596,8 +8889,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         if (with_gquad) {
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
-            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
-              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           } else if (G[ij] > 0.) {
             probs[ij] += q1k[i - 1] *
                          G[ij] *
@@ -9607,9 +8898,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         } else {
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
-
-            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
-              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
         }
         // printf("%d-", probs[ij]);
@@ -9734,13 +9022,13 @@ vrna_pf(vrna_fold_compound_t  *fc,
       return dG;
     }
 
-    if (md->circ)
+    // if (md->circ)
       /* do post processing step for circular RNAs */
-      postprocess_circular(fc);
+      // postprocess_circular(fc);
 
     /* call user-defined grammar post-condition callback function */
-    if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
-      fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
+    // if ((fc->aux_grammar) && (fc->aux_grammar->cb_proc))
+    //   fc->aux_grammar->cb_proc(fc, VRNA_STATUS_PF_POST, fc->aux_grammar->data);
 
     if (fc->strands > 1)
       vrna_gr_reset(fc);

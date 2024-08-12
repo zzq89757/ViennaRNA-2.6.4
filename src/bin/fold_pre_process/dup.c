@@ -17,6 +17,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+#include "dup.h"
 // #include "utils/basic.h"
 // #include "params/default.h"
 // #include "fold_vars.h"
@@ -40,7 +41,7 @@
 #define UNIT 100
 #define MINPSCORE -2 * UNIT
 #define NONE -10000         /* score for forbidden pairs */
-#define PUBLIC
+
 #define PRIVATE static
 #define MAXALPHA 20       /* maximal length of alphabet */
 

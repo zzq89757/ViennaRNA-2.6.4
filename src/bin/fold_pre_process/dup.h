@@ -1,5 +1,8 @@
 # define INLINE inline
+# define PUBLIC
 
+typedef struct vrna_md_s vrna_md_t;
+typedef struct  vrna_param_s vrna_param_t;
 PUBLIC void
 set_model_details(vrna_md_t *md);
 
