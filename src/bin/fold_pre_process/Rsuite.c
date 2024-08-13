@@ -14552,7 +14552,7 @@ char *process_record(char *sequence){
   char *costruc;
   // prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
   costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
-//   printf("%s", costruc);
+  // printf("%s", costruc);
   return costruc;
 }
 
