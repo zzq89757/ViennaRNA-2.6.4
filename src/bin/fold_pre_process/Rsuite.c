@@ -14564,8 +14564,6 @@ int main_cofold(){
   char *res;
   res = process_record(s1);
   printf("%s",res);
-  free(s1);
-  free(res);
   return 0;
 }
 
