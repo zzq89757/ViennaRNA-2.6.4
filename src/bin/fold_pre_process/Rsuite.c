@@ -14559,12 +14559,17 @@ char *process_record(char *sequence){
 
 
 
-int main(){
+int main_cofold(){
   char *s1 = "ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA";
   char *res;
   res = process_record(s1);
   printf("%s",res);
   return 0;
+}
+
+int main(){
+  main_dup();
+  main_cofold();
 }
 
 
