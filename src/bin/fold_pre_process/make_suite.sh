@@ -1,2 +1,2 @@
-gcc Rsuite.c -o Rsuite -lm 
+gcc -g Rsuite.c -o Rsuite -lm 
 ./Rsuite
