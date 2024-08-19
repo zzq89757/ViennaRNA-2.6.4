@@ -14560,7 +14560,7 @@ char *process_record(char *sequence){
 
 
 int main_cofold(){
-  char *s1 = "ttagtcatcgctaccaggatggtgatgcggttttggca&TGCCAAAACCGCATCACCATGGTAATAGCGATGACTAA";
+  char *s1 = "attgacgtcaatgggtggagtatttacggtaaactgcccacttggca&GCCCAACGACCCCCGCCCATTGACGTCAA";
   char *res;
   res = process_record(s1);
   printf("%s",res);
@@ -14568,7 +14568,7 @@ int main_cofold(){
 }
 
 int main(){
-  main_dup();
+  // main_dup();
   main_cofold();
 }
 
