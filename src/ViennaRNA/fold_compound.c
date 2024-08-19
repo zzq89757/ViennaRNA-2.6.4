@@ -256,7 +256,7 @@ vrna_fold_compound(const char       *sequence,
     set_fold_compound(fc, options, aux_options);
 
     if (!(options & VRNA_OPTION_EVAL_ONLY)) {
-      printf("into !(options & VRNA_OPTION_EVAL_ONLY)\n");
+      // printf("into !(options & VRNA_OPTION_EVAL_ONLY)\n");
       /* add default hard constraints */
       vrna_hc_init(fc);
 
