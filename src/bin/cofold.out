@@ -1,12 +1,10 @@
 into col row
-into !(options & VRNA_OPTION_EVAL_ONLY)
 into else
 no scinto col row
-into !(options & VRNA_OPTION_EVAL_ONLY)
 into else
 no scno scget_constraints_helpercircular is 0
 with_ud_outside is 0>primer_f7,temp_r7
-CTTCCTCGGGTTCAAAGCTGGATT&GTCCAGTTTTCCCAGGAAT
-.(((((.(((...((((((((((.&)))))))))))))))))). (-21.90)
-.(((((.(((...((((((((((.&)))))))))))))))))). [-22.33]
- frequency of mfe structure in ensemble 0.500193; delta G binding=-16.69
+attgacgtcaatgggtggagtatttacggtaaactgcccacttggca&GCCCAACGACCCCCGCCCATTGACGTCAA
+.(((((((((((((((((.........(((....((((.....))))&))).........))))))))))))))))) (-36.70)
+.{((((((((((((((((.{.......(((....|({{.....))),&))).........))))))))))))))))} [-38.63]
+ frequency of mfe structure in ensemble 0.0434894; delta G binding=-22.51
