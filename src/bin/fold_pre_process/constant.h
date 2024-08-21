@@ -109,7 +109,7 @@ static int BP_pair[NBASES][NBASES] =
  *
  *  @see    #vrna_md_t.noGUclosure, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_NO_GU_CLOSURE 0
+#define VRNA_MODEL_DEFAULT_NO_GU_CLOSURE 1
 
 /**
  *  @brief  Default model behavior to treat a molecule as a circular RNA (DNA)

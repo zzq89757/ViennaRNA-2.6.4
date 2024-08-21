@@ -4875,7 +4875,7 @@ vrna_exp_params_rescale(vrna_fold_compound_t  *vc,
   vrna_exp_param_t  *pf;
   double            e_per_nt, kT;
   vrna_md_t         *md;
-
+  // printf("\n%f\n",*mfe);
   if (vc) {
     if (!vc->exp_params) {
       vc->exp_params = vrna_exp_params(&(vc->params->model_details));
@@ -12006,8 +12006,9 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     /* init diagonal entries unable to pair in pr matrix */
     for (i = 1; i <= n; i++)
       probs[my_iindx[i] - i] = 0.;
-    // printf("probs is :%f", probs);
+      // printf("\nprobs is :%f\n", probs);
     /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
+    // printf("into cir %d\n", circular);
     if (circular)
       bppm_circ(vc, constraints);
     else
@@ -12117,7 +12118,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
             probs[ij] *= qb[ij];
           }
         }
-        // printf("%d-", probs[ij]);
+        // printf("%f,", probs[ij]);
       }
     if (structure != NULL) {
       /* s generate here -------------------*/
@@ -14256,21 +14257,21 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
   int ret = 1; /* success */
 
   /* check maximum sequence length restrictions */
-  if (fc->length > 1000000) {
-    printf(
-      "vrna_fold_compound_prepare@data_structures.c: sequence length of %d exceeds addressable range",
-      fc->length);
-    return 0;
-  }
+  // if (fc->length > 1000000) {
+  //   printf(
+  //     "vrna_fold_compound_prepare@data_structures.c: sequence length of %d exceeds addressable range",
+  //     fc->length);
+  //   return 0;
+  // }
 
   /* make sure to always provide sane bp-span settings */
-  sanitize_bp_span(fc, options);
+  // sanitize_bp_span(fc, options);
 
   /* prepare Boltzmann factors if required */
   vrna_params_prepare(fc, options);
 
   /* prepare ptype array(s) */
-  vrna_ptypes_prepare(fc, options);
+  // vrna_ptypes_prepare(fc, options);
 
   if (options & VRNA_OPTION_PF) {
     /* prepare for partition function computation */
@@ -14289,7 +14290,7 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
   }
 
   /* prepare hard constraints */
-  vrna_hc_prepare(fc, options);
+  // vrna_hc_prepare(fc, options);
 
   /* prepare soft constraints data structure, if required */
 //   vrna_sc_prepare(fc, options);
@@ -14394,7 +14395,7 @@ vrna_pf(vrna_fold_compound_t  *fc,
     }
 
   }
-
+  printf("%f",dG);
   return dG;
 }
 
@@ -14526,7 +14527,7 @@ char *process_record(char *sequence){
                                                 VRNA_OPTION_DEFAULT | VRNA_OPTION_HYBRID);
   n = vc->length;
   // min_en  = vrna_mfe_dimer(vc, mfe_structure);
-
+  min_en = -49.7;
   // pf calc
 
   char              *Astring, *Bstring, *orig_Astring, *orig_Bstring, *pairing_propensity;
@@ -14545,7 +14546,7 @@ char *process_record(char *sequence){
   Alength = Blength = 0;
 
   pairing_propensity = (char *)vrna_alloc(sizeof(char) * (n + 1));
-  vrna_exp_params_rescale(vc, &min_en);
+  vrna_exp_params_rescale(vc, &min_en); // bug in here!!!!!!!!
   kT = vc->exp_params->kT / 1000.;
   // pairing_propensity is the finnal structure
   AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
@@ -14560,7 +14561,7 @@ char *process_record(char *sequence){
 
 
 int main_cofold(){
-  char *s1 = "actgccaagtaggaaagtcccataaggtcat&tgaacttatgggactttcctacttggcag";
+  char *s1 = "ACTGCCAAGTAGGAAAGTCCCATAAGGTCAT&TGAACTTATGGGACTTTCCTACTTGGCAG";
   char *res;
   res = process_record(s1);
   printf("%s",res);
