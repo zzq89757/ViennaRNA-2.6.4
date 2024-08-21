@@ -3391,7 +3391,7 @@ init_default_options(struct options *opt)
   opt->pf             = 1;
   opt->doT            = 0; /* compute dimer free energies etc. */
   opt->noPS           = 1;
-  opt->noconv         = 0;
+  opt->noconv         = 1;
   opt->centroid       = 0;  /* off by default due to historical reasons */
   opt->MEA            = 0;
   opt->MEAgamma       = 1.;
@@ -14560,7 +14560,7 @@ char *process_record(char *sequence){
 
 
 int main_cofold(){
-  char *s1 = "attgacgtcaatgggtggagtatttacggtaaactgcccacttggca&GCCCAACGACCCCCGCCCATTGACGTCAA";
+  char *s1 = "actgccaagtaggaaagtcccataaggtcat&tgaacttatgggactttcctacttggcag";
   char *res;
   res = process_record(s1);
   printf("%s",res);
