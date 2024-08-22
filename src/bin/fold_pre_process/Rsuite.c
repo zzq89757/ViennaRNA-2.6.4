@@ -1,6 +1,14 @@
 #include "constant.h" 
-#include "matrices/all_mat.h"
-#include "Rsuite.h"
+// #include "matrices/all_mat.h"
+// #include "intl11_convert.h"
+#include "matrices/intl11.h"
+#include "intl11dH_dna.h"
+#include "intl21_dna.h"
+#include "intl21_dnadH.h"
+#include "matrices/intl22.h"
+#include "matrices/intl22dH.h"
+// #include "Rsuite.h"
+
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -1941,8 +1949,8 @@ char *process(char *s1, char *s2)
 }
 
 int main_dup(){
-    char *s1 = "CTTCCTCGGGTTCAAAGCTGGATT";
-    char *s2 = "GTCCAGTTTTCCCAGGAAT";
+    char *s1 = "ACTGCCAAGTAGGAAAGTCCCATAAGGTCAT";
+    char *s2 = "TGAACTTATGGGACTTTCCTACTTGGCAG";
     char *res;
     res = process(s1,s2);
     printf("%s", res);
@@ -14326,7 +14334,9 @@ vrna_pf(vrna_fold_compound_t  *fc,
     params    = fc->exp_params;
     matrices  = fc->exp_matrices;
     md        = &(params->model_details);
-
+    md->helical_rise = VRNA_MODEL_HELICAL_RISE_DNA;
+    md->backbone_length = VRNA_MODEL_BACKBONE_LENGTH_DNA;
+    md->saltDPXInitFact = VRNA_MODEL_SALT_DPXINIT_FACT_DNA;
     /* call user-defined recursion status callback function */
     if (fc->stat_cb) // not into
       fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
@@ -14546,7 +14556,7 @@ char *process_record(char *sequence){
   Alength = Blength = 0;
 
   pairing_propensity = (char *)vrna_alloc(sizeof(char) * (n + 1));
-  vrna_exp_params_rescale(vc, &min_en); // bug in here!!!!!!!!
+  vrna_exp_params_rescale(vc, &min_en); // expmismatchExt(same global),1nI(same global),<int11,int21,int22>,tetra,tri,hex,pf_scale,bug in here!!!!!!!!
   kT = vc->exp_params->kT / 1000.;
   // pairing_propensity is the finnal structure
   AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
@@ -14569,7 +14579,7 @@ int main_cofold(){
 }
 
 int main(){
-  // main_dup();
+  main_dup();
   main_cofold();
 }
 

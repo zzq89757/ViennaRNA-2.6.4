@@ -1,54 +1,5 @@
-PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
-{{{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- ,{{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  ,{   INF,   INF,   INF,   INF,   INF}
-  }
- }
  ,{{{  INF , INF , INF , INF , INF  }
+  ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
@@ -102,6 +53,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
+  ,{   INF , INF , INF , INF , INF }
 }
   ,{{200, 120, 160, 200, 200 }   /* GC,CG,N */
  ,{ 160, 60, 160, -10, 100 }   /* GC,CG,A */
@@ -147,6 +99,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
 }
  }
  ,{{{  INF , INF , INF , INF , INF  }
+  ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
@@ -200,6 +153,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
+  ,{   INF , INF , INF , INF , INF }
 }
   ,{{250, 250, 250, 200, 200 }   /* TG,CG,N */
  ,{ 250, 190, 250, 110, 100 }   /* TG,CG,A */
@@ -245,6 +199,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
 }
  }
  ,{{{  INF , INF , INF , INF , INF  }
+  ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
@@ -298,6 +253,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
+  ,{   INF , INF , INF , INF , INF }
 }
   ,{{210, 210, 180, 200, 200 }   /* TA,CG,N */
  ,{ 170, 110, 170, 50, 100 }   /* TA,CG,A */
@@ -347,6 +303,7 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
   ,{   INF , INF , INF , INF , INF }
+  ,{   INF , INF , INF , INF , INF }
 }
   ,{{260, 250, 260, 200, 200 }   /* NN,CG,N */
  ,{ 260, 190, 260, 110, 100 }   /* NN,CG,A */
@@ -390,4 +347,4 @@ PUBLIC int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
  ,{ 300, 300, 300, 300, 300 }   /* NN,NN,G */
  ,{ 300, 300, 300, 300, 300 }   /* NN,NN,T */
 }
- }};
+ }

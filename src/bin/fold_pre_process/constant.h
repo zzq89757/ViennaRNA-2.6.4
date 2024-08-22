@@ -82,6 +82,7 @@ static int BP_pair[NBASES][NBASES] =
  *  @see  #vrna_md_t.dangles, vrna_md_defaults_reset(), vrna_md_set_default()
  */
 #define VRNA_MODEL_DEFAULT_DANGLES 2
+// #define VRNA_MODEL_DEFAULT_DANGLES 2
 
 /**
  *  @brief  Default model behavior for lookup of special tri-, tetra-, and hexa-loops
@@ -498,8 +499,8 @@ PUBLIC int mismatchIdH[NBPAIRS + 1][5][5] =
     { 520, 400, 520, 470, 430 }}};
 
 PUBLIC int mismatchH37[NBPAIRS + 1][5][5] =
-    {{{INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}}, {
-    { 0, 0, 0, 0, 0 },
+    {{{INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}, {INF, INF, INF, INF, INF}}, 
+    {{ 0, 0, 0, 0, 0 },
     { 0, -100, -80, -90, 0 },
     { 0, -80, -50, 0, -70 },
     { 0, -100, 0, -90, -100 },
@@ -972,39 +973,48 @@ PUBLIC int dangle3_dH[NBPAIRS + 1][5] =
 
 
 
-PUBLIC char Hexaloops[361] =
-    "ACAGUACU "
-    "ACAGUGAU "
-    "ACAGUGCU "
-    "ACAGUGUU ";
-PUBLIC int Hexaloop37[40] = {280, 360, 290, 180};
-PUBLIC int HexaloopdH[40] = {-1680, -1140, -1280, -1540};
+// PUBLIC char Hexaloops[361] =
+//     "ACAGUACU "
+//     "ACAGUGAU "
+//     "ACAGUGCU "
+//     "ACAGUGUU ";
+// PUBLIC int Hexaloop37[40] = {280, 360, 290, 180};
+// PUBLIC int HexaloopdH[40] = {-1680, -1140, -1280, -1540};
+PUBLIC char Hexaloops[361];
+PUBLIC int Hexaloop37[40];
+PUBLIC int HexaloopdH[40];
 
-PUBLIC char Tetraloops[281] =
-    "CAACGG "
-    "CCAAGG "
-    "CCACGG "
-    "CCCAGG "
-    "CCGAGG "
-    "CCGCGG "
-    "CCUAGG "
-    "CCUCGG "
-    "CUAAGG "
-    "CUACGG "
-    "CUCAGG "
-    "CUCCGG "
-    "CUGCGG "
-    "CUUAGG "
-    "CUUCGG "
-    "CUUUGG ";
-PUBLIC int Tetraloop37[40] = {550, 330, 370, 340, 350, 360, 370, 250, 360, 280, 370, 270, 280, 350, 370, 370};
-PUBLIC int TetraloopdH[40] = {690, -1030, -330, -890, -660, -750, -350, -1390, -760, -1070, -660, -1290, -1070, -620, -1530, -680};
+// PUBLIC char Tetraloops[281] =
+//     "CAACGG "
+//     "CCAAGG "
+//     "CCACGG "
+//     "CCCAGG "
+//     "CCGAGG "
+//     "CCGCGG "
+//     "CCUAGG "
+//     "CCUCGG "
+//     "CUAAGG "
+//     "CUACGG "
+//     "CUCAGG "
+//     "CUCCGG "
+//     "CUGCGG "
+//     "CUUAGG "
+//     "CUUCGG "
+//     "CUUUGG ";
+// PUBLIC int Tetraloop37[40] = {550, 330, 370, 340, 350, 360, 370, 250, 360, 280, 370, 270, 280, 350, 370, 370};
+// PUBLIC int TetraloopdH[40] = {690, -1030, -330, -890, -660, -750, -350, -1390, -760, -1070, -660, -1290, -1070, -620, -1530, -680};
+PUBLIC char Tetraloops[281];
+PUBLIC int Tetraloop37[40];
+PUBLIC int TetraloopdH[40];
 
-PUBLIC char Triloops[241] =
-    "CAACG "
-    "GUUAC ";
-PUBLIC int Triloop37[40] = {680, 690};
-PUBLIC int TriloopdH[40] = {2370, 1080};
+// PUBLIC char Triloops[241] =
+//     "CAACG "
+//     "GUUAC ";
+// PUBLIC int Triloop37[40] = {680, 690};
+// PUBLIC int TriloopdH[40] = {2370, 1080};
+PUBLIC char Triloops[241];
+PUBLIC int Triloop37[40] ;
+PUBLIC int TriloopdH[40] ;
 
 
 #define saltT md->temperature + K0
@@ -1150,3 +1160,4 @@ static int pair[MAXALPHA + 1][MAXALPHA + 1];
       / kT \
       ) \
     )
+
