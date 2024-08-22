@@ -275,12 +275,12 @@ main(int  argc,
     exit(1);
 
   /* get basic set of model details */
-  ggo_get_md_eval(args_info, opt.md);
-  ggo_get_md_fold(args_info, opt.md);
-  ggo_get_md_part(args_info, opt.md);
+  // ggo_get_md_eval(args_info, opt.md);
+  // ggo_get_md_fold(args_info, opt.md);
+  // ggo_get_md_part(args_info, opt.md);
 
   /* temperature */
-  ggo_get_temperature(args_info, opt.md.temperature);
+  // ggo_get_temperature(args_info, opt.md.temperature);
 
   /* check dangle model */
   if ((opt.md.dangles < 0) || (opt.md.dangles > 3)) { // dangles constant eq 0,rm
@@ -910,11 +910,11 @@ process_record(struct record_data *record)
       min_en                            = vrna_eval_structure(vc, mfe_structure);
       vc->params->model_details.dangles = 1;
     }
-    // 配置vc的exp_params参数
+    // 配置vc的exp_params参数(此时matrices也变了！！！)
     // “预计算的自由能贡献作为玻尔兹曼因子”指的是在计算RNA结构或其他分子结构的自由能时，已经预先计算并储存了一些贡献值，这些值是以玻尔兹曼因子的形式存在的。玻尔兹曼因子是指由玻尔兹曼方程（e^-Δ𝐺/RT）计算得到的因子，其中 Δ𝐺 是自由能变化，R 是气体常数，T 是绝对温度。这些预计算的因子可以用来加速结构的自由能计算，而不需要在每次计算时都重新计算这些值。
-    vrna_exp_params_rescale(vc, &min_en);
+    vrna_exp_params_rescale(vc, &min_en); // expMLbase,expclosing,termAU,duplexinit数值不一样
     kT = vc->exp_params->kT / 1000.; // 玻尔兹曼常数 用于计算自由能
-
+    printf("%f",vc->exp_params->expstack[1][1]);
     if (n > 2000)
       vrna_cstr_message_info(o_stream->err,
                              "scaling factor %f",

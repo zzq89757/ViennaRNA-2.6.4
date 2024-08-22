@@ -756,7 +756,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       probs[my_iindx[i] - i] = 0.;
     // printf("probs is :%f", probs);
     /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
-    printf("circular is %d\n",circular);
+    // printf("circular is %d\n",circular);
     if (circular)
       bppm_circ(vc, constraints);
     else
@@ -833,6 +833,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         for (i = 1; i <= n; i++)
           for (j = i + 1; j <= n; j++) {
             ij = my_iindx[i] - j;
+            printf("%d-",ij);
             /*  search for possible auxiliary base pairs in hairpin loop motifs to store
              *  the corresponding probability corrections
              */
@@ -874,7 +875,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         ij = my_iindx[i] - j;
 
         if (with_gquad) {
-          printf("into with_gquad\n");
+          // printf("into with_gquad\n");
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
@@ -889,11 +890,12 @@ pf_create_bppm(vrna_fold_compound_t *vc,
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
 
-            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
-              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
+            // if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
+            //   probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
+          // printf("%f-",qb[ij]);
         }
-        // printf("%d-", probs[ij]);
+        // printf("%f,", probs[ij]);
       }
     if (structure != NULL) {
       /* s generate here -------------------*/

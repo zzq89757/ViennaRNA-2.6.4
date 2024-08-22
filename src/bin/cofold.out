@@ -1,10 +1,9 @@
 into col row
 into else
-no scinto col row
+into col row
 into else
-no scno scget_constraints_helpercircular is 0
-with_ud_outside is 0>primer_f7,temp_r7
-attgacgtcaatgggtggagtatttacggtaaactgcccacttggca&GCCCAACGACCCCCGCCCATTGACGTCAA
-.(((((((((((((((((.........(((....((((.....))))&))).........))))))))))))))))) (-36.70)
-.{((((((((((((((((.{.......(((....|({{.....))),&))).........))))))))))))))))} [-38.63]
- frequency of mfe structure in ensemble 0.0434894; delta G binding=-22.51
+49.110659get_constraints_helperwith_ud_outside is 0>primer_f7,temp_r7
+actgccaagtaggaaagtcccataaggtcat&tgaacttatgggactttcctacttggcag
+.(((((((((((((((((((((((((.(((.&))).))))))))))))))))))))))))) (-49.70)
+.(((((((((((((((((((((((((.{((.&))}.))))))))))))))))))))))))) [-50.19]
+ frequency of mfe structure in ensemble 0.45505; delta G binding=-41.29

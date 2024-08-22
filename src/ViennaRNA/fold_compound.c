@@ -261,7 +261,7 @@ vrna_fold_compound(const char       *sequence,
       vrna_hc_init(fc);
 
       /* add DP matrices (if required) */
-      vrna_mx_add(fc, VRNA_MX_DEFAULT, options);
+      // vrna_mx_add(fc, VRNA_MX_DEFAULT, options);
     }
   }
 
@@ -516,21 +516,21 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
 {
   int ret = 1; /* success */
   /* check maximum sequence length restrictions */
-  if (fc->length > vrna_sequence_length_max(options)) {
-    vrna_message_warning(
-      "vrna_fold_compound_prepare@data_structures.c: sequence length of %d exceeds addressable range",
-      fc->length);
-    return 0;
-  }
+  // if (fc->length > vrna_sequence_length_max(options)) {
+  //   vrna_message_warning(
+  //     "vrna_fold_compound_prepare@data_structures.c: sequence length of %d exceeds addressable range",
+  //     fc->length);
+  //   return 0;
+  // }
 
   /* make sure to always provide sane bp-span settings */
-  sanitize_bp_span(fc, options);
+  // sanitize_bp_span(fc, options);
 
   /* prepare Boltzmann factors if required */
   vrna_params_prepare(fc, options);
 
   /* prepare ptype array(s) */
-  vrna_ptypes_prepare(fc, options);
+  // vrna_ptypes_prepare(fc, options);
 
   if (options & VRNA_OPTION_PF) {
     /* prepare for partition function computation */
@@ -553,7 +553,7 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
 
   /* prepare soft constraints data structure, if required */
   // vrna_sc_prepare(fc, options);
-  printf("no sc");
+  // printf("no sc");
   /* Add DP matrices, if not they are not present or do not fit current settings */
   vrna_mx_prepare(fc, options);
 

@@ -1157,7 +1157,9 @@ set_model_details(vrna_md_t *md)
     md->special_hp      = tetra_loop;
     md->noLP            = noLonelyPairs;
     md->noGU            = noGU;
+    md->noGU            = 1;
     md->noGUclosure     = no_closingGU;
+    md->noGUclosure     = 1;
     md->logML           = logML;
     md->gquad           = gquad;
     md->circ            = circ;
