@@ -1,13 +1,10 @@
 #include "constant.h" 
-// #include "matrices/all_mat.h"
-// #include "intl11_convert.h"
-#include "matrices/intl11.h"
-#include "intl11dH_dna.h"
-#include "intl21_dna.h"
-#include "intl21_dnadH.h"
-#include "intl22_dna.h"
-#include "intl22_dna_dH.h"
-// #include "Rsuite.h"
+#include "intl11.h"
+#include "intl11dH.h"
+#include "intl21.h"
+#include "intl21dH.h"
+#include "intl22.h"
+#include "intl22dH.h"
 
 
 #ifdef HAVE_CONFIG_H
@@ -2127,7 +2124,7 @@ struct record_data {
 typedef enum {
   VRNA_SEQ_UNKNOWN = 0,   /**< @brief Nucleotide sequence represents an Unkown type */
   VRNA_SEQ_RNA = 1,       /**< @brief Nucleotide sequence represents an RNA type */
-  VRNA_SEQ_DNA = 2        /**< @brief Nucleotide sequence represents a DNA type */
+  VRNA_SEQ = 2        /**< @brief Nucleotide sequence represents a DNA type */
 } vrna_seq_type_e;
 
 struct vrna_sequence_s {
@@ -3532,8 +3529,7 @@ get_scaled_exp_params(vrna_md_t *md,
   pf = (vrna_exp_param_t *)vrna_alloc(sizeof(vrna_exp_param_t));
 
   memset(pf->param_file, '\0', 256);
-  // if (last_parameter_file() != NULL) /* not into here */
-  //   strncpy(pf->param_file, last_parameter_file(), 255);
+
 
   pf->model_details = *md;
   pf->temperature   = md->temperature;
@@ -14334,9 +14330,6 @@ vrna_pf(vrna_fold_compound_t  *fc,
     params    = fc->exp_params;
     matrices  = fc->exp_matrices;
     md        = &(params->model_details);
-    md->helical_rise = VRNA_MODEL_HELICAL_RISE_DNA;
-    md->backbone_length = VRNA_MODEL_BACKBONE_LENGTH_DNA;
-    md->saltDPXInitFact = VRNA_MODEL_SALT_DPXINIT_FACT_DNA;
     /* call user-defined recursion status callback function */
     if (fc->stat_cb) // not into
       fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);

@@ -1,5 +1,3 @@
-## RNAfold parameter file v2.0
-
 # stack
 /*  CG    GC    GU    UG    AU    UA    NN          */
   -240  -330  -210  -140  -210  -210  -140    /* CG */
