@@ -1,8 +1,8 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
-  CC       params/params.lo
-  CCLD     libRNA_params.la
+  CC       constraints/hard.lo
+  CCLD     libRNA_constraints.la
   CXXLD    libRNA_conv.la
   CXXLD    libRNA.la
   GEN      libRNA.a

@@ -690,8 +690,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
       (probs) &&
       (circular ? matrices->qm2 != NULL : (q1k != NULL && qln != NULL))) {
     with_gquad = pf_params->model_details.gquad;
-    /* probs is 0.0000 now */
-    // printf("probs is :%f", probs);
+
 
     double      kTn = pf_params->kT / 10.;               /* kT in cal/mol  */
     int         corr_size = 5;
@@ -754,9 +753,9 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     /* init diagonal entries unable to pair in pr matrix */
     for (i = 1; i <= n; i++)
       probs[my_iindx[i] - i] = 0.;
-    // printf("probs is :%f", probs);
+
     /* 1. external loop pairs, i.e. pairs not enclosed by any other pair (or external loop for circular RNAs) */
-    // printf("circular is %d\n",circular);
+
     if (circular)
       bppm_circ(vc, constraints);
     else
@@ -804,7 +803,7 @@ pf_create_bppm(vrna_fold_compound_t *vc,
     }
     // linked vc 
     if (vc->type == VRNA_FC_TYPE_SINGLE) {
-        printf("with_ud_outside is %d", with_ud_outside);
+
       if (with_ud_outside) {
         /*
          *  The above recursions only deal with base pairs, and how they might be
@@ -833,7 +832,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         for (i = 1; i <= n; i++)
           for (j = i + 1; j <= n; j++) {
             ij = my_iindx[i] - j;
-            printf("%d-",ij);
             /*  search for possible auxiliary base pairs in hairpin loop motifs to store
              *  the corresponding probability corrections
              */
@@ -864,7 +862,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         // linked bp_correction  corr_cnt corr_size qhp aux_bps ptr sc->bt sc->data  hc->mx sc->f sc->bt
         for (i = 0; i < corr_cnt; i++) {
           ij = my_iindx[bp_correction[i].i] - bp_correction[i].j;
-          /* printf("correcting pair %d, %d by %f\n", bp_correction[i].i, bp_correction[i].j, bp_correction[i].p); */
           probs[ij] += bp_correction[i].p / qb[ij];
         }
       }
@@ -875,7 +872,6 @@ pf_create_bppm(vrna_fold_compound_t *vc,
         ij = my_iindx[i] - j;
 
         if (with_gquad) {
-          // printf("into with_gquad\n");
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
@@ -893,18 +889,13 @@ pf_create_bppm(vrna_fold_compound_t *vc,
             if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
               probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
-          // printf("%f-",qb[ij]);
         }
-        // printf("%f,", probs[ij]);
       }
     if (structure != NULL) {
-      /* s generate here -------------------*/
-      // printf("---%d\n",n); 
       char *s = vrna_db_from_probs(probs, (unsigned int)n);
       /* strcuture here  generate by s  ---------------- */
       memcpy(structure, s, n);
       structure[n] = '\0';
-      // printf("%s\n\n",structure);
       free(s);
     }
 
@@ -1056,7 +1047,6 @@ get_constraints_helper(vrna_fold_compound_t *fc)
   constraints_helper *helpers;
 
   helpers = (constraints_helper *)vrna_alloc(sizeof(constraints_helper));
-  printf("get_constraints_helper");
   helpers->hc_eval_ext  = prepare_hc_ext_def(fc, &(helpers->hc_dat_ext));
   helpers->hc_eval_hp   = prepare_hc_hp_def(fc, &(helpers->hc_dat_hp));
   helpers->hc_eval_int  = prepare_hc_int_def(fc, &(helpers->hc_dat_int));

@@ -45,26 +45,6 @@
 #include "modified_bases_helpers.h"
 #include "ViennaRNA/color_output.inc"
 #include "parallel_helpers.h"
-void print_array(double *arr, int dims[], int dim_count, int level) {
-    if (level == dim_count) {
-        printf("%f", *arr);
-        return;
-    }
-
-    printf("{");
-    int stride = 1;
-    for (int i = level + 1; i < dim_count; ++i) {
-        stride *= dims[i];
-    }
-
-    for (int i = 0; i < dims[level]; ++i) {
-        if (i > 0) {
-            printf(", ");
-        }
-        print_array(arr + i * stride, dims, dim_count, level + 1);
-    }
-    printf("}");
-}
 
 struct options {
   int             filename_full;
@@ -677,23 +657,6 @@ process_input(FILE            *input_stream,
   return ret;
 }
 
-
-void print_vrna_ep_list(const vrna_ep_t *plist) {
-    int index = 0;
-    
-    while (plist[index].i != 0 || plist[index].j != 0) {
-        // 打印每个 vrna_ep_t 结构体的所有属性
-        printf("Element %d:\n", index + 1);
-        printf("  Start Position (i): %d\n", plist[index].i);
-        printf("  End Position (j): %d\n", plist[index].j);
-        printf("  Probability (p): %.2f\n", plist[index].p);
-        printf("  Type (type): %d\n", plist[index].type);
-        printf("\n");
-        index++;
-    }
-}
-
-
 static void
 process_record(struct record_data *record)
 {
@@ -823,7 +786,6 @@ process_record(struct record_data *record)
   }
   // 默认情况下未从文件中获取命令 不管
   if (opt->commands){
-    printf("cmd apply into");
     vrna_commands_apply(vc, opt->commands, VRNA_CMD_PARSE_HC | VRNA_CMD_PARSE_SC);
   }
 
@@ -933,22 +895,13 @@ process_record(struct record_data *record)
     // “预计算的自由能贡献作为玻尔兹曼因子”指的是在计算RNA结构或其他分子结构的自由能时，已经预先计算并储存了一些贡献值，这些值是以玻尔兹曼因子的形式存在的。玻尔兹曼因子是指由玻尔兹曼方程（e^-Δ𝐺/RT）计算得到的因子，其中 Δ𝐺 是自由能变化，R 是气体常数，T 是绝对温度。这些预计算的因子可以用来加速结构的自由能计算，而不需要在每次计算时都重新计算这些值。
     vrna_exp_params_rescale(vc, &min_en); // expMLbase,expclosing,termAU,duplexinit数值不一样
     kT = vc->exp_params->kT / 1000.; // 玻尔兹曼常数 用于计算自由能
-    // printf("%f",vc->exp_params->expstack[1][1]);
     
-    // 假设这是你的多维数组
-    // int my_array[8][8][5][5][5][5] = { /* 初始化数组 */ };
-    
-    int dims[] = {8, 8, 5, 5, 5, 5};  // 每一维度的大小
-    printf("\n");
-    print_array(vc->exp_params->expint22, dims, 6, 0);
-    printf("\n");
     if (n > 2000)
       vrna_cstr_message_info(o_stream->err,
                              "scaling factor %f",
                              vc->exp_params->pf_scale);
     /* pairing_propensity still nothing here */
 
-    // printf("%s-", pairing_propensity);
     /* compute partition function pairing_propensity is target  !!!!!!!!!!*/
     /* test if remove vc.matrices */
     vc->matrices = NULL;
@@ -956,7 +909,6 @@ process_record(struct record_data *record)
     vc->exp_params = NULL;
     
     AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
-    // printf("%s\n",pairing_propensity);
     if (opt->md.compute_bpp) { /* into here */
       char *costruc;
       prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
@@ -1032,7 +984,6 @@ process_record(struct record_data *record)
       }
 
 #if 1 
-      printf("AABB\n");
       Alength       = vc->nucleotides[0].length;                        /* length of first molecule */
       Blength       = vc->nucleotides[1].length;                        /* length of 2nd molecule   */
       orig_Astring  = (char *)vrna_alloc(sizeof(char) * (Alength + 1)); /*Sequence of first molecule*/
@@ -1455,10 +1406,8 @@ do_partfunc(char            *string,
   vrna_fold_compound_t  *vc;
 
   md = &(opt->md);
-  printf("do part into %d", Switch);
   switch (Switch) {
     case 1:   /* monomer */
-    printf("into case 1\n");
       tempstruc = (char *)vrna_alloc((unsigned)length + 1);
       vc        = vrna_fold_compound(string,
                                      md,
@@ -1478,11 +1427,9 @@ do_partfunc(char            *string,
       break;
     /* part func for dimer -------------------------------------- */
     case 2:   /* dimer */
-      printf("into case 2");
       tempstruc = (char *)vrna_alloc((unsigned)length * 2 + 2);
       Newstring = (char *)vrna_alloc(sizeof(char) * (length * 2 + 2));
       /* Newstring += string */
-      printf("%s", string);
       strcat(Newstring, string);
       strcat(Newstring, "&");
       strcat(Newstring, string);

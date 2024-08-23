@@ -195,7 +195,6 @@ vrna_fold_compound(const char       *sequence,
   unsigned int          length, aux_options;
   vrna_fold_compound_t  *fc;
   vrna_md_t             md;
-  // printf("vrna_fold_compound called, seq is %s", sequence);
   if (sequence == NULL)
     return NULL;
 
@@ -227,7 +226,6 @@ vrna_fold_compound(const char       *sequence,
     /* into  here*/
     md = *md_p;
   else
-    printf("into vrna_md_set_default\n");
     vrna_md_set_default(&md);
 
   /* now for the energy parameters */
@@ -237,7 +235,6 @@ vrna_fold_compound(const char       *sequence,
   /* only into else*/
   if (options & VRNA_OPTION_WINDOW) {
     set_fold_compound(fc, options, aux_options);
-    printf("into (options & VRNA_OPTION_EVAL_ONLY)");
 
     if (!(options & VRNA_OPTION_EVAL_ONLY)) {
       /* add minimal hard constraint data structure */
@@ -256,7 +253,6 @@ vrna_fold_compound(const char       *sequence,
     set_fold_compound(fc, options, aux_options);
 
     if (!(options & VRNA_OPTION_EVAL_ONLY)) {
-      // printf("into !(options & VRNA_OPTION_EVAL_ONLY)\n");
       /* add default hard constraints */
       vrna_hc_init(fc);
 
@@ -553,7 +549,7 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
 
   /* prepare soft constraints data structure, if required */
   // vrna_sc_prepare(fc, options);
-  // printf("no sc");
+
   /* Add DP matrices, if not they are not present or do not fit current settings */
   vrna_mx_prepare(fc, options);
 
@@ -631,7 +627,6 @@ set_fold_compound(vrna_fold_compound_t  *fc,
 
   switch (fc->type) {
     case VRNA_FC_TYPE_SINGLE:
-      // printf("VRNA_FC_TYPE_SINGLE");
       sequence = fc->sequence;
 
       fc->sequence  = NULL;
@@ -726,7 +721,6 @@ set_fold_compound(vrna_fold_compound_t  *fc,
   vrna_sequence_prepare(fc);
 
   if (!(options & VRNA_OPTION_WINDOW) && (fc->length <= vrna_sequence_length_max(options))) {
-    printf("into col row\n");
     fc->iindx = vrna_idx_row_wise(fc->length);
     fc->jindx = vrna_idx_col_wise(fc->length);
   }
@@ -856,7 +850,6 @@ init_fc_single(void)
   vrna_fold_compound_t  *fc = vrna_alloc(sizeof(vrna_fold_compound_t));
 
   if (fc) {
-    // printf("into nullify\n");
     memcpy(fc, &init, sizeof(vrna_fold_compound_t));
     nullify(fc);
   }
