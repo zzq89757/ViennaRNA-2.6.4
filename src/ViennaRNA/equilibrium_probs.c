@@ -890,8 +890,8 @@ pf_create_bppm(vrna_fold_compound_t *vc,
           if (qb[ij] > 0.) {
             probs[ij] *= qb[ij];
 
-            // if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
-            //   probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
+            if (vc->type == VRNA_FC_TYPE_COMPARATIVE)
+              probs[ij] *= exp(-pscore[jindx[j] + i] / kTn);
           }
           // printf("%f-",qb[ij]);
         }

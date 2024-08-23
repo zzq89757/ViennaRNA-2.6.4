@@ -129,6 +129,8 @@ rescale_params(vrna_fold_compound_t *vc);
  # BEGIN OF FUNCTION DEFINITIONS #
  #################################
  */
+
+
 PUBLIC vrna_param_t *
 vrna_params(vrna_md_t *md)
 {
@@ -549,7 +551,7 @@ get_scaled_params(vrna_md_t *md)
                                                       int21_dH[i][j][k][l][m],
                                                       tempf);
         }
-
+  
   /* interior 2x2 loops */
   for (i = 0; i <= NBPAIRS; i++)
     for (j = 0; j <= NBPAIRS; j++)
@@ -742,7 +744,7 @@ get_scaled_exp_params(vrna_md_t *md,
                                                  mismatch23IdH[i][j][k],
                                                  TT,
                                                  kT);
-
+        printf("%d",md->dangles);
         if (md->dangles) {
           pf->expmismatchM[i][j][k] = RESCALE_BF_SMOOTH(mismatchM37[i][j][k],
                                                         mismatchMdH[i][j][k],
@@ -781,20 +783,28 @@ get_scaled_exp_params(vrna_md_t *md,
                                                      kT);
           }
         }
-
+  // int my_array[8][8][5][5][5][5] = { /* 初始化数组 */ };
+    
+    int dims[] = {8, 8, 5, 5, 5, 5};  // 每一维度的大小
+    // printf("\n");
+    // print_array( (int*)int22_37, dims, 6, 0);
+    // printf("\n");
   /* interior 2x2 loops */
   for (i = 0; i <= NBPAIRS; i++)
     for (j = 0; j <= NBPAIRS; j++)
       for (k = 0; k < 5; k++)
         for (l = 0; l < 5; l++) {
           int m, n;
-          for (m = 0; m < 5; m++)
+          for (m = 0; m < 5; m++){
             for (n = 0; n < 5; n++) {
+              printf("%d   ",int22_dH[i][j][k][l][m][n]);
               pf->expint22[i][j][k][l][m][n] = RESCALE_BF(int22_37[i][j][k][l][m][n],
                                                           int22_dH[i][j][k][l][m][n],
                                                           TT,
                                                           kT);
             }
+            printf("\n");
+          }
         }
 
   strncpy(pf->Tetraloops, Tetraloops, 281);

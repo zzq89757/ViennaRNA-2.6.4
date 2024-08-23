@@ -174,22 +174,6 @@ set_salt_DNA(vrna_md_t *md);
  *  - parameter file
  */
 #define ggo_get_md_eval(ggostruct, md) ({ \
-    /* dangles */ \
-    ggo_get_dangles(ggostruct, md.dangles); \
-    /* special_hp */ \
-    ggo_get_special_hp(ggostruct, md.special_hp); \
-    /* gquadruplex support */ \
-    ggo_get_gquad(ggostruct, md.gquad); \
-    /* salt correction support */ \
-    ggo_get_salt(ggostruct, md.salt); \
-    /* set energy model */ \
-    ggo_get_energyModel(ggostruct, md.energy_set); \
-    /* Allow other pairs in addition to the usual AU,GC,and GU pairs */ \
-    { char *ns_bases = NULL; \
-      ggo_get_nsp(ggostruct, ns_bases); \
-      if (ns_bases != NULL) \
-        vrna_md_set_nonstandards(&md, ns_bases); \
-    } \
     ggo_get_read_paramFile(ggostruct, &(md)); \
   })
 

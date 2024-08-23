@@ -45,7 +45,26 @@
 #include "modified_bases_helpers.h"
 #include "ViennaRNA/color_output.inc"
 #include "parallel_helpers.h"
+void print_array(double *arr, int dims[], int dim_count, int level) {
+    if (level == dim_count) {
+        printf("%f", *arr);
+        return;
+    }
 
+    printf("{");
+    int stride = 1;
+    for (int i = level + 1; i < dim_count; ++i) {
+        stride *= dims[i];
+    }
+
+    for (int i = 0; i < dims[level]; ++i) {
+        if (i > 0) {
+            printf(", ");
+        }
+        print_array(arr + i * stride, dims, dim_count, level + 1);
+    }
+    printf("}");
+}
 
 struct options {
   int             filename_full;
@@ -275,7 +294,7 @@ main(int  argc,
     exit(1);
 
   /* get basic set of model details */
-  // ggo_get_md_eval(args_info, opt.md);
+  ggo_get_md_eval(args_info, opt.md);
   // ggo_get_md_fold(args_info, opt.md);
   // ggo_get_md_part(args_info, opt.md);
 
@@ -289,15 +308,15 @@ main(int  argc,
   }
 
   /* SHAPE reactivity data */
-  ggo_get_SHAPE(args_info, opt.shape, opt.shape_file, opt.shape_method, opt.shape_conversion);
+  // ggo_get_SHAPE(args_info, opt.shape, opt.shape_file, opt.shape_method, opt.shape_conversion);
 
-  ggo_get_id_control(args_info, opt.id_control, "Sequence", "sequence", "_", 4, 1);
+  // ggo_get_id_control(args_info, opt.id_control, "Sequence", "sequence", "_", 4, 1);
 
-  ggo_get_constraints_settings(args_info,
-                               fold_constrained,
-                               opt.constraint_file,
-                               opt.constraint_enforce,
-                               opt.constraint_batch);
+  // ggo_get_constraints_settings(args_info,
+  //                              fold_constrained,
+  //                              opt.constraint_file,
+  //                              opt.constraint_enforce,
+  //                              opt.constraint_batch);
 
   /* enforce canonical base pairs in any case? */
   if (args_info.canonicalBPonly_given) // not into 
@@ -914,7 +933,15 @@ process_record(struct record_data *record)
     // “预计算的自由能贡献作为玻尔兹曼因子”指的是在计算RNA结构或其他分子结构的自由能时，已经预先计算并储存了一些贡献值，这些值是以玻尔兹曼因子的形式存在的。玻尔兹曼因子是指由玻尔兹曼方程（e^-Δ𝐺/RT）计算得到的因子，其中 Δ𝐺 是自由能变化，R 是气体常数，T 是绝对温度。这些预计算的因子可以用来加速结构的自由能计算，而不需要在每次计算时都重新计算这些值。
     vrna_exp_params_rescale(vc, &min_en); // expMLbase,expclosing,termAU,duplexinit数值不一样
     kT = vc->exp_params->kT / 1000.; // 玻尔兹曼常数 用于计算自由能
-    printf("%f",vc->exp_params->expstack[1][1]);
+    // printf("%f",vc->exp_params->expstack[1][1]);
+    
+    // 假设这是你的多维数组
+    // int my_array[8][8][5][5][5][5] = { /* 初始化数组 */ };
+    
+    int dims[] = {8, 8, 5, 5, 5, 5};  // 每一维度的大小
+    printf("\n");
+    print_array(vc->exp_params->expint22, dims, 6, 0);
+    printf("\n");
     if (n > 2000)
       vrna_cstr_message_info(o_stream->err,
                              "scaling factor %f",

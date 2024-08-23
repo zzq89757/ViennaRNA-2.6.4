@@ -1,5 +1,14 @@
 Making all in ViennaRNA
 Making all in static
 Making all in plotting/naview
+  CC       params/params.lo
+  CCLD     libRNA_params.la
+  CXXLD    libRNA_conv.la
+  CXXLD    libRNA.la
+  GEN      libRNA.a
 Making all in bin
+  CCLD     RNAcofold
 Making all in Utils
+  CCLD     b2ct
+  CCLD     popt
+  CCLD     ct2db
