@@ -19,13 +19,14 @@ def process_pair(rna_file:str, dna_file:str, output:str) -> None:
     all_num_li = []
     for p_line in d_handle:
         # o_handle.write(p_line,end="")
-        num_str, comment = p_line.split("/*")
-        all_num_li.append(num_str.split()) 
+        # num_str, comment = p_line.split("/*")
+        all_num_li.append(p_line.rstrip().split()) 
     # replace rna data
     line_ct = 0
     for c_line in r_handle:
         if c_line.find("INF") > -1:
             o_handle.write(c_line)
+            line_ct += 1
             continue
         # data need to replace
         if c_line.find(",") > -1:
@@ -37,9 +38,9 @@ def process_pair(rna_file:str, dna_file:str, output:str) -> None:
             ...
 
 def main():
-    rna_par_file = "matrices/intl22.h"
-    dna_par_file = "/home/wayne/Repository/ViennaRNA-2.6.4/src/bin/fold_pre_process/int22_dna.par"
-    output_file = "intl22_dna.h"
+    rna_par_file = "matrices/intl22dH.h"
+    dna_par_file = "/home/wayne/Repository/ViennaRNA-2.6.4/src/bin/fold_pre_process/int22dh.par"
+    output_file = "intl22_dna_dH.h"
     process_pair(rna_par_file, dna_par_file, output_file)
     
 
