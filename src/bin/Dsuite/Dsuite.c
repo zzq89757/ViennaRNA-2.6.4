@@ -3529,8 +3529,7 @@ get_scaled_exp_params(vrna_md_t *md,
   pf = (vrna_exp_param_t *)vrna_alloc(sizeof(vrna_exp_param_t));
 
   memset(pf->param_file, '\0', 256);
-  // if (last_parameter_file() != NULL) /* not into here */
-  //   strncpy(pf->param_file, last_parameter_file(), 255);
+
 
   pf->model_details = *md;
   pf->temperature   = md->temperature;
@@ -14331,9 +14330,6 @@ vrna_pf(vrna_fold_compound_t  *fc,
     params    = fc->exp_params;
     matrices  = fc->exp_matrices;
     md        = &(params->model_details);
-    // md->helical_rise = VRNA_MODEL_HELICAL_RISE;
-    // md->backbone_length = VRNA_MODEL_BACKBONE_LENGTH;
-    // md->saltDPXInitFact = VRNA_MODEL_SALT_DPXINIT_FACT;
     /* call user-defined recursion status callback function */
     if (fc->stat_cb) // not into
       fc->stat_cb(VRNA_STATUS_PF_PRE, fc->auxdata);
