@@ -14578,7 +14578,7 @@ char *process_record(char *sequence){
 
 
 int main_cofold(){
-  char *s1 = "GTGGCGGTCTGGACCACGCCGGAGAGCGTCGA&CGTCGATCCGGACCGCCACATC";
+  char *s1 = "GGCGGAGCCTATGGAAAAACGCCAGCAACGCGGC&GTACGCACCCTCGCCGCCGCGTTCGCCGACT";
   char *res;
   res = process_record(s1);
   printf("%s",res);
