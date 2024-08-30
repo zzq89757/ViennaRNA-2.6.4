@@ -1043,8 +1043,8 @@ get_scaled_params(vrna_md_t *md)
 
   params->model_details = *md; /* copy over the model details */
   params->temperature = md->temperature;
-  // tempf                 = ((md->temperature + K0) / Tmeasure);
-  tempf = 1.;
+  tempf                 = ((md->temperature + K0) / Tmeasure);
+  // tempf = 1.;
   params->ninio[2] = RESCALE_dG(ninio37, niniodH, tempf);
   params->lxc = lxc37 * tempf;
   params->TripleC = RESCALE_dG(TripleC37, TripleCdH, tempf);
@@ -14311,7 +14311,7 @@ vrna_fold_compound_prepare(vrna_fold_compound_t *fc,
   // vrna_hc_prepare(fc, options);
 
   /* prepare soft constraints data structure, if required */
-//   vrna_sc_prepare(fc, options);
+  // vrna_sc_prepare(fc, options);
 
   /* Add DP matrices, if not they are not present or do not fit current settings */
   vrna_mx_prepare(fc, options);
