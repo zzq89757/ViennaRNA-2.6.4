@@ -275,7 +275,7 @@ main(int  argc,
 
   /* get basic set of model details */
   ggo_get_md_eval(args_info, opt.md);
-  // ggo_get_md_fold(args_info, opt.md);
+  ggo_get_md_fold(args_info, opt.md);
   // ggo_get_md_part(args_info, opt.md);
 
   /* temperature */

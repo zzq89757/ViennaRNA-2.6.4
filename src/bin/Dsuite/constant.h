@@ -95,7 +95,7 @@ static int BP_pair[NBASES][NBASES] =
  *
  *  @see    #vrna_md_t.noLP, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_NO_LP 0
+#define VRNA_MODEL_DEFAULT_NO_LP 1
 
 /**
  *  @brief  Default model behavior for G-U base pairs
