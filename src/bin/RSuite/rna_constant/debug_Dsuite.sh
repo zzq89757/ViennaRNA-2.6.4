@@ -1,0 +1,1 @@
+gcc -g Dsuite.c -o Dsuite -lm && ./Dsuite
