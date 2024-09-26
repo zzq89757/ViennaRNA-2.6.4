@@ -14567,6 +14567,7 @@ char *process_record(char *sequence){
   kT = vc->exp_params->kT / 1000.;
   // pairing_propensity is the finnal structure
   AB = AA = BB = vrna_pf_dimer(vc, pairing_propensity); /* exp_matrices changed*/
+  printf("%6.2f",AB.FcAB - AB.FA - AB.FB);
   char *costruc;
   // prAB = vrna_plist_from_probs(vc, opt->bppmThreshold);
   costruc = vrna_cut_point_insert(pairing_propensity, vc->cutpoint);
