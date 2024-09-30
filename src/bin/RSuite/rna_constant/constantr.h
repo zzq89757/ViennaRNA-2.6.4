@@ -298,11 +298,14 @@ typedef struct vrna_fc_s vrna_fold_compound_t;
 
 double temperature = VRNA_MODEL_DEFAULT_TEMPERATURE;
 double pf_scale = VRNA_MODEL_DEFAULT_PF_SCALE;
-int dangles = VRNA_MODEL_DEFAULT_DANGLES;
 int tetra_loop = VRNA_MODEL_DEFAULT_SPECIAL_HP;
+
+// command params
+int dangles = VRNA_MODEL_DEFAULT_DANGLES;
 int noLonelyPairs = VRNA_MODEL_DEFAULT_NO_LP;
-int noGU = 1;
+int noGU = VRNA_MODEL_DEFAULT_NO_GU;
 int no_closingGU = VRNA_MODEL_DEFAULT_NO_GU_CLOSURE;
+
 int circ = VRNA_MODEL_DEFAULT_CIRC;
 int gquad = VRNA_MODEL_DEFAULT_GQUAD;
 int uniq_ML = VRNA_MODEL_DEFAULT_UNIQ_ML;

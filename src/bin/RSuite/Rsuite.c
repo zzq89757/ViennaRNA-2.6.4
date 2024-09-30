@@ -1,12 +1,12 @@
-#include "constant.h" 
-// #include "matrices/all_mat.h"
+#include "constant_rna.h" 
+#include "matrices/all_mat.h"
 // #include "intl11_convert.h"
-#include "matrices/intl11.h"
-#include "intl11dH_dna.h"
-#include "intl21_dna.h"
-#include "intl21_dnadH.h"
-#include "intl22_dna.h"
-#include "intl22_dna_dH.h"
+// #include "matrices/intl11.h"
+// #include "matrices/intl11dH.h"
+// #include "matrices/intl21_dna.h"
+// #include "matrices/intl21_dnadH.h"
+// #include "matrices/intl22_dna.h"
+// #include "intl22_dna_dH.h"
 // #include "Rsuite.h"
 
 
@@ -14571,7 +14571,7 @@ char *process_record(char *sequence){
 
 
 int main_cofold(){
-  char *s1 = "ACTGCCAAGTAGGAAAGTCCCATAAGGTCAT&TGAACTTATGGGACTTTCCTACTTGGCAG";
+  char *s1 = "TAGAAAAATAAACAAATAGGGGTTCCGCGCACATTTCCCCGAAAAGTGCCACCTGACGTCTAAGAAACCATTATTATCATGACATTAACCTATAAAAATAGGCGTATCACGAGGCCCTTTCGTCGGCGCGCCGCGGCCGCCAACTTTGTATAGAAAAGTTGTTATTAATAGTAATCAATTACGGGGTCATTAGTTCATAGCCCATATATGGAGTTCCGCGTTACATAACTTACGGTAAATGGCCCGCCTGGCTGACCGCCCAACGACCCCCGCCCATTGACGTCAATAATGACGTATGTTCCCATAGTAACGCCAATAGGGACTTTCCATTGACGTCAATGGGTGGAGTATTTACGGT&ACCGGCCCAAGGAGCCCGCGTGGTTCCTGGCCACCGTCGGCGTCTCGCCCGACCACCAGGGCAAGGGTCTGGGCAGCGCCGTCGTGCTCCCCGGAGTGGAGGCGGCCGAGCGCGCCGGGGTGCCCGCCTTCCTGGAGACCTCCGCGCCCCGCAACCTCCCCTTCTAC";
   char *res;
   res = process_record(s1);
   printf("%s",res);
@@ -14579,7 +14579,7 @@ int main_cofold(){
 }
 
 int main(){
-  main_dup();
+  // main_dup();
   main_cofold();
 }
 

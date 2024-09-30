@@ -81,7 +81,7 @@ static int BP_pair[NBASES][NBASES] =
  *
  *  @see  #vrna_md_t.dangles, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_DANGLES 2
+#define VRNA_MODEL_DEFAULT_DANGLES 0
 
 /**
  *  @brief  Default model behavior for lookup of special tri-, tetra-, and hexa-loops
@@ -95,21 +95,21 @@ static int BP_pair[NBASES][NBASES] =
  *
  *  @see    #vrna_md_t.noLP, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_NO_LP 0
+#define VRNA_MODEL_DEFAULT_NO_LP 1
 
 /**
  *  @brief  Default model behavior for G-U base pairs
  *
  *  @see    #vrna_md_t.noGU, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_NO_GU 0
+#define VRNA_MODEL_DEFAULT_NO_GU 1
 
 /**
  *  @brief  Default model behavior for G-U base pairs closing a loop
  *
  *  @see    #vrna_md_t.noGUclosure, vrna_md_defaults_reset(), vrna_md_set_default()
  */
-#define VRNA_MODEL_DEFAULT_NO_GU_CLOSURE 0
+#define VRNA_MODEL_DEFAULT_NO_GU_CLOSURE 1
 
 /**
  *  @brief  Default model behavior to treat a molecule as a circular RNA (DNA)
@@ -300,7 +300,7 @@ double pf_scale = VRNA_MODEL_DEFAULT_PF_SCALE;
 int dangles = VRNA_MODEL_DEFAULT_DANGLES;
 int tetra_loop = VRNA_MODEL_DEFAULT_SPECIAL_HP;
 int noLonelyPairs = VRNA_MODEL_DEFAULT_NO_LP;
-int noGU = 1;
+int noGU = VRNA_MODEL_DEFAULT_NO_GU;
 int no_closingGU = VRNA_MODEL_DEFAULT_NO_GU_CLOSURE;
 int circ = VRNA_MODEL_DEFAULT_CIRC;
 int gquad = VRNA_MODEL_DEFAULT_GQUAD;
