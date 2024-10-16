@@ -1,0 +1,1317 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: ViennaRNA-2.6.4
+%%CreationDate: Wed Oct 16 14:33:18 2024
+%%Title: RNA Dot Plot
+%%BoundingBox: 66 211 518 662
+%%DocumentFonts: Helvetica
+%%Pages: 1
+%%EndComments
+
+% Program options: -d0 --noLP --noGU --noClosingGU 
+
+% Heterodimer AB FreeEnergy= 999.000000000
+
+% This file contains the square roots of probabilities in the form
+% i  j  sqrt(p(i,j)) ubox
+
+/DPdict 100 dict def
+
+DPdict begin
+
+%%BeginProlog
+
+/logscale false def
+/lpmin 1e-05 log def
+/DataVisible  [ true true true true] def
+/DataTitles   [ false false false false ] def
+/min { 2 copy gt { exch } if pop } bind def
+/max { 2 copy lt { exch } if pop } bind def
+/box { %size x y box - draws box centered on x,y
+   2 index 0.5 mul sub            % x -= 0.5
+   exch 2 index 0.5 mul sub exch  % y -= 0.5
+   3 -1 roll dup rectfill
+} bind def
+/ubox {
+   logscale {
+      log dup add lpmin div 1 exch sub dup 0 lt { pop 0 } if
+   } if
+   3 1 roll
+   exch len exch sub 1 add box
+} bind def
+/lbox {
+   3 1 roll
+   len exch sub 1 add box
+} bind def
+/drawseq { % print sequence along all 4 sides
+[ [0.7 -0.3 0 ]
+  [0.7 0.7 len add 0]
+  [-0.3 len sub -0.4 -90]
+  [-0.3 len sub 0.7 len add -90]
+] {
+   gsave
+    aload pop rotate translate
+    0 1 len 1 sub {
+     dup 0 moveto
+     sequence exch 1 getinterval
+     show
+    } for
+   grestore
+  } forall
+} bind def
+/drawgrid{
+  gsave
+  0.5 dup translate
+  0.01 setlinewidth
+  len log 0.9 sub cvi 10 exch exp  % grid spacing
+  dup 1 gt {
+     dup dup 20 div dup 2 array astore exch 40 div setdash
+  } { [0.3 0.7] 0.1 setdash } ifelse
+  0 exch len {
+     dup dup
+     0 moveto
+     len lineto
+     dup
+     len exch sub 0 exch moveto
+     len exch len exch sub lineto
+     stroke
+  } for
+  [] 0 setdash
+  0.04 setlinewidth
+  % draw strand separators if required
+  currentdict /nicks known {
+    gsave
+    % draw lines in red color
+    0 1 1 sethsbcolor
+    % draw with line thickness of 0.2
+    0.2 setlinewidth
+    nicks
+    { 1 sub
+    dup dup -1 moveto len 1 add lineto
+    len exch sub dup
+    -1 exch moveto len 1 add exch lineto
+    stroke
+    } forall
+    grestore
+  } if
+  % draw diagonal
+  0 len moveto len 0 lineto stroke
+  grestore
+} bind def
+/drawTitle {
+  currentdict /DPtitle known {
+    % center title text
+    /Helvetica findfont 10 scalefont setfont
+    360 705 moveto DPtitle dup stringwidth pop 2 div neg 0 rmoveto show
+  } if
+} bind def
+/prepareCoords {
+  0 1 3 {
+    % check whether we want to display current data
+    dup DataVisible exch get
+    {
+      % check whether we've actually got some data
+      DataSource exch get dup currentdict exch known {
+        % data source s_j is present, so find length of array
+        currentdict exch get length 
+      } { pop 0 } ifelse
+    } if
+  } for
+  exch dup 5 -1 roll add 4 -1 roll dup 5 1 roll 4 -1 roll add max
+  len add 3 add 700 exch div dup scale
+  exch 1 add exch 1 add translate
+} bind def
+/utri{ % i j prob utri
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95  0.33
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  exch 1 sub dup len exch sub dup 4 -1 roll dup 3 1 roll dup len exch sub
+  moveto lineto lineto closepath fill
+  grestore
+} bind def
+/uUDmotif{ % i j uUDmotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95 0.6
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  exch 1 sub dup len exch sub dup 4 -1 roll dup 3 1 roll dup len exch sub
+  moveto lineto lineto closepath fill
+  grestore
+} bind def
+/lUDmotif{ % i j lUDmotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95 0.6
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  dup len exch sub dup 4 -1 roll 1 sub dup 3 1 roll dup len exch sub
+  moveto lineto lineto closepath fill
+  grestore
+} bind def
+/uHmotif{ % i j uHmotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95  0.99
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  exch 1 sub dup len exch sub dup 4 -1 roll dup 3 1 roll dup len exch sub
+  moveto lineto lineto closepath fill
+  grestore
+} bind def
+/lHmotif{ % i j lHmotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95  0.99
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  dup len exch sub dup 4 -1 roll 1 sub dup 3 1 roll dup len exch sub
+  moveto lineto lineto closepath fill
+  grestore
+} bind def
+/uImotif{ % i j k l uImotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95  0.99
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  1 sub dup 5 1 roll exch len exch sub dup 5 1 roll 3 -1 roll dup
+  5 1 roll exch 4 1 roll 3 1 roll exch 1 sub len exch sub dup 3 1 roll
+  moveto lineto lineto lineto closepath fill
+  grestore
+} bind def
+/lImotif{ % i j k l lImotif
+  gsave
+  0.5 dup translate
+  1 min 2 div
+  0.85 mul 0.15 add 0.95  0.99
+  3 1 roll % prepare hsb color
+  sethsbcolor
+  % now produce the coordinates for lines
+  4 -1 roll 1 sub dup 5 1 roll exch 1 sub len exch sub dup 3 -1 roll exch
+  5 -1 roll len exch sub dup 6 -1 roll dup 3 1 roll 7 4 roll
+  moveto lineto lineto lineto closepath fill
+  grestore
+} bind def
+/drawDataSquareBottom { % x v n dataSquareBottom draw box
+  len add 2 add exch lbox
+} bind def
+/drawDataSquareTop { % x v n dataSquareBottom draw box
+  neg 1 sub exch lbox
+} bind def
+/drawDataSquareLeft { % y v n dataSquareBottom draw box
+  neg 1 sub 3 1 roll lbox
+} bind def
+/drawDataSquareRight { % y v n dataSquareBottom draw box
+  % use size x y box to draw box
+  2 add len add 3 1 roll lbox
+} bind def
+/drawDataSquareBottomHSB { % x v h s b n dataSquareBottomHSB draw box
+  % use size x y box to draw box
+  len add 2 add 5 1 roll sethsbcolor lbox
+} bind def
+/drawDataSquareTopHSB { % x v h s b n dataSquareBottomHSB draw box
+  % use size x y box to draw box
+  neg 1 sub 5 1 roll sethsbcolor lbox
+} bind def
+/drawDataSquareLeftHSB { % x v h s b n dataSquareLeftHSB draw box
+  % use size x y box to draw box
+  neg 1 sub 6 1 roll sethsbcolor lbox
+} bind def
+/drawDataSquareRightHSB { % x v h s b n dataSquareLeftHSB draw box
+  % use size x y box to draw box
+  2 add len add 6 1 roll sethsbcolor lbox
+} bind def
+/drawDataTitleBottom {
+  /Helvetica findfont 0.95 scalefont setfont
+  0 -1.4 3 -1 roll sub moveto 
+  dup stringwidth pop neg 0 rmoveto   
+  show
+} bind def
+/drawDataTitleTop {
+  /Helvetica findfont 0.95 scalefont setfont
+  0 len 1.6 add 3 -1 roll add moveto 
+  dup stringwidth pop neg 0 rmoveto   
+  show
+} bind def
+/drawDataTitleLeft {
+  /Helvetica findfont 0.95 scalefont setfont
+  neg 1.4 sub len 1 add moveto 
+  dup stringwidth pop 0 exch rmoveto -90 rotate
+  show 90 rotate
+} bind def
+/drawDataTitleRight {
+  /Helvetica findfont 0.95 scalefont setfont
+  1.6 add len add len 1 add moveto 
+  dup stringwidth pop 0 exch rmoveto -90 rotate
+  show 90 rotate
+} bind def
+% do not modify the arrays below unless you know what you're doing!
+/DataSource     [ /topData /leftData /bottomData /rightData ] def
+/DataDrawBox    [ /drawDataSquareTop  /drawDataSquareLeft /drawDataSquareBottom /drawDataSquareRight] def
+/DataDrawBoxHSB [ /drawDataSquareTopHSB /drawDataSquareLeftHSB /drawDataSquareBottomHSB /drawDataSquareRightHSB ] def
+/DataDrawTitle  [ /drawDataTitleTop /drawDataTitleLeft /drawDataTitleBottom /drawDataTitleRight ] def
+% this is the logic to parse the auxiliary linear data
+% given in arrays topData, leftData, bottomData, and rightData
+% See also the Boolean arrays DataVisible and DataTitles that
+% are used to control which part of data will be visible
+/drawData {
+  0 1 3 {
+    % check whether we want to display current data
+    dup DataVisible exch get
+    {
+      % check whether we've actually got some data
+      dup DataSource exch get dup currentdict exch known {
+        % data source s_j is present, so we load the
+        % corresponding data array a and loop over all data sets a[i]
+        currentdict exch get dup length 1 sub 0 1 3 -1 roll {
+          dup dup
+          % now on stack: j a i i i
+          % load data set, i.e. a[i]
+          4 -1 roll         % j i i i a
+          dup 3 -1 roll get dup % j i i a a[i] a[i]
+          % 1. check whether we need to process data set title
+          6 -1 roll dup 7 1 roll DataTitles exch get {
+            % get current title drawing function key
+            6 -1 roll dup 7 1 roll DataDrawTitle exch get
+            % now on stack: ... j i i a a[i] a[i] title_draw_key
+            % get current title and execute drawing function
+            exch 0 get exch currentdict exch get 5 -1 roll exch exec
+          } { % remove unused variables
+              pop 3 -1 roll pop
+          } ifelse
+          % now on stack: ... j i a a[i]
+          % 2. process actual data a[k] for 1 <= k < n
+          dup length 1 sub 1 exch getinterval { 
+            % on stack: j i a a[i][k]
+            gsave
+            dup length 2 eq { % print black box if two-valued
+              % get box drawing function
+              4 -1 roll dup 5 1 roll DataDrawBox exch get currentdict exch get exch
+              aload pop 5 -1 roll dup 6 1 roll 4 -1 roll exec
+            } {
+              dup length 5 eq { % print box with hsb color
+                % get box drawing function
+                4 -1 roll dup 5 1 roll DataDrawBoxHSB exch get currentdict exch get exch
+                % on stack: j i a f a[i]
+                % load data array and prepare for drawing
+                aload pop 8 -1 roll dup 9 1 roll 7 -1 roll exec
+              } { pop } ifelse
+            } ifelse
+            grestore
+          } forall
+          exch pop 
+          % left on stack: j a
+        } for
+        
+      } if
+    } if
+  } for
+} bind def
+
+%%EndProlog
+
+/DPtitle {
+  (ABprimer_f7,temp_r7)
+} def
+
+/sequence { (\
+TACAGGGCGCGATGGATCCGGTACACAGGAAACAGGAGACACAACTCCAAGTGCATACTCTATGTCATTTTCATGGGACTGGTCTGGCCACAACTACATTAATGAAATATTTGCCACATCCTCTTACACTTTTTCATACATTGCCCAAGAATAAAGAATCGTTTGTGTTATGTTTCAACGTGTTTATTTTTCAATTGCAGAAAATTTCGAATCATTTTTCATTCAGTAGTATAGCCCCACCACCACATAGCTTAT\
+ACAGATCACCGTACCTTAATCAAACTCACAGAACCCTAGTATTCAACCTGCCACCTCCCTCCCAACACACAGAGTACACAGTCCTTTCTCCCCGGCTGGCCTTAAAAAGCATCATATCATGGGTAACAGACATATTCTTAGGTGTTATATTCCACACGGTTTCCTGTCGAGCCAAACGCTCATCAGTGATATTAATAAACTCCCCGGGCAGCTCACTTAAGTTAACTTAAGTGAGCTGCCCGGGGAGTTTATTAA\
+TATCACTGATGAGCGTTTGGCTCGACAGGAAACCGTGTGGAATATAACACCTAAGAATATGTCTGTTACCCATGATATGATGCTTTTTAAGGCCAGCCGGGGAGAAAGGACTGTGTACTCTGTGTGTTGGGAGGGAGGTGGCAGGTTGAATACTAGGGTTCTGTGAGTTTGATTAAGGTACGGTGATCTGTATAAGCTATGTGGTGGTGGGGCTATACTACTGAATGAAAAATGATTCGAAATTTTCTGCAATTG\
+AAAAATAAACACGTTGAAACATAACACAAACGATTCTTTATTCTTGGGCAATGTATGAAAAAGTGTAAGAGGATGTGGCAAATATTTCATTAATGTAGTTGTGGCCAGACCAGTCCCATGAAAATGACATAGAGTATGCACTTGGAGTTGTGTCTCCTGTTTCCTGTGTACCGGATCCATCGCGCCCTGTA\
+) } def
+/len { sequence length } bind def
+
+/cutpoint 479 def
+
+/nicks [ 479 ] def
+72 216 translate
+72 6 mul len 1 add div dup scale
+/Helvetica findfont 0.95 scalefont setfont
+
+drawseq
+%data starts here
+
+%start of quadruplex data
+
+%start of Hmotif data
+
+%start of Imotif data
+
+%draw the grid
+drawgrid
+
+%start of base pair probability data
+%start of base pair probability data
+1 956 0.941106567 ubox
+2 955 0.996318537 ubox
+3 954 0.999923405 ubox
+4 953 0.999751328 ubox
+5 952 0.999988526 ubox
+6 951 0.999994934 ubox
+7 950 0.999995708 ubox
+8 949 0.999981761 ubox
+9 948 0.999981761 ubox
+10 947 0.999981701 ubox
+11 946 0.999969154 ubox
+12 945 0.999749420 ubox
+13 944 0.999596991 ubox
+14 943 0.999987930 ubox
+15 942 0.999992490 ubox
+16 941 0.999747692 ubox
+17 940 0.999747692 ubox
+18 939 0.999992460 ubox
+19 938 0.999978512 ubox
+20 937 0.999978542 ubox
+21 936 0.999990016 ubox
+22 935 0.999746439 ubox
+23 934 0.999746261 ubox
+24 933 0.999977022 ubox
+25 932 0.999791451 ubox
+26 931 0.999977320 ubox
+27 930 0.999755055 ubox
+28 929 0.999988526 ubox
+29 928 0.999991894 ubox
+30 927 0.999603521 ubox
+31 926 0.998661039 ubox
+32 925 0.999482617 ubox
+33 924 0.999975919 ubox
+34 923 0.999755025 ubox
+35 922 0.999988526 ubox
+36 921 0.999992758 ubox
+37 920 0.999849159 ubox
+38 919 0.999983221 ubox
+39 918 0.999871484 ubox
+40 917 0.999977112 ubox
+41 916 0.999791422 ubox
+42 915 0.999974668 ubox
+43 914 0.999438993 ubox
+44 913 0.999522811 ubox
+45 912 0.999975979 ubox
+46 911 0.999849129 ubox
+47 910 0.999992758 ubox
+48 909 0.999987185 ubox
+49 908 0.999438963 ubox
+50 907 0.999438307 ubox
+51 906 0.999975919 ubox
+52 905 0.999791928 ubox
+53 904 0.999990106 ubox
+54 903 0.999989629 ubox
+55 902 0.999595829 ubox
+56 901 0.999505726 ubox
+57 900 0.999733919 ubox
+58 899 0.999977022 ubox
+59 898 0.999848831 ubox
+60 897 0.999982923 ubox
+61 896 0.999690843 ubox
+62 895 0.999505696 ubox
+63 894 0.999594696 ubox
+64 893 0.999976188 ubox
+65 892 0.999871633 ubox
+66 891 0.999982178 ubox
+67 890 0.999581995 ubox
+68 889 0.998992203 ubox
+69 888 0.998492983 ubox
+70 887 0.998528560 ubox
+71 886 0.999600569 ubox
+72 885 0.999980658 ubox
+73 884 0.999598303 ubox
+74 883 0.999599377 ubox
+75 882 0.999987930 ubox
+76 881 0.999994934 ubox
+77 880 0.999992758 ubox
+78 879 0.999871693 ubox
+79 878 0.999977499 ubox
+80 877 0.999755323 ubox
+81 876 0.999988347 ubox
+82 875 0.999990135 ubox
+83 874 0.999871693 ubox
+84 873 0.999983430 ubox
+85 872 0.999755323 ubox
+86 871 0.999988377 ubox
+87 870 0.999995768 ubox
+88 869 0.999995768 ubox
+89 868 0.999988377 ubox
+90 867 0.999791958 ubox
+91 866 0.999974668 ubox
+92 865 0.999438993 ubox
+93 864 0.999522781 ubox
+94 863 0.999975681 ubox
+95 862 0.999701247 ubox
+96 861 0.999744561 ubox
+97 860 0.999976039 ubox
+98 859 0.999583068 ubox
+99 858 0.999048018 ubox
+100 857 0.999161846 ubox
+101 856 0.999161846 ubox
+102 855 0.999048048 ubox
+103 854 0.999583038 ubox
+104 853 0.999980628 ubox
+105 852 0.999602060 ubox
+106 851 0.998615499 ubox
+107 850 0.998977705 ubox
+108 849 0.999453544 ubox
+109 848 0.999453485 ubox
+110 847 0.998976929 ubox
+111 846 0.998630898 ubox
+112 845 0.999406609 ubox
+113 844 0.999988854 ubox
+114 843 0.999995738 ubox
+115 842 0.999988377 ubox
+116 841 0.999791988 ubox
+117 840 0.999976396 ubox
+118 839 0.999595978 ubox
+119 838 0.999749987 ubox
+120 837 0.999992460 ubox
+121 836 0.999988437 ubox
+122 835 0.999849219 ubox
+123 834 0.999981701 ubox
+124 833 0.999427811 ubox
+125 832 0.999292958 ubox
+126 831 0.999714602 ubox
+127 830 0.999976963 ubox
+128 829 0.999791273 ubox
+129 828 0.999975830 ubox
+130 827 0.999395784 ubox
+131 826 0.998533037 ubox
+132 825 0.998405198 ubox
+133 824 0.998525038 ubox
+134 823 0.999599466 ubox
+135 822 0.999980658 ubox
+136 821 0.999594726 ubox
+137 820 0.999505696 ubox
+138 819 0.999734098 ubox
+139 818 0.999976009 ubox
+140 817 0.999583336 ubox
+141 816 0.999069645 ubox
+142 815 0.999428914 ubox
+143 814 0.999988854 ubox
+144 813 0.999995708 ubox
+145 812 0.999994934 ubox
+146 811 0.999987155 ubox
+147 810 0.999438963 ubox
+148 809 0.999438277 ubox
+149 808 0.999980002 ubox
+150 807 0.999630472 ubox
+151 806 0.999041992 ubox
+152 805 0.999417225 ubox
+153 804 0.999193432 ubox
+154 803 0.998637314 ubox
+155 802 0.999399213 ubox
+156 801 0.999979943 ubox
+157 800 0.999630830 ubox
+158 799 0.999053805 ubox
+159 798 0.999730074 ubox
+160 797 0.999968975 ubox
+161 796 0.999956845 ubox
+162 795 0.999481901 ubox
+163 794 0.998676646 ubox
+164 793 0.999405565 ubox
+165 792 0.999974578 ubox
+166 791 0.999791392 ubox
+167 790 0.999975979 ubox
+168 789 0.999513746 ubox
+169 788 0.999258392 ubox
+170 787 0.999447998 ubox
+171 786 0.999594099 ubox
+172 785 0.999974966 ubox
+173 784 0.999482587 ubox
+174 783 0.998660979 ubox
+175 782 0.999602686 ubox
+176 781 0.999978930 ubox
+177 780 0.999438933 ubox
+178 779 0.999522811 ubox
+179 778 0.999956965 ubox
+180 777 0.999958514 ubox
+181 776 0.999791392 ubox
+182 775 0.999975919 ubox
+183 774 0.999481931 ubox
+184 773 0.998637224 ubox
+185 772 0.999193283 ubox
+186 771 0.999414899 ubox
+187 770 0.998971082 ubox
+188 769 0.998485640 ubox
+189 768 0.998402959 ubox
+190 767 0.998524591 ubox
+191 766 0.999599347 ubox
+192 765 0.999978870 ubox
+193 764 0.999425753 ubox
+194 763 0.999007925 ubox
+195 762 0.999007955 ubox
+196 761 0.999427840 ubox
+197 760 0.999988854 ubox
+198 759 0.999990046 ubox
+199 758 0.999755293 ubox
+200 757 0.999981731 ubox
+201 756 0.999600152 ubox
+202 755 0.998527993 ubox
+203 754 0.998489670 ubox
+204 753 0.998925824 ubox
+205 752 0.998929762 ubox
+206 751 0.998612962 ubox
+207 750 0.999601553 ubox
+208 749 0.999967873 ubox
+209 748 0.999967932 ubox
+210 747 0.999630890 ubox
+211 746 0.999053805 ubox
+212 745 0.999730253 ubox
+213 744 0.999981552 ubox
+214 743 0.999581875 ubox
+215 742 0.998990533 ubox
+216 741 0.998486387 ubox
+217 740 0.998403109 ubox
+218 739 0.998524621 ubox
+219 738 0.999599377 ubox
+220 737 0.999980628 ubox
+221 736 0.999583634 ubox
+222 735 0.999060875 ubox
+223 734 0.999631039 ubox
+224 733 0.999981612 ubox
+225 732 0.999754727 ubox
+226 731 0.999977231 ubox
+227 730 0.999744353 ubox
+228 729 0.999701277 ubox
+229 728 0.999976724 ubox
+230 727 0.999733800 ubox
+231 726 0.999498957 ubox
+232 725 0.999499046 ubox
+233 724 0.999691379 ubox
+234 723 0.999990106 ubox
+235 722 0.999995679 ubox
+236 721 0.999994904 ubox
+237 720 0.999994904 ubox
+238 719 0.999988317 ubox
+239 718 0.999792107 ubox
+240 717 0.999990225 ubox
+241 716 0.999988347 ubox
+242 715 0.999792107 ubox
+243 714 0.999990225 ubox
+244 713 0.999988347 ubox
+245 712 0.999791988 ubox
+246 711 0.999976366 ubox
+247 710 0.999594696 ubox
+248 709 0.999505696 ubox
+249 708 0.999691469 ubox
+250 707 0.999990076 ubox
+251 706 0.999989450 ubox
+252 705 0.999428586 ubox
+253 704 0.999254455 ubox
+254 703 0.999441080 ubox
+255 702 0.999498271 ubox
+256 701 0.999734009 ubox
+257 700 0.999976992 ubox
+258 699 0.999754727 ubox
+259 698 0.999982864 ubox
+260 697 0.999747125 ubox
+261 696 0.999747304 ubox
+262 695 0.999982565 ubox
+263 694 0.999791541 ubox
+264 693 0.999990225 ubox
+265 692 0.999978482 ubox
+266 691 0.999958276 ubox
+267 690 0.999746141 ubox
+268 689 0.999746410 ubox
+269 688 0.999989986 ubox
+270 687 0.999987781 ubox
+271 686 0.999428228 ubox
+272 685 0.999182248 ubox
+273 684 0.999163218 ubox
+274 683 0.999041336 ubox
+275 682 0.999729895 ubox
+276 681 0.999979794 ubox
+277 680 0.999405565 ubox
+278 679 0.998676766 ubox
+279 678 0.999481961 ubox
+280 677 0.999975919 ubox
+281 676 0.999848921 ubox
+282 675 0.999983042 ubox
+283 674 0.999791451 ubox
+284 673 0.999977320 ubox
+285 672 0.999754727 ubox
+286 671 0.999981791 ubox
+287 670 0.999644991 ubox
+288 669 0.999517086 ubox
+289 668 0.999989450 ubox
+290 667 0.999994934 ubox
+291 666 0.999988317 ubox
+292 665 0.999701873 ubox
+293 664 0.999701306 ubox
+294 663 0.999976724 ubox
+295 662 0.999733442 ubox
+296 661 0.999477339 ubox
+297 660 0.999043633 ubox
+298 659 0.999630890 ubox
+299 658 0.999978959 ubox
+300 657 0.999438993 ubox
+301 656 0.999523735 ubox
+302 655 0.999989450 ubox
+303 654 0.999988556 ubox
+304 653 0.999755621 ubox
+305 652 0.999990046 ubox
+306 651 0.999995738 ubox
+307 650 0.999988377 ubox
+308 649 0.999792107 ubox
+309 648 0.999990225 ubox
+310 647 0.999988466 ubox
+311 646 0.999849547 ubox
+312 645 0.999992758 ubox
+313 644 0.999994934 ubox
+314 643 0.999988437 ubox
+315 642 0.999849547 ubox
+316 641 0.999992758 ubox
+317 640 0.999994934 ubox
+318 639 0.999987155 ubox
+319 638 0.999441050 ubox
+320 637 0.999523079 ubox
+321 636 0.999975979 ubox
+322 635 0.999791422 ubox
+323 634 0.999977320 ubox
+324 633 0.999791451 ubox
+325 632 0.999977320 ubox
+326 631 0.999754756 ubox
+327 630 0.999983430 ubox
+328 629 0.999848831 ubox
+329 628 0.999977052 ubox
+330 627 0.999746022 ubox
+331 626 0.999746231 ubox
+332 625 0.999977022 ubox
+333 624 0.999791451 ubox
+334 623 0.999977320 ubox
+335 622 0.999754756 ubox
+336 621 0.999977499 ubox
+337 620 0.999871693 ubox
+338 619 0.999992758 ubox
+339 618 0.999987751 ubox
+340 617 0.999401360 ubox
+341 616 0.998661158 ubox
+342 615 0.999602298 ubox
+343 614 0.999981552 ubox
+344 613 0.999849129 ubox
+345 612 0.999992728 ubox
+346 611 0.999994904 ubox
+347 610 0.999994904 ubox
+348 609 0.999978482 ubox
+349 608 0.999978572 ubox
+350 607 0.999995738 ubox
+351 606 0.999990284 ubox
+352 605 0.999755651 ubox
+353 604 0.999988377 ubox
+354 603 0.999995768 ubox
+355 602 0.999995738 ubox
+356 601 0.999987811 ubox
+357 600 0.999428139 ubox
+358 599 0.999180786 ubox
+359 598 0.999118208 ubox
+360 597 0.998499281 ubox
+361 596 0.998402959 ubox
+362 595 0.998532619 ubox
+363 594 0.999397007 ubox
+364 593 0.999989450 ubox
+365 592 0.999989629 ubox
+366 591 0.999597021 ubox
+367 590 0.999749570 ubox
+368 589 0.999981612 ubox
+369 588 0.999594398 ubox
+370 587 0.999485718 ubox
+371 586 0.999481275 ubox
+372 585 0.999743846 ubox
+373 584 0.999981612 ubox
+374 583 0.999598303 ubox
+375 582 0.999599377 ubox
+376 581 0.999987930 ubox
+377 580 0.999994934 ubox
+378 579 0.999989986 ubox
+379 578 0.999714900 ubox
+380 577 0.999296656 ubox
+381 576 0.999514134 ubox
+382 575 0.999975979 ubox
+383 574 0.999754727 ubox
+384 573 0.999983430 ubox
+385 572 0.999871484 ubox
+386 571 0.999976188 ubox
+387 570 0.999594338 ubox
+388 569 0.999484496 ubox
+389 568 0.999456586 ubox
+390 567 0.999042798 ubox
+391 566 0.999630502 ubox
+392 565 0.999980002 ubox
+393 564 0.999427661 ubox
+394 563 0.999292958 ubox
+395 562 0.999671882 ubox
+396 561 0.999988317 ubox
+397 560 0.999990225 ubox
+398 559 0.999791511 ubox
+399 558 0.999975979 ubox
+400 557 0.999513716 ubox
+401 556 0.999258094 ubox
+402 555 0.999440633 ubox
+403 554 0.999476952 ubox
+404 553 0.999456317 ubox
+405 552 0.999042768 ubox
+406 551 0.999631665 ubox
+407 550 0.999991924 ubox
+408 549 0.999988347 ubox
+409 548 0.999791988 ubox
+410 547 0.999977320 ubox
+411 546 0.999791422 ubox
+412 545 0.999958634 ubox
+413 544 0.999978482 ubox
+414 543 0.999989450 ubox
+415 542 0.999483333 ubox
+416 541 0.998661099 ubox
+417 540 0.999603521 ubox
+418 539 0.999991894 ubox
+419 538 0.999988526 ubox
+420 537 0.999755055 ubox
+421 536 0.999977112 ubox
+422 535 0.999871574 ubox
+423 534 0.999969720 ubox
+424 533 0.999969631 ubox
+425 532 0.999849278 ubox
+426 531 0.999990165 ubox
+427 530 0.999995738 ubox
+428 529 0.999987185 ubox
+429 528 0.999407623 ubox
+430 527 0.998676706 ubox
+431 526 0.999481901 ubox
+432 525 0.999956965 ubox
+433 524 0.999981701 ubox
+434 523 0.999990135 ubox
+435 522 0.999849338 ubox
+436 521 0.999982148 ubox
+437 520 0.999595948 ubox
+438 519 0.999749599 ubox
+439 518 0.999982536 ubox
+440 517 0.999754756 ubox
+441 516 0.999977678 ubox
+442 515 0.999791302 ubox
+443 514 0.999982536 ubox
+444 513 0.999743846 ubox
+445 512 0.999480291 ubox
+446 511 0.999456168 ubox
+447 510 0.999029821 ubox
+448 509 0.999161488 ubox
+449 508 0.999161428 ubox
+450 507 0.999028956 ubox
+451 506 0.999416479 ubox
+452 505 0.999193522 ubox
+453 504 0.998637284 ubox
+454 503 0.999481663 ubox
+455 502 0.999975919 ubox
+456 501 0.999849129 ubox
+457 500 0.999992728 ubox
+458 499 0.999994904 ubox
+459 498 0.999994904 ubox
+460 497 0.999978482 ubox
+461 496 0.999978512 ubox
+462 495 0.999994934 ubox
+463 494 0.999995708 ubox
+464 493 0.999990046 ubox
+465 492 0.999755651 ubox
+466 491 0.999990284 ubox
+467 490 0.999990135 ubox
+468 489 0.999849338 ubox
+469 488 0.999983042 ubox
+470 487 0.999791302 ubox
+471 486 0.999975890 ubox
+472 485 0.999426946 ubox
+473 484 0.999182427 ubox
+474 483 0.999179981 ubox
+475 482 0.999403895 ubox
+476 481 0.999865195 ubox
+477 480 0.993597726 ubox
+478 479 0.895526416 ubox
+1 956 0.9746794 lbox
+2 955 0.9746794 lbox
+3 954 0.9746794 lbox
+4 953 0.9746794 lbox
+5 952 0.9746794 lbox
+6 951 0.9746794 lbox
+7 950 0.9746794 lbox
+8 949 0.9746794 lbox
+9 948 0.9746794 lbox
+10 947 0.9746794 lbox
+11 946 0.9746794 lbox
+12 945 0.9746794 lbox
+13 944 0.9746794 lbox
+14 943 0.9746794 lbox
+15 942 0.9746794 lbox
+16 941 0.9746794 lbox
+17 940 0.9746794 lbox
+18 939 0.9746794 lbox
+19 938 0.9746794 lbox
+20 937 0.9746794 lbox
+21 936 0.9746794 lbox
+22 935 0.9746794 lbox
+23 934 0.9746794 lbox
+24 933 0.9746794 lbox
+25 932 0.9746794 lbox
+26 931 0.9746794 lbox
+27 930 0.9746794 lbox
+28 929 0.9746794 lbox
+29 928 0.9746794 lbox
+30 927 0.9746794 lbox
+31 926 0.9746794 lbox
+32 925 0.9746794 lbox
+33 924 0.9746794 lbox
+34 923 0.9746794 lbox
+35 922 0.9746794 lbox
+36 921 0.9746794 lbox
+37 920 0.9746794 lbox
+38 919 0.9746794 lbox
+39 918 0.9746794 lbox
+40 917 0.9746794 lbox
+41 916 0.9746794 lbox
+42 915 0.9746794 lbox
+43 914 0.9746794 lbox
+44 913 0.9746794 lbox
+45 912 0.9746794 lbox
+46 911 0.9746794 lbox
+47 910 0.9746794 lbox
+48 909 0.9746794 lbox
+49 908 0.9746794 lbox
+50 907 0.9746794 lbox
+51 906 0.9746794 lbox
+52 905 0.9746794 lbox
+53 904 0.9746794 lbox
+54 903 0.9746794 lbox
+55 902 0.9746794 lbox
+56 901 0.9746794 lbox
+57 900 0.9746794 lbox
+58 899 0.9746794 lbox
+59 898 0.9746794 lbox
+60 897 0.9746794 lbox
+61 896 0.9746794 lbox
+62 895 0.9746794 lbox
+63 894 0.9746794 lbox
+64 893 0.9746794 lbox
+65 892 0.9746794 lbox
+66 891 0.9746794 lbox
+67 890 0.9746794 lbox
+68 889 0.9746794 lbox
+69 888 0.9746794 lbox
+70 887 0.9746794 lbox
+71 886 0.9746794 lbox
+72 885 0.9746794 lbox
+73 884 0.9746794 lbox
+74 883 0.9746794 lbox
+75 882 0.9746794 lbox
+76 881 0.9746794 lbox
+77 880 0.9746794 lbox
+78 879 0.9746794 lbox
+79 878 0.9746794 lbox
+80 877 0.9746794 lbox
+81 876 0.9746794 lbox
+82 875 0.9746794 lbox
+83 874 0.9746794 lbox
+84 873 0.9746794 lbox
+85 872 0.9746794 lbox
+86 871 0.9746794 lbox
+87 870 0.9746794 lbox
+88 869 0.9746794 lbox
+89 868 0.9746794 lbox
+90 867 0.9746794 lbox
+91 866 0.9746794 lbox
+92 865 0.9746794 lbox
+93 864 0.9746794 lbox
+94 863 0.9746794 lbox
+95 862 0.9746794 lbox
+96 861 0.9746794 lbox
+97 860 0.9746794 lbox
+98 859 0.9746794 lbox
+99 858 0.9746794 lbox
+100 857 0.9746794 lbox
+101 856 0.9746794 lbox
+102 855 0.9746794 lbox
+103 854 0.9746794 lbox
+104 853 0.9746794 lbox
+105 852 0.9746794 lbox
+106 851 0.9746794 lbox
+107 850 0.9746794 lbox
+108 849 0.9746794 lbox
+109 848 0.9746794 lbox
+110 847 0.9746794 lbox
+111 846 0.9746794 lbox
+112 845 0.9746794 lbox
+113 844 0.9746794 lbox
+114 843 0.9746794 lbox
+115 842 0.9746794 lbox
+116 841 0.9746794 lbox
+117 840 0.9746794 lbox
+118 839 0.9746794 lbox
+119 838 0.9746794 lbox
+120 837 0.9746794 lbox
+121 836 0.9746794 lbox
+122 835 0.9746794 lbox
+123 834 0.9746794 lbox
+124 833 0.9746794 lbox
+125 832 0.9746794 lbox
+126 831 0.9746794 lbox
+127 830 0.9746794 lbox
+128 829 0.9746794 lbox
+129 828 0.9746794 lbox
+130 827 0.9746794 lbox
+131 826 0.9746794 lbox
+132 825 0.9746794 lbox
+133 824 0.9746794 lbox
+134 823 0.9746794 lbox
+135 822 0.9746794 lbox
+136 821 0.9746794 lbox
+137 820 0.9746794 lbox
+138 819 0.9746794 lbox
+139 818 0.9746794 lbox
+140 817 0.9746794 lbox
+141 816 0.9746794 lbox
+142 815 0.9746794 lbox
+143 814 0.9746794 lbox
+144 813 0.9746794 lbox
+145 812 0.9746794 lbox
+146 811 0.9746794 lbox
+147 810 0.9746794 lbox
+148 809 0.9746794 lbox
+149 808 0.9746794 lbox
+150 807 0.9746794 lbox
+151 806 0.9746794 lbox
+152 805 0.9746794 lbox
+153 804 0.9746794 lbox
+154 803 0.9746794 lbox
+155 802 0.9746794 lbox
+156 801 0.9746794 lbox
+157 800 0.9746794 lbox
+158 799 0.9746794 lbox
+159 798 0.9746794 lbox
+160 797 0.9746794 lbox
+161 796 0.9746794 lbox
+162 795 0.9746794 lbox
+163 794 0.9746794 lbox
+164 793 0.9746794 lbox
+165 792 0.9746794 lbox
+166 791 0.9746794 lbox
+167 790 0.9746794 lbox
+168 789 0.9746794 lbox
+169 788 0.9746794 lbox
+170 787 0.9746794 lbox
+171 786 0.9746794 lbox
+172 785 0.9746794 lbox
+173 784 0.9746794 lbox
+174 783 0.9746794 lbox
+175 782 0.9746794 lbox
+176 781 0.9746794 lbox
+177 780 0.9746794 lbox
+178 779 0.9746794 lbox
+179 778 0.9746794 lbox
+180 777 0.9746794 lbox
+181 776 0.9746794 lbox
+182 775 0.9746794 lbox
+183 774 0.9746794 lbox
+184 773 0.9746794 lbox
+185 772 0.9746794 lbox
+186 771 0.9746794 lbox
+187 770 0.9746794 lbox
+188 769 0.9746794 lbox
+189 768 0.9746794 lbox
+190 767 0.9746794 lbox
+191 766 0.9746794 lbox
+192 765 0.9746794 lbox
+193 764 0.9746794 lbox
+194 763 0.9746794 lbox
+195 762 0.9746794 lbox
+196 761 0.9746794 lbox
+197 760 0.9746794 lbox
+198 759 0.9746794 lbox
+199 758 0.9746794 lbox
+200 757 0.9746794 lbox
+201 756 0.9746794 lbox
+202 755 0.9746794 lbox
+203 754 0.9746794 lbox
+204 753 0.9746794 lbox
+205 752 0.9746794 lbox
+206 751 0.9746794 lbox
+207 750 0.9746794 lbox
+208 749 0.9746794 lbox
+209 748 0.9746794 lbox
+210 747 0.9746794 lbox
+211 746 0.9746794 lbox
+212 745 0.9746794 lbox
+213 744 0.9746794 lbox
+214 743 0.9746794 lbox
+215 742 0.9746794 lbox
+216 741 0.9746794 lbox
+217 740 0.9746794 lbox
+218 739 0.9746794 lbox
+219 738 0.9746794 lbox
+220 737 0.9746794 lbox
+221 736 0.9746794 lbox
+222 735 0.9746794 lbox
+223 734 0.9746794 lbox
+224 733 0.9746794 lbox
+225 732 0.9746794 lbox
+226 731 0.9746794 lbox
+227 730 0.9746794 lbox
+228 729 0.9746794 lbox
+229 728 0.9746794 lbox
+230 727 0.9746794 lbox
+231 726 0.9746794 lbox
+232 725 0.9746794 lbox
+233 724 0.9746794 lbox
+234 723 0.9746794 lbox
+235 722 0.9746794 lbox
+236 721 0.9746794 lbox
+237 720 0.9746794 lbox
+238 719 0.9746794 lbox
+239 718 0.9746794 lbox
+240 717 0.9746794 lbox
+241 716 0.9746794 lbox
+242 715 0.9746794 lbox
+243 714 0.9746794 lbox
+244 713 0.9746794 lbox
+245 712 0.9746794 lbox
+246 711 0.9746794 lbox
+247 710 0.9746794 lbox
+248 709 0.9746794 lbox
+249 708 0.9746794 lbox
+250 707 0.9746794 lbox
+251 706 0.9746794 lbox
+252 705 0.9746794 lbox
+253 704 0.9746794 lbox
+254 703 0.9746794 lbox
+255 702 0.9746794 lbox
+256 701 0.9746794 lbox
+257 700 0.9746794 lbox
+258 699 0.9746794 lbox
+259 698 0.9746794 lbox
+260 697 0.9746794 lbox
+261 696 0.9746794 lbox
+262 695 0.9746794 lbox
+263 694 0.9746794 lbox
+264 693 0.9746794 lbox
+265 692 0.9746794 lbox
+266 691 0.9746794 lbox
+267 690 0.9746794 lbox
+268 689 0.9746794 lbox
+269 688 0.9746794 lbox
+270 687 0.9746794 lbox
+271 686 0.9746794 lbox
+272 685 0.9746794 lbox
+273 684 0.9746794 lbox
+274 683 0.9746794 lbox
+275 682 0.9746794 lbox
+276 681 0.9746794 lbox
+277 680 0.9746794 lbox
+278 679 0.9746794 lbox
+279 678 0.9746794 lbox
+280 677 0.9746794 lbox
+281 676 0.9746794 lbox
+282 675 0.9746794 lbox
+283 674 0.9746794 lbox
+284 673 0.9746794 lbox
+285 672 0.9746794 lbox
+286 671 0.9746794 lbox
+287 670 0.9746794 lbox
+288 669 0.9746794 lbox
+289 668 0.9746794 lbox
+290 667 0.9746794 lbox
+291 666 0.9746794 lbox
+292 665 0.9746794 lbox
+293 664 0.9746794 lbox
+294 663 0.9746794 lbox
+295 662 0.9746794 lbox
+296 661 0.9746794 lbox
+297 660 0.9746794 lbox
+298 659 0.9746794 lbox
+299 658 0.9746794 lbox
+300 657 0.9746794 lbox
+301 656 0.9746794 lbox
+302 655 0.9746794 lbox
+303 654 0.9746794 lbox
+304 653 0.9746794 lbox
+305 652 0.9746794 lbox
+306 651 0.9746794 lbox
+307 650 0.9746794 lbox
+308 649 0.9746794 lbox
+309 648 0.9746794 lbox
+310 647 0.9746794 lbox
+311 646 0.9746794 lbox
+312 645 0.9746794 lbox
+313 644 0.9746794 lbox
+314 643 0.9746794 lbox
+315 642 0.9746794 lbox
+316 641 0.9746794 lbox
+317 640 0.9746794 lbox
+318 639 0.9746794 lbox
+319 638 0.9746794 lbox
+320 637 0.9746794 lbox
+321 636 0.9746794 lbox
+322 635 0.9746794 lbox
+323 634 0.9746794 lbox
+324 633 0.9746794 lbox
+325 632 0.9746794 lbox
+326 631 0.9746794 lbox
+327 630 0.9746794 lbox
+328 629 0.9746794 lbox
+329 628 0.9746794 lbox
+330 627 0.9746794 lbox
+331 626 0.9746794 lbox
+332 625 0.9746794 lbox
+333 624 0.9746794 lbox
+334 623 0.9746794 lbox
+335 622 0.9746794 lbox
+336 621 0.9746794 lbox
+337 620 0.9746794 lbox
+338 619 0.9746794 lbox
+339 618 0.9746794 lbox
+340 617 0.9746794 lbox
+341 616 0.9746794 lbox
+342 615 0.9746794 lbox
+343 614 0.9746794 lbox
+344 613 0.9746794 lbox
+345 612 0.9746794 lbox
+346 611 0.9746794 lbox
+347 610 0.9746794 lbox
+348 609 0.9746794 lbox
+349 608 0.9746794 lbox
+350 607 0.9746794 lbox
+351 606 0.9746794 lbox
+352 605 0.9746794 lbox
+353 604 0.9746794 lbox
+354 603 0.9746794 lbox
+355 602 0.9746794 lbox
+356 601 0.9746794 lbox
+357 600 0.9746794 lbox
+358 599 0.9746794 lbox
+359 598 0.9746794 lbox
+360 597 0.9746794 lbox
+361 596 0.9746794 lbox
+362 595 0.9746794 lbox
+363 594 0.9746794 lbox
+364 593 0.9746794 lbox
+365 592 0.9746794 lbox
+366 591 0.9746794 lbox
+367 590 0.9746794 lbox
+368 589 0.9746794 lbox
+369 588 0.9746794 lbox
+370 587 0.9746794 lbox
+371 586 0.9746794 lbox
+372 585 0.9746794 lbox
+373 584 0.9746794 lbox
+374 583 0.9746794 lbox
+375 582 0.9746794 lbox
+376 581 0.9746794 lbox
+377 580 0.9746794 lbox
+378 579 0.9746794 lbox
+379 578 0.9746794 lbox
+380 577 0.9746794 lbox
+381 576 0.9746794 lbox
+382 575 0.9746794 lbox
+383 574 0.9746794 lbox
+384 573 0.9746794 lbox
+385 572 0.9746794 lbox
+386 571 0.9746794 lbox
+387 570 0.9746794 lbox
+388 569 0.9746794 lbox
+389 568 0.9746794 lbox
+390 567 0.9746794 lbox
+391 566 0.9746794 lbox
+392 565 0.9746794 lbox
+393 564 0.9746794 lbox
+394 563 0.9746794 lbox
+395 562 0.9746794 lbox
+396 561 0.9746794 lbox
+397 560 0.9746794 lbox
+398 559 0.9746794 lbox
+399 558 0.9746794 lbox
+400 557 0.9746794 lbox
+401 556 0.9746794 lbox
+402 555 0.9746794 lbox
+403 554 0.9746794 lbox
+404 553 0.9746794 lbox
+405 552 0.9746794 lbox
+406 551 0.9746794 lbox
+407 550 0.9746794 lbox
+408 549 0.9746794 lbox
+409 548 0.9746794 lbox
+410 547 0.9746794 lbox
+411 546 0.9746794 lbox
+412 545 0.9746794 lbox
+413 544 0.9746794 lbox
+414 543 0.9746794 lbox
+415 542 0.9746794 lbox
+416 541 0.9746794 lbox
+417 540 0.9746794 lbox
+418 539 0.9746794 lbox
+419 538 0.9746794 lbox
+420 537 0.9746794 lbox
+421 536 0.9746794 lbox
+422 535 0.9746794 lbox
+423 534 0.9746794 lbox
+424 533 0.9746794 lbox
+425 532 0.9746794 lbox
+426 531 0.9746794 lbox
+427 530 0.9746794 lbox
+428 529 0.9746794 lbox
+429 528 0.9746794 lbox
+430 527 0.9746794 lbox
+431 526 0.9746794 lbox
+432 525 0.9746794 lbox
+433 524 0.9746794 lbox
+434 523 0.9746794 lbox
+435 522 0.9746794 lbox
+436 521 0.9746794 lbox
+437 520 0.9746794 lbox
+438 519 0.9746794 lbox
+439 518 0.9746794 lbox
+440 517 0.9746794 lbox
+441 516 0.9746794 lbox
+442 515 0.9746794 lbox
+443 514 0.9746794 lbox
+444 513 0.9746794 lbox
+445 512 0.9746794 lbox
+446 511 0.9746794 lbox
+447 510 0.9746794 lbox
+448 509 0.9746794 lbox
+449 508 0.9746794 lbox
+450 507 0.9746794 lbox
+451 506 0.9746794 lbox
+452 505 0.9746794 lbox
+453 504 0.9746794 lbox
+454 503 0.9746794 lbox
+455 502 0.9746794 lbox
+456 501 0.9746794 lbox
+457 500 0.9746794 lbox
+458 499 0.9746794 lbox
+459 498 0.9746794 lbox
+460 497 0.9746794 lbox
+461 496 0.9746794 lbox
+462 495 0.9746794 lbox
+463 494 0.9746794 lbox
+464 493 0.9746794 lbox
+465 492 0.9746794 lbox
+466 491 0.9746794 lbox
+467 490 0.9746794 lbox
+468 489 0.9746794 lbox
+469 488 0.9746794 lbox
+470 487 0.9746794 lbox
+471 486 0.9746794 lbox
+472 485 0.9746794 lbox
+473 484 0.9746794 lbox
+474 483 0.9746794 lbox
+475 482 0.9746794 lbox
+476 481 0.9746794 lbox
+477 480 0.9746794 lbox
+showpage
+end
+%%EOF
